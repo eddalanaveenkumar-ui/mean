@@ -1,20 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+  <!-- Essential Meta -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Mean AI — Intelligent Assistant</title>
-  <meta name="description" content="Mean AI is a powerful, intelligent assistant that helps you brainstorm, synthesize, and solve problems with precision." />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+
+  <!-- Primary SEO Meta Tags -->
+  <title>Mean AI — Intelligent AI Assistant for Brainstorming, Research & Problem Solving</title>
+  <meta name="description"
+    content="Mean AI is a powerful, intelligent AI assistant that helps you brainstorm ideas, synthesize information, generate presentations, and solve complex problems with precision. Try it free today." />
+  <meta name="keywords"
+    content="AI assistant, artificial intelligence, brainstorming tool, AI chat, problem solving AI, research assistant, presentation generator, Mean AI, smart assistant, AI productivity tool" />
+  <meta name="author" content="Mean AI" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <link rel="canonical" href="https://mean-85713.web.app/" />
+
+  <!-- Google Site Verification -->
+  <meta name="google-site-verification" content="C09u3h-4FBldeWUHfwCErkYQrhewsmumcnG0uS4zn3U" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mean-85713.web.app/" />
+  <meta property="og:title" content="Mean AI — Intelligent AI Assistant for Brainstorming & Problem Solving" />
+  <meta property="og:description"
+    content="Meet Mean AI — your powerful AI assistant that helps you brainstorm, synthesize, generate presentations, and solve complex problems with precision." />
+  <meta property="og:image" content="https://mean-85713.web.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Mean AI — Intelligent AI Assistant" />
+  <meta property="og:site_name" content="Mean AI" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://mean-85713.web.app/" />
+  <meta name="twitter:title" content="Mean AI — Intelligent AI Assistant for Brainstorming & Problem Solving" />
+  <meta name="twitter:description"
+    content="Meet Mean AI — your powerful AI assistant that helps you brainstorm, synthesize, generate presentations, and solve complex problems with precision." />
+  <meta name="twitter:image" content="https://mean-85713.web.app/og-image.png" />
+  <meta name="twitter:image:alt" content="Mean AI — Intelligent AI Assistant" />
+
+  <!-- Theme & App Meta -->
+  <meta name="theme-color" content="#863bff" />
+  <meta name="msapplication-TileColor" content="#863bff" />
+  <meta name="application-name" content="Mean AI" />
+  <meta name="apple-mobile-web-app-title" content="Mean AI" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Fonts & Stylesheets (with preconnect for speed) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+
+  <!-- Preload critical scripts -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/marked/marked.min.js" as="script" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Mean AI",
+    "url": "https://mean-85713.web.app",
+    "description": "Mean AI is a powerful, intelligent AI assistant that helps you brainstorm ideas, synthesize information, generate presentations, and solve complex problems with precision.",
+    "applicationCategory": "Productivity",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "image": "https://mean-85713.web.app/og-image.png",
+    "screenshot": "https://mean-85713.web.app/og-image.png",
+    "featureList": [
+      "AI-powered brainstorming",
+      "Intelligent research assistant",
+      "Presentation generation",
+      "Voice interaction",
+      "Smart problem solving"
+    ],
+    "creator": {
+      "@type": "Organization",
+      "name": "Mean AI",
+      "url": "https://mean-85713.web.app"
+    }
+  }
+  </script>
 </head>
+
 <body>
+  <noscript>
+    <div style="padding: 2rem; text-align: center; font-family: Inter, sans-serif; background: #0a0a0f; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+      <div>
+        <h1>Mean AI</h1>
+        <p>Mean AI requires JavaScript to run. Please enable JavaScript in your browser settings and reload the page.</p>
+      </div>
+    </div>
+  </noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
+
 </html>
