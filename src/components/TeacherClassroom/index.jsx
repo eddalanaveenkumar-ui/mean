@@ -1,8 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 import './TeacherClassroom.css';
 
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
 const MODEL = 'arcee-ai/trinity-large-preview:free';
+const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
 // HashMap for instant slide lookup by index (DSA optimization)
 class SlideCache {
@@ -10,8 +16,20 @@ class SlideCache {
   set(key, val) { this.map.set(key, val); }
   get(key) { return this.map.get(key); }
   has(key) { return this.map.has(key); }
-  getAll() { return [...this.map.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]); }
 }
+
+// Completely block React from re-reconciling the interior DOM tree while text is speaking
+// Without this, parent state updates (like real-time countdown timer) obliterate our `.tc-hw` word spans!
+const StaticSlideBody = React.memo(({ html, innerRef }) => {
+  return (
+    <div className="tc-slide-body">
+      <div 
+        ref={innerRef}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
+  );
+}, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
   const { apiKey, user } = useApp();
@@ -22,51 +40,577 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [duration, setDuration] = useState(30);
   const [lang, setLang] = useState('English');
 
+  // File upload state
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [fileType, setFileType] = useState(''); // 'syllabus', 'concepts', 'questions'
+  const [extracting, setExtracting] = useState(false);
+  const [extractStatus, setExtractStatus] = useState('');
+  const fileInputRef = useRef(null);
+
   // Presentation state
   const [slides, setSlides] = useState([]);
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
   const [slideContents, setSlideContents] = useState(new SlideCache());
   const [voiceState, setVoiceState] = useState('idle');
   const [timeLeft, setTimeLeft] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const slideBodyRef = useRef(null);
+  const [loading, _setLoading] = useState(false);
+  const isLoadingRef = useRef(false);
+  const setLoading = useCallback((val) => { isLoadingRef.current = val; _setLoading(val); }, []);
+  const fetchingRefs = useRef(new Set());
   const [showDoubt, setShowDoubt] = useState(false);
   const [doubtText, setDoubtText] = useState('');
   const [doubtAnswer, setDoubtAnswer] = useState('');
+
+  // Right panel — YouTube videos & images
+  const [mediaItems, setMediaItems] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
+  // YouTube Data API v3 key from environment variables
+  const APP_YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 
   // Full class notes for PDF
   const classNotesRef = useRef([]);
   const timerRef = useRef(null);
   const activeRef = useRef(false);
   const contentRef = useRef(null);
+  const sessionVideoRef = useRef(null);
 
-  const fetchAI = useCallback(async (messages) => {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, messages, stream: false, max_tokens: 2000 })
-    });
-    const data = await resp.json();
-    return data.choices?.[0]?.message?.content || '';
+  const fetchAI = useCallback(async (messages, maxTokens = 2000, retryCount = 1) => {
+    try {
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: MODEL, messages, stream: false, max_tokens: maxTokens })
+      });
+      const data = await resp.json();
+      const content = data.choices?.[0]?.message?.content;
+      
+      if (!content && retryCount > 0) {
+        // Rate limit hit or bad response on free model. Pause and retry automatically.
+        await new Promise(r => setTimeout(r, 1500));
+        return fetchAI(messages, maxTokens, retryCount - 1);
+      }
+      return content || '';
+    } catch (e) {
+      if (retryCount > 0) {
+        await new Promise(r => setTimeout(r, 1500));
+        return fetchAI(messages, maxTokens, retryCount - 1);
+      }
+      return '';
+    }
   }, [apiKey]);
 
+  // Wrap all visible text nodes inside the slide body with word spans for highlighting
+  const wrapWordsInDOM = useCallback(() => {
+    const el = slideBodyRef.current;
+    if (!el) return 0;
+
+    // Clear any previous wrapping by re-rendering (React handles this via key)
+    // But if already wrapped from a previous call in the same render, skip
+    const existing = el.querySelectorAll('.tc-hw');
+    if (existing.length > 0) return existing.length;
+
+    let wordIdx = 0;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    for (const node of textNodes) {
+      const text = node.textContent;
+      if (!text || !text.trim()) continue;
+
+      // DO NOT wrap or speak code blocks
+      if (node.parentElement?.closest('pre') || node.parentElement?.closest('code')) continue;
+
+      const frag = document.createDocumentFragment();
+      const parts = text.split(/(\s+)/);
+      for (const part of parts) {
+        if (/^\s+$/.test(part) || !part) {
+          frag.appendChild(document.createTextNode(part || ''));
+        } else {
+          const span = document.createElement('span');
+          span.className = 'tc-hw';
+          span.setAttribute('data-wi', wordIdx.toString());
+          span.textContent = part;
+          frag.appendChild(span);
+          wordIdx++;
+        }
+      }
+      if (node.parentNode) node.parentNode.replaceChild(frag, node);
+    }
+    return wordIdx;
+  }, []);
+
   const speakText = useCallback(async (text) => {
+    window.speechSynthesis?.cancel();
     if (!('speechSynthesis' in window)) return;
     setVoiceState('speaking');
-    const clean = text.replace(/[#*`_\[\]()~\->📌👉💡⚡✅🔥📝🎯📊🏫]/g, '').replace(/<[^>]+>/g, '').trim();
-    if (!clean) { setVoiceState('idle'); return; }
+
+    // Wait for React to finish rendering the new content into the DOM
+    await new Promise(r => setTimeout(r, 400));
+    // Force a second frame paint
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const totalWrapped = wrapWordsInDOM();
+    if (totalWrapped === 0 || !slideBodyRef.current) {
+      setVoiceState('idle'); 
+      return; 
+    }
+
+    // Build the EXACT string to speak directly from the DOM spans.
+    // Strip emojis and punctuation so TTS engines don't choke or drop boundaries.
+    const spans = slideBodyRef.current.querySelectorAll('.tc-hw');
+    let exactText = '';
+    let spanMap = [];
+    
+    spans.forEach((span, idx) => {
+      // Remove emojis and common markdown artifacts left over
+      const w = span.textContent.replace(/[#*`_\[\]()~\->📌👉💡⚡✅🔥📝🎯📊🏫🔍🧠📎]/g, '').trim();
+      
+      // Only map and speak words that contain speakable characters
+      if (w.length > 0) {
+        spanMap.push({ domIdx: idx, startChar: exactText.length, length: w.length });
+        exactText += w + ' ';
+      }
+    });
+    
+    exactText = exactText.trim();
+    if (!exactText) { setVoiceState('idle'); return; }
+
+    console.log(`[TTS] Speaking ${totalWrapped} words from DOM`);
+
     return new Promise(resolve => {
-      const utt = new SpeechSynthesisUtterance(clean);
+      const utt = new SpeechSynthesisUtterance(exactText);
       utt.rate = 0.92; utt.pitch = 1.05;
       const voices = window.speechSynthesis.getVoices();
       const langMap = { English: 'en', Hindi: 'hi', Telugu: 'te', Tamil: 'ta', Kannada: 'kn', Malayalam: 'ml', Marathi: 'mr' };
       const code = langMap[lang] || 'en';
       const voice = voices.find(v => v.lang.startsWith(code)) || voices[0];
       if (voice) utt.voice = voice;
-      utt.onend = () => { setVoiceState('idle'); resolve(); };
-      utt.onerror = () => { setVoiceState('idle'); resolve(); };
+
+      let prevHighlight = null;
+      let boundaryFired = false;
+
+      // Helper to avoid erratic scrolling jitter
+      const scrollIfHidden = (el) => {
+        const rect = el.getBoundingClientRect();
+        const container = document.querySelector('.tc-board-left');
+        if (!container) return;
+        const containerRect = container.getBoundingClientRect();
+        if (rect.top < containerRect.top || rect.bottom > containerRect.bottom) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      };
+
+      // Method 1: onboundary (works beautifully when exact text matches)
+      utt.onboundary = (e) => {
+        if (e.name === 'word') {
+          boundaryFired = true;
+          
+          // KILL the fallback timer if it accidentally started before the TTS engine loaded!
+          // This prevents the timer and the real boundaries from fighting and bouncing back and forth.
+          if (fallbackTimer) clearInterval(fallbackTimer);
+          clearTimeout(fallbackStart);
+
+          const charIdx = e.charIndex;
+          const target = spanMap.find(w => charIdx >= w.startChar && charIdx < w.startChar + w.length);
+          
+          if (target && slideBodyRef.current) {
+            if (prevHighlight) prevHighlight.classList.remove('tc-hw-active');
+            const wordSpan = slideBodyRef.current.querySelector(`[data-wi="${target.domIdx}"]`);
+            if (wordSpan) {
+              wordSpan.classList.add('tc-hw-active');
+              scrollIfHidden(wordSpan);
+              prevHighlight = wordSpan;
+            }
+          }
+        }
+      };
+
+      // Method 2: Timer fallback (for browsers like Firefox that don't trigger per-word boundaries)
+      let fallbackTimer = null;
+      let fIdx = 0;
+      const wordsPerSecond = 2.5 / utt.rate;
+      const msPerWord = 1000 / wordsPerSecond;
+
+      const startFallback = () => {
+        if (boundaryFired || !slideBodyRef.current) return;
+        console.log('[TTS] onboundary missing, using timer fallback');
+        fallbackTimer = setInterval(() => {
+          if (!slideBodyRef.current || fIdx >= spanMap.length) {
+            clearInterval(fallbackTimer);
+            return;
+          }
+          if (prevHighlight) prevHighlight.classList.remove('tc-hw-active');
+          const wordSpan = slideBodyRef.current.querySelector(`[data-wi="${spanMap[fIdx].domIdx}"]`);
+          if (wordSpan) {
+            wordSpan.classList.add('tc-hw-active');
+            scrollIfHidden(wordSpan);
+            prevHighlight = wordSpan;
+          }
+          fIdx++;
+        }, msPerWord);
+      };
+
+      // Wait a generous 3 seconds for the TTS engine to start before assuming it's broken
+      const fallbackStart = setTimeout(startFallback, 3000);
+
+      const clearHighlights = () => {
+        clearTimeout(fallbackStart);
+        if (fallbackTimer) clearInterval(fallbackTimer);
+        if (prevHighlight) prevHighlight.classList.remove('tc-hw-active');
+        slideBodyRef.current?.querySelectorAll('.tc-hw-active').forEach(el => el.classList.remove('tc-hw-active'));
+        setVoiceState('idle');
+        resolve();
+      };
+      utt.onend = clearHighlights;
+      utt.onerror = clearHighlights;
       window.speechSynthesis.speak(utt);
     });
-  }, [lang]);
+  }, [lang, wrapWordsInDOM]);
+
+  // ===== TEXT EXTRACTION UTILITIES =====
+
+  // Extract text from PDF using pdf.js
+  const extractPdfText = async (arrayBuffer) => {
+    setExtractStatus('📄 Loading PDF...');
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
+    let fullText = '';
+    let hasTextContent = false;
+
+    for (let i = 1; i <= totalPages; i++) {
+      setExtractStatus(`📄 Extracting page ${i}/${totalPages}...`);
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+
+      if (pageText.trim().length > 10) {
+        hasTextContent = true;
+      }
+      fullText += `\n--- Page ${i} ---\n${pageText}\n`;
+    }
+
+    // If very little text was found, the PDF might be scanned/image-based — try OCR
+    if (!hasTextContent && window.Tesseract) {
+      setExtractStatus('🔍 Scanned PDF detected — running OCR...');
+      fullText = '';
+
+      for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+        setExtractStatus(`🔍 OCR processing page ${i}/${Math.min(totalPages, 10)}...`);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 });
+
+        // Render page to canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // OCR the canvas image
+        const imageDataUrl = canvas.toDataURL('image/png');
+        try {
+          const result = await window.Tesseract.recognize(imageDataUrl, 'eng', {
+            logger: (m) => {
+              if (m.status === 'recognizing text') {
+                setExtractStatus(`🔍 OCR page ${i}: ${Math.round(m.progress * 100)}%`);
+              }
+            }
+          });
+          fullText += `\n--- Page ${i} (OCR) ---\n${result.data.text}\n`;
+        } catch (ocrErr) {
+          console.warn('OCR failed for page', i, ocrErr);
+          fullText += `\n--- Page ${i} ---\n[OCR failed]\n`;
+        }
+
+        canvas.remove();
+      }
+    }
+
+    return fullText.trim();
+  };
+
+  // Extract text from DOCX using mammoth
+  const extractDocxText = async (arrayBuffer) => {
+    setExtractStatus('📝 Extracting DOCX content...');
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value.trim();
+  };
+
+  // Extract text from images using Tesseract.js OCR
+  const extractImageText = async (file) => {
+    if (!window.Tesseract) {
+      setExtractStatus('⚠️ OCR not available');
+      return '[OCR library not loaded]';
+    }
+
+    setExtractStatus('🖼️ Running OCR on image...');
+    const imageUrl = URL.createObjectURL(file);
+
+    try {
+      const result = await window.Tesseract.recognize(imageUrl, 'eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            setExtractStatus(`🖼️ OCR: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      });
+      URL.revokeObjectURL(imageUrl);
+      return result.data.text.trim();
+    } catch (err) {
+      URL.revokeObjectURL(imageUrl);
+      console.warn('Image OCR failed:', err);
+      return '[Image OCR failed]';
+    }
+  };
+
+  // Auto-detect file content type
+  const detectFileType = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('syllabus') || lower.includes('curriculum') || lower.includes('semester') || lower.includes('unit') || lower.includes('module')) {
+      return 'syllabus';
+    } else if (lower.includes('question') || lower.includes('answer') || lower.includes('?') || lower.includes('solve') || lower.includes('exam') || lower.includes('marks')) {
+      return 'questions';
+    }
+    return 'concepts';
+  };
+
+  // ===== MAIN FILE HANDLER =====
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const name = file.name;
+    const ext = name.split('.').pop().toLowerCase();
+    setFileName(name);
+    setUploadedFile(file);
+    setExtracting(true);
+    setExtractStatus('📂 Reading file...');
+
+    try {
+      let extractedText = '';
+
+      // PDF files
+      if (ext === 'pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractPdfText(arrayBuffer);
+      }
+      // DOCX files
+      else if (ext === 'docx') {
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractDocxText(arrayBuffer);
+      }
+      // DOC files (old Word format) — try mammoth, fallback to text
+      else if (ext === 'doc') {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          extractedText = await extractDocxText(arrayBuffer);
+        } catch {
+          setExtractStatus('📝 Reading as plain text...');
+          extractedText = await file.text();
+        }
+      }
+      // Image files — OCR
+      else if (['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff', 'tif'].includes(ext)) {
+        extractedText = await extractImageText(file);
+      }
+      // Plain text files (.txt, .md, .csv, .json, etc.)
+      else {
+        setExtractStatus('📝 Reading text file...');
+        extractedText = await file.text();
+      }
+
+      if (!extractedText || extractedText.trim().length < 5) {
+        setExtractStatus('⚠️ No text could be extracted');
+        extractedText = '[File content could not be extracted. The file may be empty or in an unsupported format.]';
+      }
+
+      setFileContent(extractedText);
+      setFileType(detectFileType(extractedText));
+      setExtractStatus(`✅ Extracted ${extractedText.length.toLocaleString()} characters`);
+    } catch (err) {
+      console.error('File extraction error:', err);
+      setExtractStatus('❌ Extraction failed — trying plain text...');
+      try {
+        const fallbackText = await file.text();
+        setFileContent(fallbackText);
+        setFileType(detectFileType(fallbackText));
+        setExtractStatus(`⚠️ Fallback: ${fallbackText.length.toLocaleString()} chars (may contain artifacts)`);
+      } catch {
+        setFileContent('[Failed to extract file content]');
+        setExtractStatus('❌ Could not read file');
+      }
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setFileContent('');
+    setFileName('');
+    setFileType('');
+    setExtractStatus('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // ===== FETCH MEDIA (YouTube + Images) =====
+
+  // YouTube Data API v3 — real video search
+  const searchYouTube = async (query, maxResults = 3) => {
+    if (!APP_YT_KEY) return [];
+    try {
+      const params = new URLSearchParams({
+        part: 'snippet',
+        q: query,
+        type: 'video',
+        videoDuration: 'medium', // Completely eliminates YouTube Shorts!
+        maxResults: maxResults.toString(),
+        relevanceLanguage: lang === 'English' ? 'en' : lang.slice(0, 2).toLowerCase(),
+        safeSearch: 'strict',
+        key: APP_YT_KEY
+      });
+      const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+      if (!resp.ok) throw new Error(`YT API ${resp.status}`);
+      const data = await resp.json();
+      return (data.items || []).map(item => ({
+        videoId: item.id.videoId,
+        title: item.snippet.title,
+        description: item.snippet.description?.slice(0, 100),
+        thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+        channel: item.snippet.channelTitle
+      }));
+    } catch (err) {
+      console.warn('YouTube API error:', err);
+      return [];
+    }
+  };
+
+  // Image search — Unsplash Source (free, no API key) + Wikimedia fallback
+  const searchImages = async (query, limit = 3) => {
+    const images = [];
+    const cleanQuery = encodeURIComponent(query.replace(/[^\w\s]/g, '').trim());
+    
+    // Strategy 1: Unsplash Source — beautiful, highly relevant stock images (no API key needed)
+    for (let i = 0; i < limit; i++) {
+      images.push({
+        url: `https://source.unsplash.com/600x400/?${cleanQuery}&sig=${Date.now() + i}`,
+        alt: `${query} illustration ${i + 1}`
+      });
+    }
+
+    // Strategy 2: Wikimedia Commons fallback (only if Unsplash fails to load)
+    try {
+      const searchParams = new URLSearchParams({
+        action: 'query',
+        list: 'search',
+        srsearch: `${query} diagram illustration`,
+        srnamespace: '6',
+        srlimit: '3',
+        format: 'json',
+        origin: '*'
+      });
+      const searchResp = await fetch(`https://commons.wikimedia.org/w/api.php?${searchParams}`);
+      const searchData = await searchResp.json();
+      const results = searchData.query?.search || [];
+
+      for (const result of results.slice(0, 2)) {
+        const title = result.title;
+        const infoParams = new URLSearchParams({
+          action: 'query',
+          titles: title,
+          prop: 'imageinfo',
+          iiprop: 'url|mime',
+          format: 'json',
+          origin: '*'
+        });
+        const infoResp = await fetch(`https://commons.wikimedia.org/w/api.php?${infoParams}`);
+        const infoData = await infoResp.json();
+        const infoPages = infoData.query?.pages || {};
+        for (const p of Object.values(infoPages)) {
+          if (p.imageinfo?.[0]?.mime?.startsWith('image/') && !p.imageinfo[0].url.includes('.svg')) {
+            images.push({
+              url: p.imageinfo[0].url,
+              alt: title.replace('File:', '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Wikimedia fallback error:', err);
+    }
+
+    return images.slice(0, limit + 2); // Return up to 5 images (3 Unsplash + 2 Wikimedia)
+  };
+
+  const fetchMediaForSlide = useCallback(async (slideTitle, slideContent) => {
+    setMediaLoading(true);
+    const result = { youtube: [], images: [], keyTerms: [] };
+
+    try {
+      // Extract key terms using Regex
+      const boldWordsMatch = slideContent.match(/\*\*(.*?)\*\*/g) || [];
+      const extractedTerms = [...new Set(boldWordsMatch.map(w => w.replace(/\*\*/g, '').trim()))];
+      result.keyTerms = extractedTerms.filter(w => w.length > 2 && w.split(' ').length <= 3).slice(0, 5);
+
+      const topKeyword = extractedTerms[0] || topic;
+      const imageQuery = `${topic} ${slideTitle}`;
+
+      // Global Session Video: Fetch exactly 1 long-form video per session globally
+      if (!sessionVideoRef.current && APP_YT_KEY) {
+        const searchQuery = `${subject} ${topic} full lecture -shorts`;
+        const vids = await searchYouTube(`${searchQuery} ${lang !== 'English' ? lang : ''}`, 1);
+        if (vids.length > 0) sessionVideoRef.current = vids;
+      }
+      
+      result.youtube = sessionVideoRef.current || [];
+      
+      // Fetch relevant images using topic + slide title
+      result.images = await searchImages(imageQuery, 3);
+
+    } catch (e) {
+      console.warn('Media fetch error:', e);
+    }
+
+    setMediaItems(result);
+    setMediaLoading(false);
+  }, [subject, topic, lang, APP_YT_KEY]);
+
+  // ===== D.S.E.C.A.R PROMPT =====
+  const buildDSECARPrompt = (slide, prevContext) => {
+    const fileContext = fileContent
+      ? `\n\nATTACHED DOCUMENT (${fileType}): "${fileName}"\n=== FILE CONTENT ===\n${fileContent.slice(0, 2000)}\n=== END ===\n\nUse the above ${fileType} as your primary reference.`
+      : '';
+
+    return `You are an expert ${subject} teacher giving a live class on "${topic}" at ${level} level.
+
+Current slide: "${slide.title}" - ${slide.subtitle}
+Points to cover: ${slide.points.join(', ')}
+${prevContext ? `Previous context: ${prevContext.slice(0, 300)}` : ''}
+${fileContext}
+
+IMPORTANT INSTRUCTIONS:
+1. ALWAYS generate text strictly in ENGLISH. Use simple vocabulary.
+2. DO NOT use generic D.S.E.C.A.R labels. Create natural, engaging subheadings.
+3. IN EVERY SECTION, tie the concept to a REAL-WORLD everyday example.
+4. IF the topic involves CODE, for EVERY code block follow this EXACT structure:
+   - **Purpose (Big Picture):** What the code achieves in 1-2 lines.
+   - **Input & Output:** What goes in, what comes out.
+   - **Step-by-Step Breakdown:** Explain line by line. Do NOT just repeat code in words — explain the LOGIC.
+   - **Dry Run:** Walk through with a sample input step by step (e.g. i=0 -> print 0, i=1 -> print 1).
+   - **Key Takeaway:** The most important pattern or idea.
+   - **Improvement (optional):** Suggest a better/cleaner approach if applicable.
+5. AT THE BOTTOM, generate exactly 3 Practice Problems (coding challenges if coding, math if math, theory MCQs if theory).
+6. Be clear, structured, NOT verbose. Focus on understanding, not memorization.
+7. If the code is inefficient or bad, point it out honestly.
+
+Keep the core explanation concise. Maximum 250 words. Output in pure Markdown.`;
+  };
 
   // ===== START CLASS =====
   const startClass = async () => {
@@ -74,43 +618,58 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     setPhase('loading');
     activeRef.current = true;
     classNotesRef.current = [];
+    sessionVideoRef.current = null;
     setSlideContents(new SlideCache());
     setTimeLeft(duration * 60);
+    setMediaItems([]);
+
+    const fileContext = fileContent
+      ? `\n\nThe student has attached a ${fileType} document: "${fileName}"\nContent: ${fileContent.slice(0, 3000)}\n\nUse this document as the primary source for generating the slide outline. Extract key topics and structure from it.`
+      : '';
 
     const outlinePrompt = `You are an expert ${subject} teacher. Create a detailed presentation outline for teaching "${topic}" at ${level} level.
+${fileContext}
 
 Return ONLY a JSON array of slides. Each slide has:
-- "title": slide title
+- "title": slide title  
 - "subtitle": brief subtitle
 - "points": array of 3-5 key points to cover
 
 Generate 5-8 slides. Include: Introduction, Core Concepts (2-3 slides), Examples/Applications, Summary/Key Takeaways.
+${fileContent ? 'Base the slides on the attached document content.' : ''}
 
 Return ONLY the JSON array, no other text.`;
 
     try {
       const content = await fetchAI([{ role: 'user', content: outlinePrompt }]);
+      
       const match = content.match(/\[[\s\S]*\]/);
       let parsed = match ? JSON.parse(match[0]) : null;
       if (!parsed || !Array.isArray(parsed)) {
         parsed = [
           { title: 'Introduction', subtitle: `Overview of ${topic}`, points: ['What is it?', 'Why is it important?', 'Prerequisites'] },
-          { title: 'Core Concepts', subtitle: 'Fundamental ideas', points: ['Concept 1', 'Concept 2', 'Concept 3'] },
+          { title: 'Core Concepts', subtitle: 'Fundamental ideas', points: ['Concept 1', 'Concept 2'] },
           { title: 'Examples', subtitle: 'Real-world applications', points: ['Example 1', 'Example 2'] },
           { title: 'Summary', subtitle: 'Key takeaways', points: ['Recap', 'Next steps'] },
         ];
       }
+      
       setSlides(parsed);
       setCurrentSlideIdx(0);
+
+      // Load first slide content OVER the setup loading screen securely
+      await loadSlideContent(parsed, 0);
+      
+      if (!activeRef.current) return;
+
       setPhase('presenting');
 
-      // Start timer
+      // Start timer (pauses when buffering)
       timerRef.current = setInterval(() => {
-        setTimeLeft(prev => { if (prev <= 1) { endClass(); return 0; } return prev - 1; });
+        if (!isLoadingRef.current) {
+          setTimeLeft(prev => { if (prev <= 1) { endClass(); return 0; } return prev - 1; });
+        }
       }, 1000);
-
-      // Load first slide content
-      await loadSlideContent(parsed, 0);
     } catch (e) {
       alert('Failed to generate outline. Check your API key.');
       setPhase('setup');
@@ -125,43 +684,26 @@ Return ONLY the JSON array, no other text.`;
     const slide = slideData[idx];
     const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
 
-    const explainPrompt = `You are an expert ${subject} teacher giving a live class on "${topic}" at ${level} level.
-
-Current slide: "${slide.title}" - ${slide.subtitle}
-Points to cover: ${slide.points.join(', ')}
-${prevContext ? `Previous context: ${prevContext.slice(0, 300)}` : ''}
-
-Write the FULL slide content as a beautiful, engaging presentation. Follow these rules:
-
-FORMATTING (VERY IMPORTANT):
-- Start with a single # for the slide title
-- Use ## for subtopics
-- Use 👉 for ALL bullet points (NOT dashes or asterisks)
-- Use 📌 for key definitions or important terms
-- Use 💡 for tips, tricks, or insights
-- Use ⚡ for crucial points students must remember
-- Use ✅ for examples or step-by-step instructions
-- Use 🔥 for interesting facts or highlights
-- Use 📝 for notes or things to remember
-- Use **bold** for key terms
-- If coding topic: include a well-commented code block
-- If math: show formulas clearly
-- Keep explanations CLEAR and DETAILED (200-350 words)
-- Use real-world analogies students can relate to
-- End with a "📌 Key Takeaway" one-liner
-
-Language: ${lang}`;
+    const explainPrompt = buildDSECARPrompt(slide, prevContext);
 
     try {
-      const content = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher. You explain concepts with great clarity using examples and analogies.` },
+      let content = await fetchAI([
+        { role: 'system', content: `You are an expert ${subject} coding teacher who explains code clearly, logically, and practically. Your goal is not just to describe concepts, but to make the user understand how and why they work. For code: always include Purpose, Step-by-Step Breakdown, Dry Run with sample values, and Key Takeaways. Never just repeat code in words. Use simple language suitable for ${level} level. Be clear and structured, not verbose.` },
         { role: 'user', content: explainPrompt }
       ]);
+      
+      // Fallback if the Free API completely drops the request even after retries
+      if (!content || content.trim() === '') {
+        content = "## ⚠️ AI API Rate Limit Reached\n\nThe free AI provider (OpenRouter) is currently dropping requests due to high network traffic on your API Key.\n\n👉 **What to do:** Slide content will retry automatically in the background, or you can skip to the next slide.";
+      }
 
-      // Cache the content
-      const cache = slideContents;
-      cache.set(idx, { slide, content, explained: false });
-      setSlideContents(cache);
+      // Cache the content safely
+      setSlideContents(prevCache => {
+        const newCache = new SlideCache();
+        newCache.map = new Map(prevCache.map);
+        newCache.set(idx, { slide, content, explained: false });
+        return newCache;
+      });
 
       classNotesRef.current.push({
         slideIdx: idx,
@@ -176,12 +718,65 @@ Language: ${lang}`;
       // Auto-scroll content
       setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
 
-      // TTS
-      const speechPrompt = `Summarize this slide content for spoken lecture in 2-3 sentences in ${lang}. Only return the spoken text, no formatting: ${content.slice(0, 500)}`;
-      const speech = await fetchAI([{ role: 'user', content: speechPrompt }]);
-      if (activeRef.current) await speakText(speech);
+      // Fetch media for right panel
+      fetchMediaForSlide(slide.title, content);
+
+      // Trigger background buffering for the next slide automatically
+      prefetchNextSlide(slideData, idx);
+
+      // Non-blocking TTS (Reads actual slide content, saving an API call!)
+      if (activeRef.current) speakText(content);
     } catch (e) {
       setLoading(false);
+    }
+  };
+
+  // ===== BACKGROUND PREFETCH =====
+  const prefetchNextSlide = async (slidesArray, currentIndex) => {
+    const nextIdx = currentIndex + 1;
+    if (!activeRef.current || nextIdx >= slidesArray.length) return;
+    
+    // If it's already cached or actively fetching, try the next one
+    if (slideContents.has(nextIdx) || fetchingRefs.current.has(nextIdx)) {
+      prefetchNextSlide(slidesArray, nextIdx);
+      return;
+    }
+
+    fetchingRefs.current.add(nextIdx);
+    
+    // Slight pause to prioritize TTS and UI thread
+    await new Promise(r => setTimeout(r, 1500));
+    if (!activeRef.current) return;
+
+    const slide = slidesArray[nextIdx];
+    const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
+    const explainPrompt = buildDSECARPrompt(slide, prevContext);
+
+    try {
+      let content = await fetchAI([
+        { role: 'system', content: `Expert ${subject} teacher. You explain concepts using the D.S.E.C.A.R framework with great clarity, examples, and analogies. You never use jargon. A beginner should understand everything you say.` },
+        { role: 'user', content: explainPrompt }
+      ]);
+      
+      if (!content || content.trim() === '') {
+        content = "## ⚠️ AI API Rate Limit Reached\n\nThe free AI provider (OpenRouter) is currently dropping requests due to high network traffic on your API Key.\n\n👉 **What to do:** Reload the classroom to retry.";
+      }
+      
+      if (activeRef.current) {
+        setSlideContents(prevCache => {
+          const newCache = new SlideCache();
+          newCache.map = new Map(prevCache.map);
+          newCache.set(nextIdx, { slide, content, explained: false });
+          return newCache;
+        });
+        
+        // Auto-prefetch the slide after this one
+        prefetchNextSlide(slidesArray, nextIdx);
+      }
+    } catch (e) {
+      console.warn('Background prefetch failed:', e);
+    } finally {
+      fetchingRefs.current.delete(nextIdx);
     }
   };
 
@@ -192,6 +787,12 @@ Language: ${lang}`;
       window.speechSynthesis?.cancel();
       if (slideContents.has(next)) {
         setCurrentSlideIdx(next);
+        // Re-fetch media for this slide
+        const cached = slideContents.get(next);
+        if (cached) {
+          fetchMediaForSlide(cached.slide.title, cached.content);
+          if (activeRef.current) speakText(cached.content);
+        }
         setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
       } else {
         loadSlideContent(slides, next);
@@ -202,7 +803,13 @@ Language: ${lang}`;
   const prevSlide = () => {
     if (currentSlideIdx > 0) {
       window.speechSynthesis?.cancel();
-      setCurrentSlideIdx(currentSlideIdx - 1);
+      const prev = currentSlideIdx - 1;
+      setCurrentSlideIdx(prev);
+      const cached = slideContents.get(prev);
+      if (cached) {
+        fetchMediaForSlide(cached.slide.title, cached.content);
+        if (activeRef.current) speakText(cached.content);
+      }
       setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
     }
   };
@@ -216,7 +823,7 @@ Language: ${lang}`;
 
     try {
       const answer = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher. Answer student's doubt about "${topic}" clearly. Use 👉 for points, 📌 for key info, 💡 for tips. Be thorough but concise. Language: ${lang}.` },
+        { role: 'system', content: `Expert ${subject} teacher. Answer student's doubt about "${topic}" using D.S.E.C.A.R method — Define, Simplify, Expand, Connect, Analogy, Recap. Use 👉 for points, 📌 for key info, 💡 for tips. Be thorough but concise. Language: ${lang}.` },
         { role: 'user', content: q }
       ]);
       setDoubtAnswer(answer);
@@ -228,10 +835,9 @@ Language: ${lang}`;
 
   // ===== PDF DOWNLOAD =====
   const downloadPDF = () => {
-    const notes = classNotesRef.current;
+    const notes = slideContents.getAll();
     if (notes.length === 0) { alert('No notes to download!'); return; }
 
-    // Build rich HTML for PDF
     let html = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>${subject} - ${topic} | Mean AI Classroom</title>
     <style>
@@ -241,6 +847,7 @@ Language: ${lang}`;
       .cover h1 { font-size: 2.4rem; color: #e8913a; margin-bottom: 8px; }
       .cover h2 { font-size: 1.5rem; color: #333; font-weight: 400; }
       .cover p { color: #888; margin-top: 12px; font-size: 0.9rem; }
+      .cover .method { display: inline-block; background: #fef3e2; color: #e8913a; padding: 6px 16px; border-radius: 6px; font-weight: 600; margin-top: 16px; font-size: 0.85rem; }
       .slide { page-break-inside: avoid; margin-bottom: 36px; border-left: 4px solid #e8913a; padding-left: 20px; }
       .slide h2 { font-size: 1.4rem; color: #e8913a; margin-bottom: 6px; }
       .slide .time { font-size: 0.75rem; color: #aaa; margin-bottom: 12px; }
@@ -256,11 +863,11 @@ Language: ${lang}`;
       <h2>${subject} • ${level} Level</h2>
       <p>Generated by Mean AI Classroom • ${new Date().toLocaleDateString()} • Duration: ${duration} min • Language: ${lang}</p>
       <p>Student: ${user?.name || 'Student'}</p>
+      <div class="method">📐 Teaching Method: D.S.E.C.A.R Framework</div>
     </div>`;
 
-    notes.forEach((note, i) => {
+    notes.forEach((note) => {
       let content = note.content;
-      // Convert markdown to basic HTML for PDF
       content = content.replace(/^### (.*$)/gm, '<h3>$1</h3>');
       content = content.replace(/^## (.*$)/gm, '<h2>$1</h2>');
       content = content.replace(/^# (.*$)/gm, '<h1>$1</h1>');
@@ -270,15 +877,14 @@ Language: ${lang}`;
       content = content.replace(/\n/g, '<br>');
 
       html += `<div class="slide">
-        <h2>${note.title}</h2>
-        <div class="time">⏱ ${note.timestamp}</div>
+        <h2>${note.slide.title}</h2>
+        <div class="time">⏱ ${new Date().toLocaleTimeString()}</div>
         <div class="content">${content}</div>
       </div>`;
     });
 
-    html += `<div class="footer">📚 Generated with ❤️ by Mean AI Classroom — ${new Date().toLocaleString()}</div></body></html>`;
+    html += `<div class="footer">📚 Generated with ❤️ by Mean AI Classroom (D.S.E.C.A.R Method) — ${new Date().toLocaleString()}</div></body></html>`;
 
-    // Open in new window for print/save as PDF
     const printWindow = window.open('', '_blank');
     printWindow.document.write(html);
     printWindow.document.close();
@@ -302,6 +908,8 @@ Language: ${lang}`;
     setSlides([]);
     setSlideContents(new SlideCache());
     classNotesRef.current = [];
+    setMediaItems([]);
+    removeFile();
     onClose();
   };
 
@@ -319,6 +927,11 @@ Language: ${lang}`;
     ? slideContents.get(currentSlideIdx)
     : null;
 
+  // Memoize the HTML so React doesn't forcefully overwrite our word-highlighting DOM spans every 1s when timeLeft updates
+  const currentHtml = React.useMemo(() => {
+    return currentContent ? renderMarkdown(currentContent.content) : '';
+  }, [currentContent?.content]);
+
   if (!isOpen) return null;
 
   // ===== SETUP SCREEN =====
@@ -330,7 +943,10 @@ Language: ${lang}`;
           <div className="tc-setup-top">
             <div className="tc-setup-emoji">🏫</div>
             <h2>AI Classroom</h2>
-            <p>Start an interactive lesson with a virtual teacher</p>
+            <p>Start an interactive lesson powered by D.S.E.C.A.R method</p>
+            <div className="tc-method-badge">
+              <span>📐</span> Define → Simplify → Expand → Connect → Analogy → Recap
+            </div>
           </div>
           <div className="tc-setup-form">
             <div className="tc-field">
@@ -341,6 +957,82 @@ Language: ${lang}`;
               <label>📖 Topic</label>
               <input placeholder="e.g. Binary Search Trees" value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
+
+            {/* File Upload Section — OPTIONAL */}
+            <div className="tc-field">
+              <label>📎 Attach File <span className="tc-label-optional">— Optional</span></label>
+              <span className="tc-label-hint-block">Upload a syllabus, concepts, questions, or snap a photo</span>
+              <div className="tc-file-upload-area">
+                {extracting ? (
+                  <div className="tc-file-extracting">
+                    <div className="tc-extract-spinner" />
+                    <span className="tc-extract-status">{extractStatus}</span>
+                  </div>
+                ) : uploadedFile ? (
+                  <div className="tc-file-attached">
+                    <div className="tc-file-info">
+                      <i className={`fas ${
+                        fileName.endsWith('.pdf') ? 'fa-file-pdf' :
+                        fileName.endsWith('.docx') || fileName.endsWith('.doc') ? 'fa-file-word' :
+                        ['png','jpg','jpeg','bmp','webp'].some(e => fileName.toLowerCase().endsWith(e)) ? 'fa-file-image' :
+                        'fa-file-alt'
+                      }`} />
+                      <div className="tc-file-details">
+                        <span className="tc-file-name">{fileName}</span>
+                        <div className="tc-file-meta-row">
+                          <span className="tc-file-type-badge">{fileType || 'document'}</span>
+                          {extractStatus && <span className="tc-extract-result">{extractStatus}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button className="tc-file-remove" onClick={removeFile}>
+                      <i className="fas fa-times" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="tc-upload-options">
+                    {/* File picker — documents & images */}
+                    <label className="tc-file-dropzone" htmlFor="tc-file-input">
+                      <i className="fas fa-cloud-upload-alt" />
+                      <span>Upload File</span>
+                      <span className="tc-file-hint">PDF, DOCX, TXT, Images</span>
+                      <input
+                        ref={fileInputRef}
+                        id="tc-file-input"
+                        type="file"
+                        accept=".txt,.md,.text,.csv,.json,.pdf,.doc,.docx,.png,.jpg,.jpeg,.bmp,.webp,.tiff,.tif,image/*"
+                        onChange={handleFileUpload}
+                        hidden
+                      />
+                    </label>
+
+                    {/* Camera capture — for mobile/Android */}
+                    <label className="tc-camera-btn" htmlFor="tc-camera-input">
+                      <i className="fas fa-camera" />
+                      <span>Scan / Camera</span>
+                      <span className="tc-file-hint">Take photo & OCR</span>
+                      <input
+                        id="tc-camera-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileUpload}
+                        hidden
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+              {uploadedFile && !extracting && (
+                <div className="tc-file-type-selector">
+                  <span>Content type:</span>
+                  <button className={fileType === 'syllabus' ? 'active' : ''} onClick={() => setFileType('syllabus')}>📋 Syllabus</button>
+                  <button className={fileType === 'concepts' ? 'active' : ''} onClick={() => setFileType('concepts')}>📖 Concepts</button>
+                  <button className={fileType === 'questions' ? 'active' : ''} onClick={() => setFileType('questions')}>❓ Questions</button>
+                </div>
+              )}
+            </div>
+
             <div className="tc-field-row">
               <div className="tc-field">
                 <label>🎯 Level</label>
@@ -365,6 +1057,7 @@ Language: ${lang}`;
               <label>⏱ Duration: {duration} min</label>
               <input type="range" min="5" max="120" value={duration} onChange={e => setDuration(+e.target.value)} />
             </div>
+
             <button className="tc-start-btn" onClick={startClass}>
               <i className="fas fa-play" /> Start Lesson
             </button>
@@ -380,8 +1073,9 @@ Language: ${lang}`;
       <div className="tc-overlay">
         <div className="tc-loading-card">
           <div className="tc-loading-spinner" />
-          <h3>Preparing your lesson...</h3>
+          <h3>Preparing your D.S.E.C.A.R lesson...</h3>
           <p>Generating slides for <strong>{topic}</strong></p>
+          {uploadedFile && <p className="tc-loading-file">📎 Processing: {fileName}</p>}
         </div>
       </div>
     );
@@ -394,12 +1088,12 @@ Language: ${lang}`;
         <div className="tc-complete-card">
           <div className="tc-complete-emoji">🎓</div>
           <h2>Class Complete!</h2>
-          <p>Great job, {user?.name || 'Student'}! You covered {slides.length} slides on <strong>{topic}</strong>.</p>
+          <p>Great job, {user?.name || 'Student'}! You covered {slides.length} slides on <strong>{topic}</strong> using the D.S.E.C.A.R method.</p>
           <div className="tc-complete-actions">
             <button className="tc-download-btn" onClick={downloadPDF}>
               <i className="fas fa-file-pdf" /> Download Notes (PDF)
             </button>
-            <button className="tc-restart-btn" onClick={() => { setPhase('setup'); setSlides([]); }}>
+            <button className="tc-restart-btn" onClick={() => { setPhase('setup'); setSlides([]); setMediaItems([]); }}>
               <i className="fas fa-redo" /> Start New Lesson
             </button>
             <button className="tc-close-btn" onClick={handleClose}>
@@ -411,7 +1105,7 @@ Language: ${lang}`;
     );
   }
 
-  // ===== PRESENTING =====
+  // ===== PRESENTING — SPLIT BOARD =====
   return (
     <div className="tc-overlay tc-presentation">
       {/* Header */}
@@ -421,6 +1115,7 @@ Language: ${lang}`;
           <span className="tc-pres-subject">{subject}</span>
           <span className="tc-pres-topic">{topic}</span>
         </div>
+        <div className="tc-pres-method-badge">D.S.E.C.A.R</div>
         <div className="tc-pres-meta">
           <span className={`tc-pres-timer ${timeLeft < 120 ? 'warn' : ''}`}>
             <i className="fas fa-clock" /> {formatTime(timeLeft)}
@@ -436,44 +1131,156 @@ Language: ${lang}`;
       <div className="tc-progress-bar">
         {slides.map((_, i) => (
           <div key={i} className={`tc-progress-dot ${i === currentSlideIdx ? 'active' : i < currentSlideIdx ? 'done' : ''}`}
-            onClick={() => { if (slideContents.has(i)) { setCurrentSlideIdx(i); window.speechSynthesis?.cancel(); } }}
+            onClick={() => { if (slideContents.has(i)) { setCurrentSlideIdx(i); window.speechSynthesis?.cancel(); const cached = slideContents.get(i); if (cached) fetchMediaForSlide(cached.slide.title, cached.content); } }}
           />
         ))}
       </div>
 
-      {/* Content Area */}
-      <div className="tc-pres-content" ref={contentRef}>
-        {loading ? (
-          <div className="tc-pres-loading">
-            <div className="tc-loading-spinner small" />
-            <p>Loading slide content...</p>
-          </div>
-        ) : currentContent ? (
-          <div className="tc-pres-slide">
-            <div className="tc-slide-title-bar">
-              <span className="tc-slide-badge">Slide {currentSlideIdx + 1}</span>
-              <h1 className="tc-slide-title">{currentContent.slide.title}</h1>
-              {currentContent.slide.subtitle && (
-                <p className="tc-slide-subtitle">{currentContent.slide.subtitle}</p>
-              )}
+      {/* ===== SPLIT BOARD ===== */}
+      <div className="tc-split-board">
+        {/* LEFT COLUMN — D.S.E.C.A.R Content */}
+        <div className="tc-board-left" ref={contentRef}>
+          {loading ? (
+            <div className="tc-pres-loading">
+              <div className="tc-loading-spinner small" />
+              <p>Generating D.S.E.C.A.R explanation...</p>
             </div>
-            <div
-              className="tc-slide-body"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(currentContent.content) }}
-            />
-          </div>
-        ) : (
-          <div className="tc-pres-loading"><p>No content available</p></div>
-        )}
+          ) : currentContent ? (
+            <div className="tc-pres-slide">
+              <div className="tc-slide-title-bar">
+                <div className="tc-slide-title-row">
+                  <span className="tc-slide-badge">Slide {currentSlideIdx + 1}</span>
+                  <span className="tc-dsecar-badge">📐 D.S.E.C.A.R</span>
+                </div>
+                <h1 className="tc-slide-title">{currentContent.slide.title}</h1>
+                {currentContent.slide.subtitle && (
+                  <p className="tc-slide-subtitle">{currentContent.slide.subtitle}</p>
+                )}
+              </div>
+              <StaticSlideBody html={currentHtml} innerRef={slideBodyRef} />
+            </div>
+          ) : (
+            <div className="tc-pres-loading"><p>No content available</p></div>
+          )}
 
-        {/* Doubt Answer */}
-        {doubtAnswer && (
-          <div className="tc-doubt-answer">
-            <h4>💬 Answer</h4>
-            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(doubtAnswer) }} />
-            <button onClick={() => setDoubtAnswer('')}><i className="fas fa-times" /> Dismiss</button>
+          {/* Doubt Answer */}
+          {doubtAnswer && (
+            <div className="tc-doubt-answer">
+              <h4>💬 Answer</h4>
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(doubtAnswer) }} />
+              <button onClick={() => setDoubtAnswer('')}><i className="fas fa-times" /> Dismiss</button>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN — Media Panel */}
+        <div className="tc-board-right">
+          <div className="tc-media-header">
+            <h3><i className="fas fa-photo-video" /> Resources</h3>
+            <span className="tc-media-hint">Videos & visual aids</span>
           </div>
-        )}
+
+          {mediaLoading ? (
+            <div className="tc-media-loading">
+              <div className="tc-loading-spinner small" />
+              <p>Finding relevant resources...</p>
+            </div>
+          ) : (
+            <div className="tc-media-content">
+              {/* Embedded YouTube Videos */}
+              {mediaItems.youtube && mediaItems.youtube.length > 0 && (
+                <div className="tc-media-section">
+                  <h4><i className="fab fa-youtube" /> Videos</h4>
+                  {mediaItems.youtube.map((video, i) => (
+                    <div key={i} className="tc-yt-embed-card">
+                      {video.videoId ? (
+                        <div className="tc-yt-embed-wrapper">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${video.videoId}`}
+                            title={video.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <a
+                          className="tc-youtube-card"
+                          href={`${YOUTUBE_SEARCH_URL}${encodeURIComponent(video.query || video.title)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <div className="tc-yt-thumb">
+                            <i className="fas fa-play-circle" />
+                          </div>
+                          <div className="tc-yt-info">
+                            <span className="tc-yt-title">{video.title}</span>
+                          </div>
+                        </a>
+                      )}
+                      <div className="tc-yt-embed-info">
+                        <span className="tc-yt-title">{video.title}</span>
+                        {video.channel && <span className="tc-yt-channel">{video.channel}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No YouTube key warning */}
+              {!APP_YT_KEY && (
+                <div className="tc-media-section tc-api-hint">
+                  <p><i className="fas fa-info-circle" /> Set VITE_YOUTUBE_API_KEY in .env to enable embedded videos</p>
+                </div>
+              )}
+
+              {/* Key Terms */}
+              {mediaItems.keyTerms && mediaItems.keyTerms.length > 0 && (
+                <div className="tc-media-section">
+                  <h4><i className="fas fa-tags" /> Key Terms</h4>
+                  <div className="tc-key-terms">
+                    {mediaItems.keyTerms.map((term, i) => (
+                      <span key={i} className="tc-term-chip">{term}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Real Images from Wikimedia */}
+              {mediaItems.images && mediaItems.images.length > 0 && (
+                <div className="tc-media-section">
+                  <h4><i className="fas fa-image" /> Visual Aids</h4>
+                  <div className="tc-real-images">
+                    {mediaItems.images.map((img, i) => (
+                      <div key={i} className="tc-real-image-card">
+                        <img
+                          src={img.url}
+                          alt={img.alt}
+                          loading="lazy"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                        <span className="tc-img-caption">{img.alt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* D.S.E.C.A.R Legend */}
+              <div className="tc-media-section tc-dsecar-legend">
+                <h4><i className="fas fa-graduation-cap" /> D.S.E.C.A.R Method</h4>
+                <div className="tc-legend-items">
+                  <div className="tc-legend-item"><span className="tc-legend-letter">D</span> Define</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">S</span> Simplify</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">E</span> Expand</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">C</span> Connect</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">A</span> Analogies</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">R</span> Recap</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom Controls */}
