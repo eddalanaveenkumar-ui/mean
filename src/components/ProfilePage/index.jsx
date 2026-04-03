@@ -54,6 +54,12 @@ export default function ProfilePage() {
             <span>Theme</span>
             <div className="theme-switch-group">
               <button
+                className={`theme-option ${theme === 'system' ? 'active' : ''}`}
+                onClick={() => setTheme('system')}
+              >
+                <i className="fas fa-desktop" /> System
+              </button>
+              <button
                 className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
                 onClick={() => setTheme('dark')}
               >

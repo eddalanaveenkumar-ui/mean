@@ -15,17 +15,35 @@ export function AppProvider({ children }) {
   const [showProfile, setShowProfile] = useState(false);
   const [deepdiveActive, setDeepdiveActive] = useState(false);
   const [webSearchActive, setWebSearchActive] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'system');
   const streamAbortRef = useRef(null);
 
-  // Theme effect
+  // Theme application and synchronization
   useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
     localStorage.setItem('mean_theme', theme);
+    
+    const applyTheme = () => {
+      let activeTheme = theme;
+      if (theme === 'system') {
+        activeTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      
+      if (activeTheme === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+    };
+
+    applyTheme();
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const handleChange = () => {
+      if (theme === 'system') applyTheme();
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
   // Load user on mount
