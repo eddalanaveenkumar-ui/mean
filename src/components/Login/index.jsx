@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../../firebase';
 import './Login.css';
 
 // Google icon SVG
@@ -25,6 +27,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [tempUser, setTempUser] = useState(null); // Stores Google profile until linked
   
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -33,22 +36,81 @@ export default function Login() {
       alert('Please enter your email and password.');
       return;
     }
+    // Set temp user for demo purposes as we transition to full backend auth
+    setTempUser({ email, name: email.split('@')[0] });
     setStep(2);
   };
 
-  const handleGoogleLogin = () => {
-    // Simulate google login step
-    setEmail('google@user.com');
-    setStep(2);
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      
+      // Step 1: Send Firebase token to Backend
+      const response = await fetch('https://mean-backend-zg5d.onrender.com/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: idToken })
+      });
+
+      if (!response.ok) {
+         throw new Error('Backend failed to authenticate token.');
+      }
+
+      const data = await response.json();
+      const backendJwt = data.access_token;
+      
+      // Step 2: Now that we have our internal JWT, check if OpenRouter API is linked
+      const meResponse = await fetch('https://mean-backend-zg5d.onrender.com/me', {
+         method: 'GET',
+         headers: { 'Authorization': `Bearer ${backendJwt}` }
+      });
+      const meData = await meResponse.json();
+
+      if (meData.has_api_key) {
+         // The user already linked OpenRouter in the past! Log them in entirely.
+         // Note: Fetch the cleartext key via the secure endpoint to seed the UI
+         const keyResp = await fetch('https://mean-backend-zg5d.onrender.com/me/api_key', {
+            headers: { 'Authorization': `Bearer ${backendJwt}` }
+         });
+         const keyData = await keyResp.json();
+         login({ id: user.email, name: user.displayName, apiKey: keyData.openrouter_api_key, jwt: backendJwt });
+      } else {
+         // They are authenticated, but need to link OpenRouter! Let's save standard details to state and go to Step 2
+         setTempUser({ email: user.email, name: user.displayName, jwt: backendJwt });
+         setStep(2);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Google Login Failed. Please try again.');
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!apiKeyInput.trim()) {
       alert('Please enter your OpenRouter API key to continue.');
       return;
     }
-    // We pass a dummy name and the email as id for now
-    login({ id: email, name: email.split('@')[0], apiKey: apiKeyInput.trim() });
+
+    // Connect OpenRouter API to new backend
+    if (tempUser?.jwt) {
+      const response = await fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
+        method: 'POST',
+        headers: { 
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${tempUser.jwt}` 
+        },
+        body: JSON.stringify({ api_key: apiKeyInput.trim() })
+      });
+      if (!response.ok) {
+         alert("Failed to link API key!");
+         return;
+      }
+    }
+    
+    // Fallback: local session login directly
+    login({ id: tempUser?.email || email, name: tempUser?.name || email.split('@')[0], apiKey: apiKeyInput.trim() });
   };
 
   return (
