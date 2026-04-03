@@ -39,9 +39,21 @@ export function AppProvider({ children }) {
       } catch (e) { /* ignore */ }
     }
     const storedChats = localStorage.getItem('mean_chats');
+    let initialChats = [];
     if (storedChats) {
-      try { setChats(JSON.parse(storedChats)); } catch (e) { /* ignore */ }
+      try { initialChats = JSON.parse(storedChats); } catch (e) { /* ignore */ }
     }
+
+    // Clean up any empty chats from previous sessions
+    initialChats = initialChats.filter(c => c.messages && c.messages.length > 0);
+    
+    // Always start with exactly one fresh New Chat
+    const freshChat = { id: Date.now().toString(), title: 'New Chat', messages: [] };
+    initialChats = [freshChat, ...initialChats];
+    
+    setChats(initialChats);
+    setCurrentChatId(freshChat.id);
+    localStorage.setItem('mean_chats', JSON.stringify(initialChats));
   }, []);
 
   // Persist chats
