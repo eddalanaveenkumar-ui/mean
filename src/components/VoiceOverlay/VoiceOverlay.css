@@ -1,0 +1,177 @@
+.voice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(20px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+
+.voice-modal {
+  width: 90%;
+  max-width: 400px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 40px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+
+.voice-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: all var(--transition);
+}
+.voice-close:hover { color: var(--text-primary); background: var(--hover-bg); }
+
+/* ===== VISUAL RINGS ===== */
+.voice-visual {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.voice-rings {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.voice-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0.15;
+  transition: all 0.3s ease;
+}
+
+.voice-ring.r1 { inset: 0; }
+.voice-ring.r2 { inset: 15px; opacity: 0.25; }
+.voice-ring.r3 { inset: 30px; opacity: 0.35; }
+
+.voice-rings.listening .voice-ring { animation: voicePulse 1.5s ease-in-out infinite; }
+.voice-rings.listening .voice-ring.r2 { animation-delay: 0.2s; }
+.voice-rings.listening .voice-ring.r3 { animation-delay: 0.4s; }
+
+.voice-rings.speaking .voice-ring { animation: voicePulse 0.8s ease-in-out infinite; opacity: 0.4; border-color: var(--success); }
+.voice-rings.speaking .voice-ring.r2 { animation-delay: 0.15s; }
+.voice-rings.speaking .voice-ring.r3 { animation-delay: 0.3s; }
+
+.voice-rings.thinking .voice-ring { animation: voiceSpin 2s linear infinite; opacity: 0.2; }
+
+@keyframes voicePulse {
+  0%, 100% { transform: scale(1); opacity: 0.15; }
+  50% { transform: scale(1.08); opacity: 0.4; }
+}
+
+@keyframes voiceSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.voice-center {
+  position: absolute;
+  inset: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 24px rgba(232,145,58,0.3);
+}
+
+.voice-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.voice-transcript, .voice-response {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.voice-transcript {
+  background: var(--accent-soft);
+  border: 1px solid var(--border-color);
+}
+
+.voice-response {
+  background: rgba(74,222,128,0.06);
+  border: 1px solid rgba(74,222,128,0.15);
+}
+
+.voice-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.voice-response .voice-label { color: var(--success); }
+
+.voice-transcript p, .voice-response p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* Mic button */
+.voice-actions { margin-top: 4px; }
+
+.voice-mic-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-mic-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 20px rgba(232,145,58,0.15);
+}
+
+.voice-mic-btn.active {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+
+.voice-mic-btn.thinking {
+  opacity: 0.5;
+  cursor: default;
+}

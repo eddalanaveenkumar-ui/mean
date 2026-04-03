@@ -1,0 +1,91 @@
+.msg-row {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+/* ===== USER MESSAGE — dark rounded pill ===== */
+.msg-user {
+  justify-content: flex-end;
+  padding: 4px 0;
+}
+
+.msg-user-bubble {
+  max-width: 70%;
+  background: #303030;
+  color: #ececec;
+  border-radius: 20px;
+  padding: 10px 18px;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+body.light-theme .msg-user-bubble {
+  background: #e8e8e8;
+  color: #0d0d0d;
+}
+
+/* ===== BOT MESSAGE ===== */
+.msg-bot { padding: 8px 0; }
+.msg-bot-content { flex: 1; min-width: 0; }
+
+.msg-content {
+  font-size: 0.93rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.gen-cursor {
+  font-weight: 600;
+  color: var(--accent);
+  animation: pulse 0.8s infinite;
+  margin-left: 1px;
+}
+
+/* ===== ACTIONS ROW — Copy / Download with outlined icons ===== */
+.msg-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.msg-bot:hover .msg-actions-row { opacity: 1; }
+
+.msg-copy-btn, .msg-dl-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.msg-copy-btn:hover, .msg-dl-btn:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.msg-copy-btn.done {
+  color: var(--success);
+}
+
+.msg-copy-btn svg, .msg-dl-btn svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .msg-user-bubble { max-width: 85%; }
+  .msg-actions-row { opacity: 1; }
+}

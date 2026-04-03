@@ -1,0 +1,35 @@
+.app-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar-overlay.visible {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-dark);
+}

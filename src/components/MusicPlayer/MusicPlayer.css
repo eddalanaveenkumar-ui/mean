@@ -1,0 +1,122 @@
+.music-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.music-modal {
+  width: 90%;
+  max-width: 440px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+.music-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.music-close:hover { color: var(--text-primary); background: var(--hover-bg); }
+
+.music-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.music-icon {
+  font-size: 1.8rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.music-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.music-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.music-search input {
+  flex: 1;
+  padding: 11px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+}
+.music-search input:focus { border-color: var(--accent); }
+
+.music-search button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.music-search button:hover { opacity: 0.85; }
+
+.music-player-area {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.music-quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.music-quick-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.music-quick-btn {
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.music-quick-btn i { color: var(--accent); font-size: 0.75rem; }
+.music-quick-btn:hover { background: var(--hover-bg); border-color: var(--border-hover); }

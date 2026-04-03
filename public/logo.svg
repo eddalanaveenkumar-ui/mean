@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <g transform="translate(20, 0) rotate(45, 60, 80)">
+    <!-- Main leaf body -->
+    <path d="M60 8C60 8 15 55 15 100C15 128 35 150 60 150C85 150 105 128 105 100C105 55 60 8 60 8Z" fill="#e8913a"/>
+    <!-- Center vein -->
+    <path d="M60 40C60 40 58 150 60 155" stroke="rgba(180,100,20,0.5)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <!-- Curved stem -->
+    <path d="M60 150C60 150 55 158 48 155C42 152 45 145 50 148" stroke="#d4782a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <!-- Left vein -->
+    <path d="M58 75C48 62 36 64 28 68" stroke="rgba(180,100,20,0.35)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- Right vein upper -->
+    <path d="M62 60C70 50 80 52 86 55" stroke="rgba(180,100,20,0.35)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- Right vein lower -->
+    <path d="M62 95C72 85 82 88 90 92" stroke="rgba(180,100,20,0.35)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- Left vein lower -->
+    <path d="M58 110C48 100 36 103 28 107" stroke="rgba(180,100,20,0.35)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
