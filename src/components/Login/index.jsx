@@ -28,6 +28,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [tempUser, setTempUser] = useState(null); 
+  const [isLoading, setIsLoading] = useState(false);
   
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -71,6 +72,7 @@ export default function Login() {
       return;
     }
     
+    setIsLoading(true);
     try {
       let result;
       try {
@@ -88,17 +90,24 @@ export default function Login() {
     } catch (err) {
       console.error(err);
       alert('Authentication Failed: ' + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
       await processBackendAuth(result.user, idToken);
     } catch (err) {
       console.error(err);
-      alert('Google Login Failed. Please try again.');
+      if (err.code !== 'auth/popup-closed-by-user') {
+          alert('Google Login Failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -108,30 +117,40 @@ export default function Login() {
       return;
     }
 
-    // Connect OpenRouter API to new backend
-    if (tempUser?.jwt) {
-      const response = await fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
-        method: 'POST',
-        headers: { 
-           'Content-Type': 'application/json',
-           'Authorization': `Bearer ${tempUser.jwt}` 
-        },
-        body: JSON.stringify({ api_key: apiKeyInput.trim() })
-      });
-      if (!response.ok) {
-         alert("Failed to link API key!");
-         return;
-      }
+    setIsLoading(true);
+    try {
+        // Connect OpenRouter API to new backend
+        if (tempUser?.jwt) {
+          const response = await fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
+            method: 'POST',
+            headers: { 
+               'Content-Type': 'application/json',
+               'Authorization': `Bearer ${tempUser.jwt}` 
+            },
+            body: JSON.stringify({ api_key: apiKeyInput.trim() })
+          });
+          if (!response.ok) {
+             alert("Failed to link API key!");
+             return;
+          }
+        }
+        
+        // Fallback: local session login directly
+        login({ id: tempUser?.email || email, name: tempUser?.name || email.split('@')[0], apiKey: apiKeyInput.trim() });
+    } finally {
+        setIsLoading(false);
     }
-    
-    // Fallback: local session login directly
-    login({ id: tempUser?.email || email, name: tempUser?.name || email.split('@')[0], apiKey: apiKeyInput.trim() });
   };
 
   return (
     <div className="login-wrapper">
       <div className="login-card-ds">
-        {step === 1 ? (
+        {isLoading ? (
+          <div className="login-spinner-overlay">
+            <div className="spinner"></div>
+            <div className="loading-text">Authenticating securely...</div>
+          </div>
+        ) : step === 1 ? (
           <>
             <div className="login-brand-ds">
               <span className="login-logo-text-ds">Mean <span className="logo-ai-accent">AI</span></span>
