@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
 import './Login.css';
 
@@ -27,41 +27,24 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [tempUser, setTempUser] = useState(null); // Stores Google profile until linked
+  const [tempUser, setTempUser] = useState(null); 
   
   const [apiKeyInput, setApiKeyInput] = useState('');
 
-  const handleNext = () => {
-    if (!email.trim() || !password.trim()) {
-      alert('Please enter your email and password.');
-      return;
-    }
-    // Set temp user for demo purposes as we transition to full backend auth
-    setTempUser({ email, name: email.split('@')[0] });
-    setStep(2);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const idToken = await user.getIdToken();
-      
-      // Step 1: Send Firebase token to Backend
+  // Reusable backend linkage
+  const processBackendAuth = async (user, idToken) => {
+      // Step 1: Send Firebase token to Backend (Using the google-login endpoint since it validates ANY firebase token)
       const response = await fetch('https://mean-backend-zg5d.onrender.com/google-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: idToken })
       });
 
-      if (!response.ok) {
-         throw new Error('Backend failed to authenticate token.');
-      }
-
+      if (!response.ok) throw new Error('Backend failed to authenticate token.');
       const data = await response.json();
       const backendJwt = data.access_token;
       
-      // Step 2: Now that we have our internal JWT, check if OpenRouter API is linked
+      // Step 2: Check if OpenRouter API is linked
       const meResponse = await fetch('https://mean-backend-zg5d.onrender.com/me', {
          method: 'GET',
          headers: { 'Authorization': `Bearer ${backendJwt}` }
@@ -69,18 +52,50 @@ export default function Login() {
       const meData = await meResponse.json();
 
       if (meData.has_api_key) {
-         // The user already linked OpenRouter in the past! Log them in entirely.
-         // Note: Fetch the cleartext key via the secure endpoint to seed the UI
+         // Log them in entirely.
          const keyResp = await fetch('https://mean-backend-zg5d.onrender.com/me/api_key', {
             headers: { 'Authorization': `Bearer ${backendJwt}` }
          });
          const keyData = await keyResp.json();
-         login({ id: user.email, name: user.displayName, apiKey: keyData.openrouter_api_key, jwt: backendJwt });
+         login({ id: user.email, name: user.displayName || user.email.split('@')[0], apiKey: keyData.openrouter_api_key, jwt: backendJwt });
       } else {
-         // They are authenticated, but need to link OpenRouter! Let's save standard details to state and go to Step 2
-         setTempUser({ email: user.email, name: user.displayName, jwt: backendJwt });
+         // Ask for API key
+         setTempUser({ email: user.email, name: user.displayName || user.email.split('@')[0], jwt: backendJwt });
          setStep(2);
       }
+  };
+
+  const handleNext = async () => {
+    if (!email.trim() || !password.trim()) {
+      alert('Please enter your email and password.');
+      return;
+    }
+    
+    try {
+      let result;
+      try {
+        result = await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        // Automatically create account if it doesn't exist
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            result = await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+            throw err;
+        }
+      }
+      const idToken = await result.user.getIdToken();
+      await processBackendAuth(result.user, idToken);
+    } catch (err) {
+      console.error(err);
+      alert('Authentication Failed: ' + err.message);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      await processBackendAuth(result.user, idToken);
     } catch (err) {
       console.error(err);
       alert('Google Login Failed. Please try again.');
