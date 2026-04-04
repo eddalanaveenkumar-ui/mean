@@ -143,6 +143,57 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     return wordIdx;
   }, []);
 
+  const updateLiveVisualizer = (wordSpan) => {
+    const container = document.getElementById('tc-live-visualizer-inject');
+    if (!container || !slideBodyRef.current) return;
+
+    // Is it inside Line-by-Line Explanation?
+    const explContainer = wordSpan.closest('.tc-expl-container');
+    if (explContainer) {
+      const p = wordSpan.closest('p');
+      if (p && p.textContent.includes('What:') && p.querySelector('code')) {
+        const codeText = p.querySelector('code').innerHTML;
+        let html = `<div class="tc-live-header active"><i class="fas fa-play-circle"></i> Explaining Node</div>`;
+        html += `<pre class="tc-live-code-block active"><code>${codeText}</code></pre>`;
+        
+        let cleanedHtml = p.innerHTML.replace(/[→>]*\s*<code(.*?)\/code><br>/, '');
+        html += `<div class="tc-live-details">${cleanedHtml}</div>`;
+        
+        container.innerHTML = html;
+        container.className = 'tc-code-workspace active';
+        return;
+      }
+    }
+
+    // Is it inside a Dry Run Table?
+    const tableContainer = wordSpan.closest('.tc-dyn-table');
+    if (tableContainer) {
+      const tr = wordSpan.closest('tr');
+      if (tr && tr.closest('table')) {
+        const table = tr.closest('table');
+        let html = `<div class="tc-live-header active"><i class="fas fa-table"></i> Algorithm State</div>`;
+        html += `<div class="tc-live-table-wrapper">${table.outerHTML}</div>`;
+        container.innerHTML = html;
+        container.className = 'tc-code-workspace table-mode active';
+        
+        const newTable = container.querySelector('table');
+        const rowIndex = Array.from(tr.parentNode.children).indexOf(tr);
+        if (rowIndex >= 0 && newTable) {
+           const rows = newTable.querySelectorAll('tr');
+           if (rows[rowIndex]) rows[rowIndex].classList.add('tc-live-row-active');
+        }
+        return;
+      }
+    }
+
+    // Default state if outside
+    const fullCode = slideBodyRef.current.querySelector('.tc-block-reveal pre code');
+    if (fullCode) {
+      container.innerHTML = `<div class="tc-live-header"><i class="fas fa-check"></i> Code Ready</div><pre class="tc-live-code-block"><code>${fullCode.innerHTML}</code></pre>`;
+      container.className = 'tc-code-workspace idle';
+    }
+  };
+
   const speakText = useCallback(async (text) => {
     window.speechSynthesis?.cancel();
     if (!('speechSynthesis' in window)) return;
@@ -224,6 +275,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
               wordSpan.classList.add('tc-hw-active');
               scrollIfHidden(wordSpan);
               prevHighlight = wordSpan;
+              updateLiveVisualizer(wordSpan);
             }
           }
         }
@@ -249,6 +301,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
             wordSpan.classList.add('tc-hw-active');
             scrollIfHidden(wordSpan);
             prevHighlight = wordSpan;
+            updateLiveVisualizer(wordSpan);
           }
           fIdx++;
         }, msPerWord);
@@ -936,11 +989,14 @@ Return ONLY the JSON array.`;
     // Split raw markdown by ## headers
     const sections = text.split(/(?=^## )/m).filter(s => s.trim());
     if (sections.length <= 1) {
-      // Single block — just render normally
       return `<div class="tc-block-reveal">${renderMarkdown(text)}</div>`;
     }
     return sections.map(section => {
-      return `<div class="tc-block-reveal">${renderMarkdown(section)}</div>`;
+      let cls = 'tc-block-reveal';
+      const low = section.toLowerCase();
+      if (low.includes('line-by-line')) cls += ' tc-expl-container';
+      if (low.includes('dry run') || low.includes('step-by-step')) cls += ' tc-dyn-table';
+      return `<div class="${cls}">${renderMarkdown(section)}</div>`;
     }).join('');
   };
 
@@ -1237,8 +1293,9 @@ Return ONLY the JSON array.`;
               {currentContent && currentContent.content.includes('```') && (
                 <div className="tc-media-section tc-code-visualizer">
                   <h4><i className="fas fa-code" /> Code Visualizer</h4>
-                  <div className="tc-code-workspace">
-                    <pre><code>
+                  <div className="tc-code-workspace" id="tc-live-visualizer-inject">
+                    <div className="tc-live-header"><i className="fas fa-check"></i> Code Ready</div>
+                    <pre className="tc-live-code-block"><code>
                       {(() => {
                         const match = currentContent.content.match(/```(?:\w+)?\n([\s\S]*?)```/);
                         return match ? match[1] : 'No code block found';
