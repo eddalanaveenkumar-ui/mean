@@ -633,10 +633,18 @@ Return ONLY the JSON array.`;
 
     try {
       const content = await fetchAI([{ role: 'user', content: outlinePrompt }], 800);
+      console.log('[Classroom] Outline response:', content?.slice(0, 200));
       
-      const match = content.match(/\[[\s\S]*\]/);
-      let parsed = match ? JSON.parse(match[0]) : null;
-      if (!parsed || !Array.isArray(parsed)) {
+      let parsed = null;
+      try {
+        const match = content.match(/\[[\s\S]*\]/);
+        if (match) parsed = JSON.parse(match[0]);
+      } catch (parseErr) {
+        console.warn('[Classroom] JSON parse failed:', parseErr);
+      }
+      
+      if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
+        console.warn('[Classroom] Using fallback slides');
         parsed = [
           { title: 'Introduction', subtitle: `Overview of ${topic}`, points: ['What is it?', 'Why is it important?', 'Prerequisites'] },
           { title: 'Core Concepts', subtitle: 'Fundamental ideas', points: ['Concept 1', 'Concept 2'] },
@@ -648,8 +656,12 @@ Return ONLY the JSON array.`;
       setSlides(parsed);
       setCurrentSlideIdx(0);
 
-      // Load first slide content OVER the setup loading screen securely
-      await loadSlideContent(parsed, 0);
+      // Load first slide content — but DON'T block on it
+      try {
+        await loadSlideContent(parsed, 0);
+      } catch (slideErr) {
+        console.warn('[Classroom] First slide load failed:', slideErr);
+      }
       
       if (!activeRef.current) return;
 
@@ -662,6 +674,7 @@ Return ONLY the JSON array.`;
         }
       }, 1000);
     } catch (e) {
+      console.error('[Classroom] Fatal error:', e);
       alert('Failed to generate outline. Check your API key.');
       setPhase('setup');
     }
