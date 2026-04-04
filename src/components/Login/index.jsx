@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
 import './Login.css';
 
@@ -24,6 +24,8 @@ const EyeIcon = () => (
 export default function Login() {
   const { login } = useApp();
   const [step, setStep] = useState(1);
+  const [mode, setMode] = useState('login'); // 'login' or 'signup'
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -72,17 +74,29 @@ export default function Login() {
       return;
     }
     
+    if (mode === 'signup' && !name.trim()) {
+      alert('Please enter your full name.');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       let result;
-      try {
-        result = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        // Automatically create account if it doesn't exist
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-            result = await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-            throw err;
+      if (mode === 'signup') {
+        result = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(result.user, { displayName: name });
+        // update the local user object with displayName immediately for processBackendAuth
+        result.user.displayName = name;
+      } else {
+        try {
+          result = await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+          // Automatically create account if it doesn't exist
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+              result = await createUserWithEmailAndPassword(auth, email, password);
+          } else {
+              throw err;
+          }
         }
       }
       const idToken = await result.user.getIdToken();
@@ -157,14 +171,26 @@ export default function Login() {
             </div>
 
             <div className="login-fields-ds">
+              {mode === 'signup' && (
+                <div className="login-input-group">
+                  <input
+                    type="text"
+                    className="login-input-ds"
+                    placeholder="Full Name"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              )}
               <div className="login-input-group">
                 <input
                   type="text"
                   className="login-input-ds"
-                  placeholder="Phone number / email address"
+                  placeholder="Email address"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  autoFocus
+                  autoFocus={mode === 'login'}
                 />
               </div>
               <div className="login-input-group">
@@ -188,12 +214,18 @@ export default function Login() {
             </div>
 
             <div className="ds-links-row">
-              <a href="#" className="ds-link">Forgot password?</a>
-              <a href="#" className="ds-link">Sign up</a>
+              {mode === 'login' ? (
+                <>
+                  <a href="#" className="ds-link">Forgot password?</a>
+                  <a href="#" className="ds-link" onClick={(e) => { e.preventDefault(); setMode('signup'); }}>Sign up</a>
+                </>
+              ) : (
+                <a href="#" className="ds-link" onClick={(e) => { e.preventDefault(); setMode('login'); }}>Already have an account? Log in</a>
+              )}
             </div>
 
             <button className="ds-login-btn orange-btn" onClick={handleNext}>
-              Log in
+              {mode === 'login' ? 'Log in' : 'Sign up'}
             </button>
 
             <div className="ds-divider">
