@@ -90,13 +90,13 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       
       if (!content && retryCount > 0) {
         // Rate limit hit or bad response on free model. Pause and retry automatically.
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 500));
         return fetchAI(messages, maxTokens, retryCount - 1);
       }
       return content || '';
     } catch (e) {
       if (retryCount > 0) {
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 500));
         return fetchAI(messages, maxTokens, retryCount - 1);
       }
       return '';
@@ -584,117 +584,27 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   // ===== STRUCTURED BLOCK-BASED TEACHING PROMPT =====
   const buildTeachingPrompt = (slide, prevContext) => {
     const fileContext = fileContent
-      ? `\n\nATTACHED DOCUMENT (${fileType}): "${fileName}"\n=== FILE CONTENT ===\n${fileContent.slice(0, 2000)}\n=== END ===\n\nUse the above ${fileType} as your primary reference.`
+      ? `\nDOCUMENT: "${fileName}" (${fileType})\n${fileContent.slice(0, 1200)}\nUse this as primary reference.`
       : '';
 
-    return `You are a structured, friendly, and highly skilled teacher who explains both theory and code like a real classroom instructor.
-Your goal is not just to explain, but to make the student DEEPLY understand the concept and execution.
+    return `${subject} teacher explaining "${slide.title}" — ${slide.subtitle} for ${level} level.
+Points: ${slide.points.join(', ')}
+${prevContext ? `Context: ${prevContext.slice(0, 200)}` : ''}${fileContext}
 
-Subject: ${subject}
-Topic: "${topic}" at ${level} level.
-Current slide: "${slide.title}" — ${slide.subtitle}
-Points to cover: ${slide.points.join(', ')}
-${prevContext ? `Previous context: ${prevContext.slice(0, 300)}` : ''}
-${fileContext}
+FOR THEORY — use these ## sections:
+## Topic Name | ## Definition (max 20 words) | ## Core Explanation (step-by-step) | ## Why It Matters | ## Examples (2+) | ## Summary
 
-=== FOR THEORY TOPICS ===
-Use this EXACT structure with natural section titles (do NOT write "Block 1", "Block 2" etc.):
+FOR CODE — use these ## sections:
+## Goal (1-2 lines) | ## The Code (full code block)
+## Line-by-Line Explanation ← THIS MUST BE THE LONGEST SECTION
+For EVERY line: → \`code\` then **What:** / **Why:** / **Effect:**
+NEVER skip any line. Not even print() or assignments.
+## Dry Run (table with variables at each step)
+## Output (exact output + how each line was produced)
+## Key Insight (1-2 sentences)
 
-## Topic Name
-* Clearly state the topic name
-
-## Definition
-* Explain in simple terms (max 20 words)
-
-## Core Explanation
-* Explain step-by-step in simple language
-* Build intuition first, then logic
-
-## Why It Matters
-* Explain real-world use or importance
-
-## Examples
-* Give at least 2 clear examples
-
-## Summary
-* One-line recap
-
-=== IF CODE / PROBLEMS ARE PRESENT (THIS IS THE MOST IMPORTANT SECTION) ===
-
-⚠️ CRITICAL RULE: You MUST explain EVERY SINGLE LINE of code. Do NOT just show the code and the output. The line-by-line explanation IS the main content. If you skip the line-by-line explanation, you have FAILED.
-
-Use this EXACT structure with natural section titles (do NOT write "Block 1", "Block 2" etc.):
-
-## Goal
-* What the code is trying to achieve (1-2 sentences)
-
-## The Code
-* Show the FULL code in a code block
-
-## Line-by-Line Explanation
-
-⚠️ THIS BLOCK IS MANDATORY AND MUST BE THE LONGEST BLOCK.
-
-For EVERY SINGLE LINE of the code above, write it like this:
-
-→ \`line of code here\`
-**What:** What this line does
-**Why:** Why this line is needed
-**Effect:** How it changes program state going forward
-
-EXAMPLE (follow this format exactly):
-→ \`x = 5\`
-**What:** Creates a variable x and assigns value 5
-**Why:** We need to store the starting number
-**Effect:** Now x holds 5, which will be used in the loop below
-
-→ \`for i in range(3):\`
-**What:** Starts a loop that runs 3 times (i=0, i=1, i=2)
-**Why:** We want to repeat the operation 3 times
-**Effect:** i will take values 0, 1, 2 in each iteration
-
-RULES:
-* Do NOT skip ANY line — not even simple ones like print() or variable assignments
-* Explain each line as if the student has never seen code before
-* Connect each line to the next — explain the FLOW
-
-## Step-by-Step Execution (Dry Run)
-* Pick a sample input and trace through the code
-* Show a table tracking ALL variables at each step
-* Show iteration-by-iteration: what changes, what stays same
-
-Example table format:
-| Step | i | x | Output |
-|------|---|---|--------|
-| Start| - | 5 | -      |
-| i=0  | 0 | 10| prints 10 |
-| i=1  | 1 | 15| prints 15 |
-
-## Output
-* Show the EXACT final output
-* Explain step-by-step HOW each output line was produced
-
-## Key Insight
-* The main pattern or trick in this code (1-2 sentences)
-
-=== TEACHING BEHAVIOR RULES (MANDATORY) ===
-* Teach like a real teacher standing in front of a classroom
-* Point at each line of code and explain it — do NOT skip any
-* Always explain "why" and "what happens next"
-* The line-by-line explanation should be the BIGGEST part of your response
-* Use simple, clear language — assume the student is a beginner
-* Focus on understanding, not memorization
-* NEVER write "Block 1", "Block 2", etc. — use natural section titles only
-
-=== OUTPUT STYLE ===
-* Use ## for section headers with natural titles (NOT numbered blocks)
-* Use → arrow markers for EVERY code line in the line-by-line section
-* Use markdown tables for dry run
-* Use **bold** for key terms, \`code\` for inline code
-* Use emojis sparingly: 📌 for key points, 💡 for insights, ⚡ for important, ✅ for conclusions
-* IMPORTANT: Do NOT label sections as "Block 1", "Block 2" — just use the topic name as the ## header
-
-Output in pure Markdown. Be thorough — do NOT truncate or summarize the code explanation.`;
+RULES: Use natural ## titles (NOT "Block 1"). Use → arrows for code lines. Use tables for dry runs. Be thorough with code explanations.
+Markdown output.`;
   };
 
   // ===== START CLASS =====
@@ -709,24 +619,20 @@ Output in pure Markdown. Be thorough — do NOT truncate or summarize the code e
     setMediaItems([]);
 
     const fileContext = fileContent
-      ? `\n\nThe student has attached a ${fileType} document: "${fileName}"\nContent: ${fileContent.slice(0, 3000)}\n\nUse this document as the primary source for generating the slide outline. Extract key topics and structure from it.`
+      ? `\n\nThe student has attached a ${fileType} document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\n\nUse this document as the primary source.`
       : '';
 
-    const outlinePrompt = `You are an expert ${subject} teacher. Create a detailed presentation outline for teaching "${topic}" at ${level} level.
+    const outlinePrompt = `Expert ${subject} teacher. Create a slide outline for "${topic}" at ${level} level.
 ${fileContext}
 
-Return ONLY a JSON array of slides. Each slide has:
-- "title": slide title  
-- "subtitle": brief subtitle
-- "points": array of 3-5 key points to cover
+Return ONLY a JSON array. Each slide: {"title": "...", "subtitle": "...", "points": ["..."]}
 
-Generate 5-8 slides. Include: Introduction, Core Concepts (2-3 slides), Examples/Applications, Summary/Key Takeaways.
-${fileContent ? 'Base the slides on the attached document content.' : ''}
-
-Return ONLY the JSON array, no other text.`;
+Generate 3-5 slides: Introduction, Core (1-2), Examples, Summary.
+${fileContent ? 'Use the attached document.' : ''}
+Return ONLY the JSON array.`;
 
     try {
-      const content = await fetchAI([{ role: 'user', content: outlinePrompt }]);
+      const content = await fetchAI([{ role: 'user', content: outlinePrompt }], 800);
       
       const match = content.match(/\[[\s\S]*\]/);
       let parsed = match ? JSON.parse(match[0]) : null;
@@ -829,8 +735,8 @@ Return ONLY the JSON array, no other text.`;
 
     fetchingRefs.current.add(nextIdx);
     
-    // Slight pause to prioritize TTS and UI thread
-    await new Promise(r => setTimeout(r, 1500));
+    // Minimal pause before prefetch
+    await new Promise(r => setTimeout(r, 300));
     if (!activeRef.current) return;
 
     const slide = slidesArray[nextIdx];
