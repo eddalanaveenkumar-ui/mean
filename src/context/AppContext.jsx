@@ -8,6 +8,7 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [chats, setChats] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -62,22 +63,66 @@ export function AppProvider({ children }) {
       try { initialChats = JSON.parse(storedChats); } catch (e) { /* ignore */ }
     }
 
-    // Clean up any empty chats from previous sessions
     initialChats = initialChats.filter(c => c.messages && c.messages.length > 0);
-    
-    // Always start with exactly one fresh New Chat
     const freshChat = { id: Date.now().toString(), title: 'New Chat', messages: [] };
-    initialChats = [freshChat, ...initialChats];
     
+    // Attempt DB sync if user is present
+    const loadFromDB = async (jwt) => {
+       try {
+          const r = await fetch('https://mean-backend-zg5d.onrender.com/chats', { headers: { 'Authorization': `Bearer ${jwt}` } });
+          const dbChats = await r.json();
+          if (dbChats?.chats && dbChats.chats.length > 0) {
+             const merged = [freshChat, ...dbChats.chats.map(c => ({ id: c.chat_id, title: c.title, messages: c.messages }))];
+             setChats(merged);
+             setCurrentChatId(freshChat.id);
+             localStorage.setItem('mean_chats', JSON.stringify(merged));
+          } else {
+             const mergedLocal = [freshChat, ...initialChats];
+             setChats(mergedLocal);
+             setCurrentChatId(freshChat.id);
+          }
+       } catch (e) {
+          const mergedLocal = [freshChat, ...initialChats];
+          setChats(mergedLocal);
+          setCurrentChatId(freshChat.id);
+       }
+       
+       try {
+           const cResp = await fetch('https://mean-backend-zg5d.onrender.com/classes', { headers: { 'Authorization': `Bearer ${jwt}` } });
+           const dbClasses = await cResp.json();
+           if (dbClasses?.classes) setClasses(dbClasses.classes);
+       } catch(e) {}
+    };
+
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.jwt) {
+           loadFromDB(u.jwt);
+           return;
+        }
+      } catch (e) {}
+    }
+
+    initialChats = [freshChat, ...initialChats];
     setChats(initialChats);
     setCurrentChatId(freshChat.id);
     localStorage.setItem('mean_chats', JSON.stringify(initialChats));
   }, []);
 
   // Persist chats
-  const persistChats = useCallback((updatedChats) => {
+  const persistChats = useCallback((updatedChats, specificChat = null) => {
     localStorage.setItem('mean_chats', JSON.stringify(updatedChats));
-  }, []);
+    
+    // Sync specifically modified chat to DB
+    if (specificChat && specificChat.id && user?.jwt && specificChat.messages.length > 0) {
+        fetch('https://mean-backend-zg5d.onrender.com/chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.jwt}` },
+            body: JSON.stringify({ chat_id: specificChat.id, title: specificChat.title, messages: specificChat.messages })
+        }).catch(() => {});
+    }
+  }, [user]);
 
   // Login
   const login = useCallback((userData) => {
@@ -143,19 +188,21 @@ export function AppProvider({ children }) {
   // Add message to current chat
   const addMessage = useCallback((role, content, displayContent = null) => {
     setChats(prev => {
+      let targetChat = null;
       const updated = prev.map(c => {
         if (c.id === currentChatId) {
-          return {
+          targetChat = {
             ...c,
             messages: [...c.messages, {
               role, content, displayContent,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]
           };
+          return targetChat;
         }
         return c;
       });
-      persistChats(updated);
+      persistChats(updated, targetChat);
       return updated;
     });
   }, [currentChatId, persistChats]);
@@ -183,16 +230,24 @@ export function AppProvider({ children }) {
       if (!title) throw new Error('empty');
 
       setChats(prev => {
-        const updated = prev.map(c => c.id === chatId ? { ...c, title } : c);
-        persistChats(updated);
+        let target = null;
+        const updated = prev.map(c => {
+           if (c.id === chatId) { target = { ...c, title }; return target; }
+           return c;
+        });
+        persistChats(updated, target);
         return updated;
       });
     } catch (e) {
       let t = userMessage.trim().split('\n')[0];
       if (t.length > 35) t = t.substring(0, 32) + '…';
       setChats(prev => {
-        const updated = prev.map(c => c.id === chatId ? { ...c, title: t || 'New Chat' } : c);
-        persistChats(updated);
+        let target = null;
+        const updated = prev.map(c => {
+           if (c.id === chatId) { target = { ...c, title: t || 'New Chat' }; return target; }
+           return c;
+        });
+        persistChats(updated, target);
         return updated;
       });
     }
@@ -304,6 +359,7 @@ export function AppProvider({ children }) {
   const value = {
     user, apiKey, login, logout,
     chats, currentChat, currentChatId, setCurrentChatId,
+    classes, setClasses,
     newChat, deleteChat, loadChat, addMessage, sendMessage,
     isStreaming, setIsStreaming,
     sidebarOpen, setSidebarOpen,

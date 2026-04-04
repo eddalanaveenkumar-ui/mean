@@ -46,9 +46,28 @@ export default function Login() {
       .then(data => {
          if (data.key) {
             setApiKeyInput(data.key);
-            setStep(2); // Automatically move to step 2 with the key filled!
+            // DO NOT stop at step 2, automatically link the key!
+            const theKey = data.key;
+            if (savedTemp && savedTemp !== 'null') {
+                const u = JSON.parse(savedTemp);
+                fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${u.jwt}` 
+                    },
+                    body: JSON.stringify({ api_key: theKey })
+                }).then(() => {
+                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt });
+                }).catch(() => {
+                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt });
+                });
+            } else {
+                login({ id: 'user', name: 'User', apiKey: theKey });
+            }
          } else {
             alert('Failed to obtain OpenRouter Key.');
+            setStep(2);
          }
       })
       .catch(err => {
@@ -162,7 +181,7 @@ export default function Login() {
                Welcome. Log in with Google to continue.
             </p>
 
-            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '50px' }}>
               <GoogleIcon />
               Continue with Google
             </button>
@@ -191,7 +210,7 @@ export default function Login() {
                   }
                   window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
               }} 
-              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333', marginTop: '20px' }}
+              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333', marginTop: '20px', borderRadius: '50px' }}
             >
               Connect with OpenRouter
             </button>
