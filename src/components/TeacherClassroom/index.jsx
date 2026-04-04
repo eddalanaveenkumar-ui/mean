@@ -619,55 +619,80 @@ Use this EXACT block structure:
 ## Block 6: Summary
 * One-line recap
 
-=== IF CODE / PROBLEMS ARE PRESENT ===
+=== IF CODE / PROBLEMS ARE PRESENT (THIS IS THE MOST IMPORTANT SECTION) ===
+
+⚠️ CRITICAL RULE: You MUST explain EVERY SINGLE LINE of code. Do NOT just show the code and the output. The line-by-line explanation IS the main content. If you skip the line-by-line explanation, you have FAILED.
+
 Use this EXACT block structure:
 
 ## Block 1: Goal
-* What the code is trying to achieve
+* What the code is trying to achieve (1-2 sentences)
 
-## Block 2: Input / Initial State
-* List variables and their starting values in a clear table
+## Block 2: The Code
+* Show the FULL code in a code block
 
 ## Block 3: Line-by-Line Explanation (REAL TEACHER MODE)
-For EACH line of code:
-* Show the line with an arrow marker (→)
-* Explain WHAT the line does
-* Explain WHY it is used
-* Explain HOW it affects future execution
-* IMPORTANT: Do NOT skip any line. Maintain flow from one line to next.
+
+⚠️ THIS BLOCK IS MANDATORY AND MUST BE THE LONGEST BLOCK.
+
+For EVERY SINGLE LINE of the code above, write it like this:
+
+→ \`line of code here\`
+**What:** What this line does
+**Why:** Why this line is needed
+**Effect:** How it changes program state going forward
+
+EXAMPLE (follow this format exactly):
+→ \`x = 5\`
+**What:** Creates a variable x and assigns value 5
+**Why:** We need to store the starting number
+**Effect:** Now x holds 5, which will be used in the loop below
+
+→ \`for i in range(3):\`
+**What:** Starts a loop that runs 3 times (i=0, i=1, i=2)
+**Why:** We want to repeat the operation 3 times
+**Effect:** i will take values 0, 1, 2 in each iteration
+
+RULES:
+* Do NOT skip ANY line — not even simple ones like print() or variable assignments
+* Explain each line as if the student has never seen code before
+* Connect each line to the next — explain the FLOW
 
 ## Block 4: Step-by-Step Execution (Dry Run)
-* Simulate execution step-by-step
-* Track variable changes clearly in a table
-* Show iteration-wise updates (i=0 → x=5, i=1 → x=10, etc.)
+* Pick a sample input and trace through the code
+* Show a table tracking ALL variables at each step
+* Show iteration-by-iteration: what changes, what stays same
 
-## Block 5: Output Generation
-* Explain exactly how final output is formed
-* Show final output clearly
+Example table format:
+| Step | i | x | Output |
+|------|---|---|--------|
+| Start| - | 5 | -      |
+| i=0  | 0 | 10| prints 10 |
+| i=1  | 1 | 15| prints 15 |
+
+## Block 5: Output
+* Show the EXACT final output
+* Explain step-by-step HOW each output line was produced
 
 ## Block 6: Key Insight
-* Explain the main logic/pattern behind the code
+* The main pattern or trick in this code (1-2 sentences)
 
 === TEACHING BEHAVIOR RULES (MANDATORY) ===
-* Teach like a real teacher, NOT a textbook
+* Teach like a real teacher standing in front of a classroom
+* Point at each line of code and explain it — do NOT skip any
 * Always explain "why" and "what happens next"
-* Use simple, clear language
-* Build intuition before technical explanation
-* Never skip execution steps in code
+* The line-by-line explanation (Block 3) should be the BIGGEST part of your response
+* Use simple, clear language — assume the student is a beginner
 * Focus on understanding, not memorization
-* Keep explanations structured and clean
 
 === OUTPUT STYLE ===
 * Always use blocks (Block 1, Block 2, etc.) as ## headers
-* Keep explanations concise but meaningful
-* Ensure flow between steps is clear
-* No placeholders — only real explanations
-* Use → arrow markers when explaining code lines
-* Use tables for variable tracking during dry runs
+* Use → arrow markers for EVERY code line in Block 3
+* Use markdown tables for dry run in Block 4
 * Use **bold** for key terms, \`code\` for inline code
-* Use emojis sparingly: 📌 for key points, 💡 for insights, ⚡ for important notes, ✅ for conclusions
+* Use emojis sparingly: 📌 for key points, 💡 for insights, ⚡ for important, ✅ for conclusions
 
-Output in pure Markdown. Maximum 400 words.`;
+Output in pure Markdown. Be thorough — do NOT truncate or summarize the code explanation.`;
   };
 
   // ===== START CLASS =====
@@ -746,9 +771,9 @@ Return ONLY the JSON array, no other text.`;
 
     try {
       let content = await fetchAI([
-        { role: 'system', content: `You are a structured, friendly, and highly skilled ${subject} teacher who explains both theory and code like a REAL classroom instructor. Your goal is to make the student deeply understand the concept and execution. For theory: use Block 1 (Topic) → Block 2 (Definition) → Block 3 (Core Explanation) → Block 4 (Why It Matters) → Block 5 (Examples) → Block 6 (Summary). For code: use Block 1 (Goal) → Block 2 (Input/State) → Block 3 (Line-by-Line with → arrows) → Block 4 (Dry Run table) → Block 5 (Output) → Block 6 (Key Insight). Never skip any line of code. Always explain WHY each line exists. Level: ${level}. Language: simple and clear.` },
+        { role: 'system', content: `You are a ${subject} teacher who explains code LINE BY LINE like a real classroom instructor. CRITICAL RULE: When there is ANY code, you MUST explain EVERY SINGLE LINE using → arrows. The line-by-line Block 3 must be the LONGEST section. NEVER just show code and output — the explanation between code and output IS the lesson. For each line write: → \`code\` then What/Why/Effect. Then do a dry run table. Then show output. Level: ${level}.` },
         { role: 'user', content: explainPrompt }
-      ]);
+      ], 3000);
       
       // Fallback if the Free API completely drops the request even after retries
       if (!content || content.trim() === '') {
@@ -812,9 +837,9 @@ Return ONLY the JSON array, no other text.`;
 
     try {
       let content = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher using structured Block-Based teaching. Use Block 1 through Block 6 format. For code: explain every line with → arrow markers, do a full dry run with a variable-tracking table, and show exactly how output is generated. Teach like a real classroom instructor — build intuition, explain WHY, never skip steps.` },
+        { role: 'system', content: `Expert ${subject} teacher. CRITICAL: For ANY code, you MUST explain EVERY LINE using → arrows with What/Why/Effect for each. Block 3 (Line-by-Line) must be the LONGEST block. NEVER skip any line — not even print statements or variable assignments. Do a full dry run with a table. Then show how output is produced step by step.` },
         { role: 'user', content: explainPrompt }
-      ]);
+      ], 3000);
       
       if (!content || content.trim() === '') {
         content = "## ⚠️ AI API Rate Limit Reached\n\nThe free AI provider (OpenRouter) is currently dropping requests due to high network traffic on your API Key.\n\n👉 **What to do:** Reload the classroom to retry.";
