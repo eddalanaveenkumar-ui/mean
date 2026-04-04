@@ -218,11 +218,11 @@ export default function Login() {
             <div className="ds-links-row">
               {mode === 'login' ? (
                 <>
-                  <a href="#" className="ds-link">Forgot password?</a>
-                  <a href="#" className="ds-link" onClick={(e) => { e.preventDefault(); setMode('signup'); }}>Sign up</a>
+                  <span className="ds-link" style={{ cursor: 'pointer' }}>Forgot password?</span>
+                  <span className="ds-link" style={{ cursor: 'pointer' }} onClick={() => setMode('signup')}>Sign up</span>
                 </>
               ) : (
-                <a href="#" className="ds-link" onClick={(e) => { e.preventDefault(); setMode('login'); }}>Already have an account? Log in</a>
+                <span className="ds-link" style={{ cursor: 'pointer' }} onClick={() => setMode('login')}>Already have an account? Log in</span>
               )}
             </div>
 
