@@ -581,35 +581,93 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     setMediaLoading(false);
   }, [subject, topic, lang, APP_YT_KEY]);
 
-  // ===== D.S.E.C.A.R PROMPT =====
-  const buildDSECARPrompt = (slide, prevContext) => {
+  // ===== STRUCTURED BLOCK-BASED TEACHING PROMPT =====
+  const buildTeachingPrompt = (slide, prevContext) => {
     const fileContext = fileContent
       ? `\n\nATTACHED DOCUMENT (${fileType}): "${fileName}"\n=== FILE CONTENT ===\n${fileContent.slice(0, 2000)}\n=== END ===\n\nUse the above ${fileType} as your primary reference.`
       : '';
 
-    return `You are an expert ${subject} teacher giving a live class on "${topic}" at ${level} level.
+    return `You are a structured, friendly, and highly skilled teacher who explains both theory and code like a real classroom instructor.
+Your goal is not just to explain, but to make the student DEEPLY understand the concept and execution.
 
-Current slide: "${slide.title}" - ${slide.subtitle}
+Subject: ${subject}
+Topic: "${topic}" at ${level} level.
+Current slide: "${slide.title}" — ${slide.subtitle}
 Points to cover: ${slide.points.join(', ')}
 ${prevContext ? `Previous context: ${prevContext.slice(0, 300)}` : ''}
 ${fileContext}
 
-IMPORTANT INSTRUCTIONS:
-1. ALWAYS generate text strictly in ENGLISH. Use simple vocabulary.
-2. DO NOT use generic D.S.E.C.A.R labels. Create natural, engaging subheadings.
-3. IN EVERY SECTION, tie the concept to a REAL-WORLD everyday example.
-4. IF the topic involves CODE, for EVERY code block follow this EXACT structure:
-   - **Purpose (Big Picture):** What the code achieves in 1-2 lines.
-   - **Input & Output:** What goes in, what comes out.
-   - **Step-by-Step Breakdown:** Explain line by line. Do NOT just repeat code in words — explain the LOGIC.
-   - **Dry Run:** Walk through with a sample input step by step (e.g. i=0 -> print 0, i=1 -> print 1).
-   - **Key Takeaway:** The most important pattern or idea.
-   - **Improvement (optional):** Suggest a better/cleaner approach if applicable.
-5. AT THE BOTTOM, generate exactly 3 Practice Problems (coding challenges if coding, math if math, theory MCQs if theory).
-6. Be clear, structured, NOT verbose. Focus on understanding, not memorization.
-7. If the code is inefficient or bad, point it out honestly.
+=== FOR THEORY TOPICS ===
+Use this EXACT block structure:
 
-Keep the core explanation concise. Maximum 250 words. Output in pure Markdown.`;
+## Block 1: Topic Name
+* Clearly state the topic name
+
+## Block 2: Definition
+* Explain in simple terms (max 20 words)
+
+## Block 3: Core Explanation
+* Explain step-by-step in simple language
+* Build intuition first, then logic
+
+## Block 4: Why It Matters
+* Explain real-world use or importance
+
+## Block 5: Examples
+* Give at least 2 clear examples
+
+## Block 6: Summary
+* One-line recap
+
+=== IF CODE / PROBLEMS ARE PRESENT ===
+Use this EXACT block structure:
+
+## Block 1: Goal
+* What the code is trying to achieve
+
+## Block 2: Input / Initial State
+* List variables and their starting values in a clear table
+
+## Block 3: Line-by-Line Explanation (REAL TEACHER MODE)
+For EACH line of code:
+* Show the line with an arrow marker (→)
+* Explain WHAT the line does
+* Explain WHY it is used
+* Explain HOW it affects future execution
+* IMPORTANT: Do NOT skip any line. Maintain flow from one line to next.
+
+## Block 4: Step-by-Step Execution (Dry Run)
+* Simulate execution step-by-step
+* Track variable changes clearly in a table
+* Show iteration-wise updates (i=0 → x=5, i=1 → x=10, etc.)
+
+## Block 5: Output Generation
+* Explain exactly how final output is formed
+* Show final output clearly
+
+## Block 6: Key Insight
+* Explain the main logic/pattern behind the code
+
+=== TEACHING BEHAVIOR RULES (MANDATORY) ===
+* Teach like a real teacher, NOT a textbook
+* Always explain "why" and "what happens next"
+* Use simple, clear language
+* Build intuition before technical explanation
+* Never skip execution steps in code
+* Focus on understanding, not memorization
+* Keep explanations structured and clean
+
+=== OUTPUT STYLE ===
+* Always use blocks (Block 1, Block 2, etc.) as ## headers
+* Keep explanations concise but meaningful
+* Ensure flow between steps is clear
+* No placeholders — only real explanations
+* Use → arrow markers when explaining code lines
+* Use tables for variable tracking during dry runs
+* Use **bold** for key terms, \`code\` for inline code
+* Use emojis sparingly: 📌 for key points, 💡 for insights, ⚡ for important notes, ✅ for conclusions
+
+Output in pure Markdown. Maximum 400 words.`;
   };
 
   // ===== START CLASS =====
@@ -684,11 +742,11 @@ Return ONLY the JSON array, no other text.`;
     const slide = slideData[idx];
     const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
 
-    const explainPrompt = buildDSECARPrompt(slide, prevContext);
+    const explainPrompt = buildTeachingPrompt(slide, prevContext);
 
     try {
       let content = await fetchAI([
-        { role: 'system', content: `You are an expert ${subject} coding teacher who explains code clearly, logically, and practically. Your goal is not just to describe concepts, but to make the user understand how and why they work. For code: always include Purpose, Step-by-Step Breakdown, Dry Run with sample values, and Key Takeaways. Never just repeat code in words. Use simple language suitable for ${level} level. Be clear and structured, not verbose.` },
+        { role: 'system', content: `You are a structured, friendly, and highly skilled ${subject} teacher who explains both theory and code like a REAL classroom instructor. Your goal is to make the student deeply understand the concept and execution. For theory: use Block 1 (Topic) → Block 2 (Definition) → Block 3 (Core Explanation) → Block 4 (Why It Matters) → Block 5 (Examples) → Block 6 (Summary). For code: use Block 1 (Goal) → Block 2 (Input/State) → Block 3 (Line-by-Line with → arrows) → Block 4 (Dry Run table) → Block 5 (Output) → Block 6 (Key Insight). Never skip any line of code. Always explain WHY each line exists. Level: ${level}. Language: simple and clear.` },
         { role: 'user', content: explainPrompt }
       ]);
       
@@ -750,11 +808,11 @@ Return ONLY the JSON array, no other text.`;
 
     const slide = slidesArray[nextIdx];
     const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
-    const explainPrompt = buildDSECARPrompt(slide, prevContext);
+    const explainPrompt = buildTeachingPrompt(slide, prevContext);
 
     try {
       let content = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher. You explain concepts using the D.S.E.C.A.R framework with great clarity, examples, and analogies. You never use jargon. A beginner should understand everything you say.` },
+        { role: 'system', content: `Expert ${subject} teacher using structured Block-Based teaching. Use Block 1 through Block 6 format. For code: explain every line with → arrow markers, do a full dry run with a variable-tracking table, and show exactly how output is generated. Teach like a real classroom instructor — build intuition, explain WHY, never skip steps.` },
         { role: 'user', content: explainPrompt }
       ]);
       
@@ -823,7 +881,7 @@ Return ONLY the JSON array, no other text.`;
 
     try {
       const answer = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher. Answer student's doubt about "${topic}" using D.S.E.C.A.R method — Define, Simplify, Expand, Connect, Analogy, Recap. Use 👉 for points, 📌 for key info, 💡 for tips. Be thorough but concise. Language: ${lang}.` },
+        { role: 'system', content: `Expert ${subject} teacher. Answer student's doubt about "${topic}" using the structured Block format. If it's a theory doubt: Block 1 (Topic) → Block 2 (Definition) → Block 3 (Explanation) → Block 4 (Why It Matters). If it's a code doubt: Block 1 (Goal) → Block 2 (Line-by-Line with → arrows) → Block 3 (Dry Run) → Block 4 (Key Insight). Use 📌 for key info, 💡 for tips. Be thorough but concise. Language: ${lang}.` },
         { role: 'user', content: q }
       ]);
       setDoubtAnswer(answer);
@@ -883,7 +941,7 @@ Return ONLY the JSON array, no other text.`;
       </div>`;
     });
 
-    html += `<div class="footer">📚 Generated with ❤️ by Mean AI Classroom (D.S.E.C.A.R Method) — ${new Date().toLocaleString()}</div></body></html>`;
+    html += `<div class="footer">📚 Generated with ❤️ by Mean AI Classroom (Block-Based Teaching) — ${new Date().toLocaleString()}</div></body></html>`;
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(html);
@@ -943,9 +1001,9 @@ Return ONLY the JSON array, no other text.`;
           <div className="tc-setup-top">
             <div className="tc-setup-emoji">🏫</div>
             <h2>AI Classroom</h2>
-            <p>Start an interactive lesson powered by D.S.E.C.A.R method</p>
+            <p>Start an interactive lesson with structured Block-Based teaching</p>
             <div className="tc-method-badge">
-              <span>📐</span> Define → Simplify → Expand → Connect → Analogy → Recap
+              <span>📐</span> Block 1 → Block 2 → Block 3 → Block 4 → Block 5 → Block 6
             </div>
           </div>
           <div className="tc-setup-form">
@@ -1073,7 +1131,7 @@ Return ONLY the JSON array, no other text.`;
       <div className="tc-overlay">
         <div className="tc-loading-card">
           <div className="tc-loading-spinner" />
-          <h3>Preparing your D.S.E.C.A.R lesson...</h3>
+          <h3>Preparing your structured lesson...</h3>
           <p>Generating slides for <strong>{topic}</strong></p>
           {uploadedFile && <p className="tc-loading-file">📎 Processing: {fileName}</p>}
         </div>
@@ -1088,7 +1146,7 @@ Return ONLY the JSON array, no other text.`;
         <div className="tc-complete-card">
           <div className="tc-complete-emoji">🎓</div>
           <h2>Class Complete!</h2>
-          <p>Great job, {user?.name || 'Student'}! You covered {slides.length} slides on <strong>{topic}</strong> using the D.S.E.C.A.R method.</p>
+          <p>Great job, {user?.name || 'Student'}! You covered {slides.length} slides on <strong>{topic}</strong> using the Block-Based teaching method.</p>
           <div className="tc-complete-actions">
             <button className="tc-download-btn" onClick={downloadPDF}>
               <i className="fas fa-file-pdf" /> Download Notes (PDF)
@@ -1115,7 +1173,7 @@ Return ONLY the JSON array, no other text.`;
           <span className="tc-pres-subject">{subject}</span>
           <span className="tc-pres-topic">{topic}</span>
         </div>
-        <div className="tc-pres-method-badge">D.S.E.C.A.R</div>
+        <div className="tc-pres-method-badge">Block Teaching</div>
         <div className="tc-pres-meta">
           <span className={`tc-pres-timer ${timeLeft < 120 ? 'warn' : ''}`}>
             <i className="fas fa-clock" /> {formatTime(timeLeft)}
@@ -1143,14 +1201,14 @@ Return ONLY the JSON array, no other text.`;
           {loading ? (
             <div className="tc-pres-loading">
               <div className="tc-loading-spinner small" />
-              <p>Generating D.S.E.C.A.R explanation...</p>
+              <p>Generating block-by-block explanation...</p>
             </div>
           ) : currentContent ? (
             <div className="tc-pres-slide">
               <div className="tc-slide-title-bar">
                 <div className="tc-slide-title-row">
                   <span className="tc-slide-badge">Slide {currentSlideIdx + 1}</span>
-                  <span className="tc-dsecar-badge">📐 D.S.E.C.A.R</span>
+                  <span className="tc-dsecar-badge">📐 Block Teaching</span>
                 </div>
                 <h1 className="tc-slide-title">{currentContent.slide.title}</h1>
                 {currentContent.slide.subtitle && (
@@ -1268,14 +1326,15 @@ Return ONLY the JSON array, no other text.`;
 
               {/* D.S.E.C.A.R Legend */}
               <div className="tc-media-section tc-dsecar-legend">
-                <h4><i className="fas fa-graduation-cap" /> D.S.E.C.A.R Method</h4>
+                <h4><i className="fas fa-graduation-cap" /> Block Teaching Method</h4>
                 <div className="tc-legend-items">
-                  <div className="tc-legend-item"><span className="tc-legend-letter">D</span> Define</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">S</span> Simplify</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">E</span> Expand</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">C</span> Connect</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">A</span> Analogies</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">R</span> Recap</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">T</span> Theory Blocks</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">1</span> Topic / Goal</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">2</span> Definition / Input</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">3</span> Core / Line-by-Line</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">4</span> Why / Dry Run</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">5</span> Examples / Output</div>
+                  <div className="tc-legend-item"><span className="tc-legend-letter">6</span> Summary / Insight</div>
                 </div>
               </div>
             </div>
