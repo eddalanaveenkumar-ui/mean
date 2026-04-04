@@ -598,40 +598,40 @@ ${prevContext ? `Previous context: ${prevContext.slice(0, 300)}` : ''}
 ${fileContext}
 
 === FOR THEORY TOPICS ===
-Use this EXACT block structure:
+Use this EXACT structure with natural section titles (do NOT write "Block 1", "Block 2" etc.):
 
-## Block 1: Topic Name
+## Topic Name
 * Clearly state the topic name
 
-## Block 2: Definition
+## Definition
 * Explain in simple terms (max 20 words)
 
-## Block 3: Core Explanation
+## Core Explanation
 * Explain step-by-step in simple language
 * Build intuition first, then logic
 
-## Block 4: Why It Matters
+## Why It Matters
 * Explain real-world use or importance
 
-## Block 5: Examples
+## Examples
 * Give at least 2 clear examples
 
-## Block 6: Summary
+## Summary
 * One-line recap
 
 === IF CODE / PROBLEMS ARE PRESENT (THIS IS THE MOST IMPORTANT SECTION) ===
 
 ⚠️ CRITICAL RULE: You MUST explain EVERY SINGLE LINE of code. Do NOT just show the code and the output. The line-by-line explanation IS the main content. If you skip the line-by-line explanation, you have FAILED.
 
-Use this EXACT block structure:
+Use this EXACT structure with natural section titles (do NOT write "Block 1", "Block 2" etc.):
 
-## Block 1: Goal
+## Goal
 * What the code is trying to achieve (1-2 sentences)
 
-## Block 2: The Code
+## The Code
 * Show the FULL code in a code block
 
-## Block 3: Line-by-Line Explanation (REAL TEACHER MODE)
+## Line-by-Line Explanation
 
 ⚠️ THIS BLOCK IS MANDATORY AND MUST BE THE LONGEST BLOCK.
 
@@ -658,7 +658,7 @@ RULES:
 * Explain each line as if the student has never seen code before
 * Connect each line to the next — explain the FLOW
 
-## Block 4: Step-by-Step Execution (Dry Run)
+## Step-by-Step Execution (Dry Run)
 * Pick a sample input and trace through the code
 * Show a table tracking ALL variables at each step
 * Show iteration-by-iteration: what changes, what stays same
@@ -670,27 +670,29 @@ Example table format:
 | i=0  | 0 | 10| prints 10 |
 | i=1  | 1 | 15| prints 15 |
 
-## Block 5: Output
+## Output
 * Show the EXACT final output
 * Explain step-by-step HOW each output line was produced
 
-## Block 6: Key Insight
+## Key Insight
 * The main pattern or trick in this code (1-2 sentences)
 
 === TEACHING BEHAVIOR RULES (MANDATORY) ===
 * Teach like a real teacher standing in front of a classroom
 * Point at each line of code and explain it — do NOT skip any
 * Always explain "why" and "what happens next"
-* The line-by-line explanation (Block 3) should be the BIGGEST part of your response
+* The line-by-line explanation should be the BIGGEST part of your response
 * Use simple, clear language — assume the student is a beginner
 * Focus on understanding, not memorization
+* NEVER write "Block 1", "Block 2", etc. — use natural section titles only
 
 === OUTPUT STYLE ===
-* Always use blocks (Block 1, Block 2, etc.) as ## headers
-* Use → arrow markers for EVERY code line in Block 3
-* Use markdown tables for dry run in Block 4
+* Use ## for section headers with natural titles (NOT numbered blocks)
+* Use → arrow markers for EVERY code line in the line-by-line section
+* Use markdown tables for dry run
 * Use **bold** for key terms, \`code\` for inline code
 * Use emojis sparingly: 📌 for key points, 💡 for insights, ⚡ for important, ✅ for conclusions
+* IMPORTANT: Do NOT label sections as "Block 1", "Block 2" — just use the topic name as the ## header
 
 Output in pure Markdown. Be thorough — do NOT truncate or summarize the code explanation.`;
   };
@@ -1006,13 +1008,27 @@ Return ONLY the JSON array, no other text.`;
     return text.replace(/\n/g, '<br>');
   };
 
+  // Split markdown into sections by ## headers and wrap each in a reveal block
+  const renderBlockRevealHtml = (text) => {
+    if (!text) return '';
+    // Split raw markdown by ## headers
+    const sections = text.split(/(?=^## )/m).filter(s => s.trim());
+    if (sections.length <= 1) {
+      // Single block — just render normally
+      return `<div class="tc-block-reveal">${renderMarkdown(text)}</div>`;
+    }
+    return sections.map(section => {
+      return `<div class="tc-block-reveal">${renderMarkdown(section)}</div>`;
+    }).join('');
+  };
+
   const currentContent = slideContents.has(currentSlideIdx)
     ? slideContents.get(currentSlideIdx)
     : null;
 
   // Memoize the HTML so React doesn't forcefully overwrite our word-highlighting DOM spans every 1s when timeLeft updates
   const currentHtml = React.useMemo(() => {
-    return currentContent ? renderMarkdown(currentContent.content) : '';
+    return currentContent ? renderBlockRevealHtml(currentContent.content) : '';
   }, [currentContent?.content]);
 
   if (!isOpen) return null;
@@ -1189,8 +1205,32 @@ Return ONLY the JSON array, no other text.`;
   }
 
   // ===== PRESENTING — SPLIT BOARD =====
+
+  // Generate particle grid (coordinate-positioned tiny particles)
+  const particles = React.useMemo(() => {
+    const pts = [];
+    const cols = 25;
+    const rows = 18;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        pts.push({
+          left: `${(c / cols) * 100 + (Math.random() * 2 - 1)}%`,
+          top: `${(r / rows) * 100 + (Math.random() * 2 - 1)}%`,
+        });
+      }
+    }
+    return pts;
+  }, []);
+
   return (
     <div className="tc-overlay tc-presentation">
+      {/* Particle Grid Background */}
+      <div className="tc-particle-grid">
+        {particles.map((p, i) => (
+          <div key={i} className="tc-particle" style={{ left: p.left, top: p.top }} />
+        ))}
+      </div>
+
       {/* Header */}
       <header className="tc-pres-header">
         <button className="tc-pres-back" onClick={handleClose}><i className="fas fa-arrow-left" /></button>
