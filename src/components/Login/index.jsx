@@ -25,9 +25,11 @@ export default function Login() {
   const { login } = useApp();
   const [step, setStep] = useState(1);
   const [mode, setMode] = useState('login'); // 'login' or 'signup'
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [tempUser, setTempUser] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
@@ -71,14 +73,24 @@ export default function Login() {
   };
 
   const handleNext = async () => {
-    if (!email.trim() || !password.trim()) {
-      alert('Please enter your email and password.');
-      return;
-    }
-    
-    if (mode === 'signup' && !name.trim()) {
-      alert('Please enter your full name.');
-      return;
+    if (mode === 'signup') {
+      if (!firstName.trim() || !lastName.trim()) {
+        alert('Please enter your first and last name.');
+        return;
+      }
+      if (!email.trim() || !password.trim() || !repeatPassword.trim()) {
+        alert('Please fill out all fields.');
+        return;
+      }
+      if (password !== repeatPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+    } else {
+      if (!email.trim() || !password.trim()) {
+        alert('Please enter your email and password.');
+        return;
+      }
     }
     
     setIsLoading(true);
@@ -86,9 +98,10 @@ export default function Login() {
       let overrideName = null;
       let result;
       if (mode === 'signup') {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`;
         result = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(result.user, { displayName: name });
-        overrideName = name;
+        await updateProfile(result.user, { displayName: fullName });
+        overrideName = fullName;
       } else {
         try {
           result = await signInWithEmailAndPassword(auth, email, password);
@@ -174,14 +187,23 @@ export default function Login() {
 
             <div className="login-fields-ds">
               {mode === 'signup' && (
-                <div className="login-input-group">
+                <div className="login-input-group" style={{ display: 'flex', gap: '10px' }}>
                   <input
                     type="text"
                     className="login-input-ds"
-                    placeholder="Full Name"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
+                    placeholder="First"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
                     autoFocus
+                    style={{ flex: 1 }}
+                  />
+                  <input
+                    type="text"
+                    className="login-input-ds"
+                    placeholder="Last"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    style={{ flex: 1 }}
                   />
                 </div>
               )}
@@ -195,6 +217,22 @@ export default function Login() {
                   autoFocus={mode === 'login'}
                 />
               </div>
+
+              {mode === 'signup' && (
+                <div className="login-input-group">
+                  <button 
+                    className="ds-login-btn" 
+                    onClick={(e) => {
+                       e.preventDefault();
+                       window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
+                    }} 
+                    style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
+                  >
+                    Connect with OpenRouter
+                  </button>
+                </div>
+              )}
+
               <div className="login-input-group">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -202,12 +240,25 @@ export default function Login() {
                   placeholder="Password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleNext()}
+                  onKeyDown={e => mode === 'login' && e.key === 'Enter' && handleNext()}
                 />
                 <button className="ds-eye-btn" onClick={() => setShowPassword(!showPassword)}>
                   <EyeIcon />
                 </button>
               </div>
+
+              {mode === 'signup' && (
+                <div className="login-input-group">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="login-input-ds"
+                    placeholder="Repeat Password"
+                    value={repeatPassword}
+                    onChange={e => setRepeatPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleNext()}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="ds-legal-text">
