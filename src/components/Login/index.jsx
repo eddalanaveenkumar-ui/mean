@@ -35,7 +35,7 @@ export default function Login() {
   const [apiKeyInput, setApiKeyInput] = useState('');
 
   // Reusable backend linkage
-  const processBackendAuth = async (user, idToken) => {
+  const processBackendAuth = async (user, idToken, overrideName = null) => {
       // Step 1: Send Firebase token to Backend (Using the google-login endpoint since it validates ANY firebase token)
       const response = await fetch('https://mean-backend-zg5d.onrender.com/google-login', {
         method: 'POST',
@@ -54,16 +54,18 @@ export default function Login() {
       });
       const meData = await meResponse.json();
 
+      let finalName = overrideName || user.displayName || user.email.split('@')[0];
+
       if (meData.has_api_key) {
          // Log them in entirely.
          const keyResp = await fetch('https://mean-backend-zg5d.onrender.com/me/api_key', {
             headers: { 'Authorization': `Bearer ${backendJwt}` }
          });
          const keyData = await keyResp.json();
-         login({ id: user.email, name: user.displayName || user.email.split('@')[0], apiKey: keyData.openrouter_api_key, jwt: backendJwt });
+         login({ id: user.email, name: finalName, apiKey: keyData.openrouter_api_key, jwt: backendJwt });
       } else {
          // Ask for API key
-         setTempUser({ email: user.email, name: user.displayName || user.email.split('@')[0], jwt: backendJwt });
+         setTempUser({ email: user.email, name: finalName, jwt: backendJwt });
          setStep(2);
       }
   };
@@ -81,12 +83,12 @@ export default function Login() {
     
     setIsLoading(true);
     try {
+      let overrideName = null;
       let result;
       if (mode === 'signup') {
         result = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(result.user, { displayName: name });
-        // update the local user object with displayName immediately for processBackendAuth
-        result.user.displayName = name;
+        overrideName = name;
       } else {
         try {
           result = await signInWithEmailAndPassword(auth, email, password);
@@ -100,7 +102,7 @@ export default function Login() {
         }
       }
       const idToken = await result.user.getIdToken();
-      await processBackendAuth(result.user, idToken);
+      await processBackendAuth(result.user, idToken, overrideName);
     } catch (err) {
       console.error(err);
       alert('Authentication Failed: ' + err.message);
