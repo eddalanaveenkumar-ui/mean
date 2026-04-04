@@ -954,6 +954,22 @@ Return ONLY the JSON array.`;
     return currentContent ? renderBlockRevealHtml(currentContent.content) : '';
   }, [currentContent?.content]);
 
+  // Generate particle grid (coordinate-positioned tiny particles)
+  const particles = React.useMemo(() => {
+    const pts = [];
+    const cols = 25;
+    const rows = 18;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        pts.push({
+          left: `${(c / cols) * 100 + (Math.random() * 2 - 1)}%`,
+          top: `${(r / rows) * 100 + (Math.random() * 2 - 1)}%`,
+        });
+      }
+    }
+    return pts;
+  }, []);
+
   if (!isOpen) return null;
 
   // ===== SETUP SCREEN =====
@@ -1128,22 +1144,6 @@ Return ONLY the JSON array.`;
   }
 
   // ===== PRESENTING — SPLIT BOARD =====
-
-  // Generate particle grid (coordinate-positioned tiny particles)
-  const particles = React.useMemo(() => {
-    const pts = [];
-    const cols = 25;
-    const rows = 18;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        pts.push({
-          left: `${(c / cols) * 100 + (Math.random() * 2 - 1)}%`,
-          top: `${(r / rows) * 100 + (Math.random() * 2 - 1)}%`,
-        });
-      }
-    }
-    return pts;
-  }, []);
 
   return (
     <div className="tc-overlay tc-presentation">
