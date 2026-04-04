@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
 import './Login.css';
 
@@ -14,26 +14,11 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const EyeIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-  </svg>
-);
-
 export default function Login() {
   const { login } = useApp();
   const [step, setStep] = useState(1);
-  const [mode, setMode] = useState('login'); // 'login' or 'signup'
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [repeatPassword, setRepeatPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [tempUser, setTempUser] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
-  
   const [apiKeyInput, setApiKeyInput] = useState('');
 
   // Intercept OpenRouter OAuth callback
@@ -78,7 +63,7 @@ export default function Login() {
 
   // Reusable backend linkage
   const processBackendAuth = async (user, idToken, overrideName = null) => {
-      // Step 1: Send Firebase token to Backend (Using the google-login endpoint since it validates ANY firebase token)
+      // Step 1: Send Firebase token to Backend
       const response = await fetch('https://mean-backend-zg5d.onrender.com/google-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,58 +95,6 @@ export default function Login() {
          setTempUser({ email: user.email, name: finalName, jwt: backendJwt });
          setStep(2);
       }
-  };
-
-  const handleNext = async () => {
-    if (mode === 'signup') {
-      if (!firstName.trim() || !lastName.trim()) {
-        alert('Please enter your first and last name.');
-        return;
-      }
-      if (!email.trim() || !password.trim() || !repeatPassword.trim()) {
-        alert('Please fill out all fields.');
-        return;
-      }
-      if (password !== repeatPassword) {
-        alert('Passwords do not match.');
-        return;
-      }
-    } else {
-      if (!email.trim() || !password.trim()) {
-        alert('Please enter your email and password.');
-        return;
-      }
-    }
-    
-    setIsLoading(true);
-    try {
-      let overrideName = null;
-      let result;
-      if (mode === 'signup') {
-        const fullName = `${firstName.trim()} ${lastName.trim()}`;
-        result = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(result.user, { displayName: fullName });
-        overrideName = fullName;
-      } else {
-        try {
-          result = await signInWithEmailAndPassword(auth, email, password);
-        } catch (err) {
-          // Automatically create account if it doesn't exist
-          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-              result = await createUserWithEmailAndPassword(auth, email, password);
-          } else {
-              throw err;
-          }
-        }
-      }
-      const idToken = await result.user.getIdToken();
-      await processBackendAuth(result.user, idToken, overrideName);
-    } catch (err) {
-      console.error(err);
-      alert('Authentication Failed: ' + err.message);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleGoogleLogin = async () => {
@@ -199,13 +132,13 @@ export default function Login() {
             body: JSON.stringify({ api_key: apiKeyInput.trim() })
           });
           if (!response.ok) {
-             alert("Failed to link API key!");
+             alert('Failed to link API key!');
              return;
           }
         }
         
         // Fallback: local session login directly
-        login({ id: tempUser?.email || email, name: tempUser?.name || email.split('@')[0], apiKey: apiKeyInput.trim() });
+        login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: apiKeyInput.trim() });
     } finally {
         setIsLoading(false);
     }
@@ -225,113 +158,18 @@ export default function Login() {
               <span className="login-logo-text-ds">Mean <span className="logo-ai-accent">AI</span></span>
             </div>
 
-            <div className="login-fields-ds">
-              {mode === 'signup' && (
-                <div className="login-input-group" style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="text"
-                    className="login-input-ds"
-                    placeholder="First"
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    autoFocus
-                    style={{ flex: 1 }}
-                  />
-                  <input
-                    type="text"
-                    className="login-input-ds"
-                    placeholder="Last"
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              )}
-              <div className="login-input-group">
-                <input
-                  type="text"
-                  className="login-input-ds"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  autoFocus={mode === 'login'}
-                />
-              </div>
+            <p className="login-subtitle-ds" style={{ textAlign: 'center', marginBottom: '30px', marginTop: '10px' }}>
+               Welcome. Log in with Google to continue.
+            </p>
 
-              {mode === 'signup' && (
-                <div className="login-input-group">
-                  <button 
-                    className="ds-login-btn" 
-                    onClick={(e) => {
-                       e.preventDefault();
-                       if (tempUser) {
-                           sessionStorage.setItem('mean_temp_user', JSON.stringify(tempUser));
-                       }
-                       window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
-                    }} 
-                    style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
-                  >
-                    Connect with OpenRouter
-                  </button>
-                </div>
-              )}
-
-              <div className="login-input-group">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className="login-input-ds"
-                  placeholder="Password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => mode === 'login' && e.key === 'Enter' && handleNext()}
-                />
-                <button className="ds-eye-btn" onClick={() => setShowPassword(!showPassword)}>
-                  <EyeIcon />
-                </button>
-              </div>
-
-              {mode === 'signup' && (
-                <div className="login-input-group">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="login-input-ds"
-                    placeholder="Repeat Password"
-                    value={repeatPassword}
-                    onChange={e => setRepeatPassword(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleNext()}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="ds-legal-text">
-              By signing up or logging in, you consent to Mean AI's <br/>
-              <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
-            </div>
-
-            <div className="ds-links-row">
-              {mode === 'login' ? (
-                <>
-                  <span className="ds-link" style={{ cursor: 'pointer' }}>Forgot password?</span>
-                  <span className="ds-link" style={{ cursor: 'pointer' }} onClick={() => setMode('signup')}>Sign up</span>
-                </>
-              ) : (
-                <span className="ds-link" style={{ cursor: 'pointer' }} onClick={() => setMode('login')}>Already have an account? Log in</span>
-              )}
-            </div>
-
-            <button className="ds-login-btn orange-btn" onClick={handleNext}>
-              {mode === 'login' ? 'Log in' : 'Sign up'}
+            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <GoogleIcon />
+              Continue with Google
             </button>
 
-            <div className="ds-divider">
-              <span className="ds-divider-line"></span>
-              <span className="ds-divider-icon">
-                <button className="ds-social-circle" onClick={handleGoogleLogin}>
-                  <GoogleIcon />
-                </button>
-              </span>
-              <span className="ds-divider-line"></span>
+            <div className="ds-legal-text" style={{ marginTop: '20px' }}>
+              By continuing, you consent to Mean AI's <br/>
+              <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
             </div>
           </>
         ) : (
@@ -341,30 +179,8 @@ export default function Login() {
             </div>
             
             <p className="login-subtitle-ds">
-              Mean AI uses OpenRouter for models. Link your account or provide an API key.
+              Mean AI uses OpenRouter for models. Connect your account to automatically provision an API key.
             </p>
-
-            <div className="login-fields-ds">
-              <input
-                type="password"
-                className="login-input-ds"
-                placeholder="OpenRouter API Key (sk-or-v1-...)"
-                value={apiKeyInput}
-                onChange={e => setApiKeyInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                autoFocus
-              />
-            </div>
-
-            <button className="ds-login-btn orange-btn" onClick={handleSubmit} style={{ marginTop: '20px' }}>
-              Connect & Start
-            </button>
-            
-            <div className="ds-divider" style={{ margin: '15px 0' }}>
-              <span className="ds-divider-line"></span>
-              <span className="ds-divider-text" style={{ fontSize: '12px', color: '#888', padding: '0 10px' }}>OR</span>
-              <span className="ds-divider-line"></span>
-            </div>
 
             <button 
               className="ds-login-btn" 
@@ -375,13 +191,31 @@ export default function Login() {
                   }
                   window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
               }} 
-              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
+              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333', marginTop: '20px' }}
             >
               Connect with OpenRouter
             </button>
+            
+            <div className="ds-divider" style={{ margin: '15px 0' }}>
+              <span className="ds-divider-line"></span>
+              <span className="ds-divider-text" style={{ fontSize: '12px', color: '#888', padding: '0 10px' }}>OR</span>
+              <span className="ds-divider-line"></span>
+            </div>
 
-            <button className="ds-back-btn" onClick={() => setStep(1)} style={{ marginTop: '15px' }}>
-              Back
+            <div className="login-fields-ds">
+              <input
+                type="password"
+                className="login-input-ds"
+                placeholder="Manual API Key (sk-or-v1-...)"
+                value={apiKeyInput}
+                onChange={e => setApiKeyInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                autoFocus
+              />
+            </div>
+
+            <button className="ds-login-btn orange-btn" onClick={handleSubmit} style={{ marginTop: '15px' }}>
+              Link & Continue
             </button>
           </>
         )}
