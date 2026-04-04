@@ -637,10 +637,14 @@ Return ONLY the JSON array.`;
       
       let parsed = null;
       try {
-        const match = content.match(/\[[\s\S]*\]/);
+        // Strip markdown backticks if present
+        let cleanContent = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+        // Extract array from first [ to last ]
+        const match = cleanContent.match(/\[[\s\S]*\]/);
         if (match) parsed = JSON.parse(match[0]);
       } catch (parseErr) {
         console.warn('[Classroom] JSON parse failed:', parseErr);
+        console.log('[Classroom] Attempted to parse:', content);
       }
       
       if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
