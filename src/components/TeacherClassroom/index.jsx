@@ -122,8 +122,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       const text = node.textContent;
       if (!text || !text.trim()) continue;
 
-      // DO NOT wrap or speak code blocks
-      if (node.parentElement?.closest('pre') || node.parentElement?.closest('code')) continue;
+      // Code blocks will now be wrapped and spoken word-by-word!
 
       const frag = document.createDocumentFragment();
       const parts = text.split(/(\s+)/);
@@ -1113,6 +1112,7 @@ Return ONLY the JSON array.`;
           <div className="tc-loading-spinner" />
           <h3>Preparing your structured lesson...</h3>
           <p>Generating slides for <strong>{topic}</strong></p>
+          <p className="tc-loading-hint">It may take 4 - 7 mins to generate all blocks</p>
           {uploadedFile && <p className="tc-loading-file">📎 Processing: {fileName}</p>}
         </div>
       </div>
@@ -1233,6 +1233,21 @@ Return ONLY the JSON array.`;
             </div>
           ) : (
             <div className="tc-media-content">
+              {/* ===== CODE VISUALIZER ===== */}
+              {currentContent && currentContent.content.includes('```') && (
+                <div className="tc-media-section tc-code-visualizer">
+                  <h4><i className="fas fa-code" /> Code Visualizer</h4>
+                  <div className="tc-code-workspace">
+                    <pre><code>
+                      {(() => {
+                        const match = currentContent.content.match(/```(?:\w+)?\n([\s\S]*?)```/);
+                        return match ? match[1] : 'No code block found';
+                      })()}
+                    </code></pre>
+                  </div>
+                </div>
+              )}
+
               {/* Embedded YouTube Videos */}
               {mediaItems.youtube && mediaItems.youtube.length > 0 && (
                 <div className="tc-media-section">

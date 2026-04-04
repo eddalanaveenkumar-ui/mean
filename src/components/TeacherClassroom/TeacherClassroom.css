@@ -385,6 +385,15 @@
   font-size: 0.82rem !important;
   opacity: 0.8;
 }
+.tc-loading-hint {
+  color: #fbbf24 !important;
+  font-size: 0.8rem !important;
+  font-style: italic;
+  opacity: 0.9;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
 
 .tc-loading-spinner {
   width: 48px; height: 48px;
@@ -625,6 +634,31 @@
 }
 .tc-media-section h4 .fas.fa-graduation-cap {
   color: var(--accent);
+}
+.tc-media-section h4 .fas.fa-code {
+  color: #10b981;
+}
+
+/* Code Visualizer */
+.tc-code-workspace {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  overflow-x: auto;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.tc-code-workspace pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.tc-code-workspace code {
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #d4d4d4;
 }
 
 /* YouTube Cards */
