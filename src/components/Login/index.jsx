@@ -231,7 +231,22 @@ export default function Login() {
             <button className="ds-login-btn orange-btn" onClick={handleSubmit} style={{ marginTop: '20px' }}>
               Connect & Start
             </button>
-            <button className="ds-back-btn" onClick={() => setStep(1)}>
+            
+            <div className="ds-divider" style={{ margin: '15px 0' }}>
+              <span className="ds-divider-line"></span>
+              <span className="ds-divider-text" style={{ fontSize: '12px', color: '#888', padding: '0 10px' }}>OR</span>
+              <span className="ds-divider-line"></span>
+            </div>
+
+            <button 
+              className="ds-login-btn" 
+              onClick={() => window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/"} 
+              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
+            >
+              Connect with OpenRouter
+            </button>
+
+            <button className="ds-back-btn" onClick={() => setStep(1)} style={{ marginTop: '15px' }}>
               Back
             </button>
           </>
