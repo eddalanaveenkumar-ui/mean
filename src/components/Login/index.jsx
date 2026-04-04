@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
@@ -35,6 +35,46 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [apiKeyInput, setApiKeyInput] = useState('');
+
+  // Intercept OpenRouter OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setIsLoading(true);
+      
+      const savedTemp = sessionStorage.getItem('mean_temp_user');
+      if (savedTemp && savedTemp !== 'null') {
+         try {
+            setTempUser(JSON.parse(savedTemp));
+         } catch(e){}
+      }
+
+      fetch('https://openrouter.ai/api/v1/auth/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      })
+      .then(r => r.json())
+      .then(data => {
+         if (data.key) {
+            setApiKeyInput(data.key);
+            setStep(2); // Automatically move to step 2 with the key filled!
+         } else {
+            alert('Failed to obtain OpenRouter Key.');
+         }
+      })
+      .catch(err => {
+         console.error(err);
+         alert('Failed to connect to OpenRouter.');
+      })
+      .finally(() => {
+         setIsLoading(false);
+      });
+    }
+  }, []);
 
   // Reusable backend linkage
   const processBackendAuth = async (user, idToken, overrideName = null) => {
@@ -224,6 +264,9 @@ export default function Login() {
                     className="ds-login-btn" 
                     onClick={(e) => {
                        e.preventDefault();
+                       if (tempUser) {
+                           sessionStorage.setItem('mean_temp_user', JSON.stringify(tempUser));
+                       }
                        window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
                     }} 
                     style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
@@ -325,7 +368,13 @@ export default function Login() {
 
             <button 
               className="ds-login-btn" 
-              onClick={() => window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/"} 
+              onClick={(e) => {
+                  e.preventDefault();
+                  if (tempUser) {
+                      sessionStorage.setItem('mean_temp_user', JSON.stringify(tempUser));
+                  }
+                  window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
+              }} 
               style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333' }}
             >
               Connect with OpenRouter
