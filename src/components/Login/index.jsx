@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
 import './Login.css';
 
@@ -21,8 +21,21 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
-  // Intercept OpenRouter OAuth callback
+  // Intercept openrouter and firebase auth redirect
   useEffect(() => {
+    // 1. Firebase redirect handler
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user) {
+        setIsLoading(true);
+        const idToken = await result.user.getIdToken();
+        await processBackendAuth(result.user, idToken);
+      }
+    }).catch(err => {
+      console.error("Redirect login error:", err);
+      setIsLoading(false);
+    });
+
+    // 2. OpenRouter OAuth redirect
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
@@ -116,7 +129,8 @@ export default function Login() {
       }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (e) => {
+    if (e) e.preventDefault();
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -124,10 +138,13 @@ export default function Login() {
       await processBackendAuth(result.user, idToken);
     } catch (err) {
       console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+          // Fallback to redirect if popup is blocked or running in Capacitor/Mobile WebView
+          signInWithRedirect(auth, googleProvider);
+          return; // Do not unset loading, let it redirect
+      } else if (err.code !== 'auth/popup-closed-by-user') {
           alert('Google Login Failed. Please try again.');
       }
-    } finally {
       setIsLoading(false);
     }
   };
@@ -181,8 +198,8 @@ export default function Login() {
                Login to access your personalized AI learning and chat experience.
             </p>
 
-            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '50px', fontSize: '1rem', fontWeight: 'bold' }}>
-              👉 Continue with Google
+            <button type="button" className="premium-google-btn" onClick={handleGoogleLogin}>
+              <GoogleIcon /> Continue with Google
             </button>
 
             <div className="ds-legal-text" style={{ marginTop: '20px' }}>

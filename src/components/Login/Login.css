@@ -257,3 +257,58 @@ body.light-theme .spinner {
   font-size: 1rem;
   font-weight: 500;
 }
+
+/* ── Premium Google Button ── */
+.premium-google-btn {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(30, 30, 30, 0.9) 0%, rgba(15, 15, 15, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.premium-google-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(232, 145, 58, 0.15), transparent);
+  transition: all 0.6s ease;
+  transform: skewX(-20deg);
+}
+
+.premium-google-btn:hover {
+  background: linear-gradient(180deg, rgba(40, 40, 40, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%);
+  border-color: rgba(232, 145, 58, 0.4);
+  color: #f0ad5e;
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 30px rgba(232, 145, 58, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.premium-google-btn:hover::before {
+  left: 150%;
+}
+
+.premium-google-btn:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 4px 10px rgba(232, 145, 58, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
