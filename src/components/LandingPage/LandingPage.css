@@ -24,6 +24,20 @@
 }
 .landing-scroll-container::-webkit-scrollbar { display: none; }
 
+/* ── Cursor Glow ── */
+.cursor-glow {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 145, 58, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: opacity 0.3s ease;
+  will-change: left, top;
+}
+
 /* ── Animated Background ── */
 .landing-bg {
   position: fixed;
@@ -36,11 +50,11 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(232, 145, 58, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(232, 145, 58, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(232, 145, 58, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 145, 58, 0.08) 1px, transparent 1px);
   background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black, transparent);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black, transparent);
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 80%);
 }
 
 .bg-glow {
@@ -371,6 +385,60 @@
   width: 1px;
   height: 36px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Stitched QR Code Card ── */
+.hero-qr-stitched-card {
+  margin-top: 48px;
+  position: relative;
+  background: rgba(15, 15, 15, 0.8);
+  border-radius: 24px;
+  padding: 8px;
+  /* Outer dark border to contrast the stitch */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: fadeInUp 0.8s ease 0.5s both;
+  max-width: 300px;
+  backdrop-filter: blur(10px);
+}
+
+.stitched-inner {
+  border: 2px dashed rgba(240, 173, 94, 0.6);
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: rgba(232, 145, 58, 0.03);
+}
+
+.stitched-inner:hover {
+  border-color: rgba(240, 173, 94, 1);
+  background: rgba(232, 145, 58, 0.08);
+  transition: all 0.3s ease;
+}
+
+.qr-code-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+  object-fit: cover;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.qr-text {
+  font-size: 0.9rem;
+  color: #ccc;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
+.qr-text-highlight {
+  color: #f0ad5e;
+  font-weight: 700;
 }
 
 /* Hero Orb */

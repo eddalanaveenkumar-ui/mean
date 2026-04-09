@@ -8,10 +8,12 @@ import VoiceOverlay from './components/VoiceOverlay';
 import TeacherClassroom from './components/TeacherClassroom';
 import PptModal from './components/PptModal';
 import MusicPlayer from './components/MusicPlayer';
+import LandingPage from './components/LandingPage';
 import './App.css';
 
 export default function App() {
   const { user, sidebarOpen, setSidebarOpen, showProfile } = useApp();
+  const [showLanding, setShowLanding] = useState(true);
 
   // Shared overlay states
   const [showVoice, setShowVoice] = useState(false);
@@ -26,7 +28,12 @@ export default function App() {
     onMusic: () => setShowMusic(true),
   };
 
-  if (!user) return <Login />;
+  if (!user) {
+    if (showLanding) {
+      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    }
+    return <Login />;
+  }
 
   return (
     <div className="app-container">

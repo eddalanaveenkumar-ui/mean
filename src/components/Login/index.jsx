@@ -174,16 +174,15 @@ export default function Login() {
         ) : step === 1 ? (
           <>
             <div className="login-brand-ds">
-              <span className="login-logo-text-ds">Mean <span className="logo-ai-accent">AI</span></span>
+              <span className="login-logo-text-ds">Continue to MeanAI</span>
             </div>
 
             <p className="login-subtitle-ds" style={{ textAlign: 'center', marginBottom: '30px', marginTop: '10px' }}>
-               Welcome. Log in with Google to continue.
+               Login to access your personalized AI learning and chat experience.
             </p>
 
-            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '50px' }}>
-              <GoogleIcon />
-              Continue with Google
+            <button className="ds-login-btn" onClick={handleGoogleLogin} style={{ backgroundColor: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '50px', fontSize: '1rem', fontWeight: 'bold' }}>
+              👉 Continue with Google
             </button>
 
             <div className="ds-legal-text" style={{ marginTop: '20px' }}>

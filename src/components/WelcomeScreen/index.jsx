@@ -37,7 +37,7 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
   return (
     <div className="welcome-block">
       {/* Heading */}
-      <h1 className="welcome-heading">What are you working on?</h1>
+      <h1 className="welcome-heading">Paste your code or ask a question.</h1>
 
       {/* Centered Input Bar */}
       <div className="welcome-input-wrap">
@@ -107,29 +107,15 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
         <input type="file" ref={fileRef} style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
 
-      {/* Action pills with real icons */}
-      <div className="welcome-pills">
-        <button className="w-pill" onClick={() => setText('Create an image')}>
-          <svg className="w-pill-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8913a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
-          <span className="w-pill-text">Create image</span>
+      {/* Action sections */}
+      <div className="welcome-pills" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }} onClick={() => setText('Explain this code step-by-step: \n\n')}>
+          <div style={{ fontWeight: 'bold', color: '#f0ad5e', marginBottom: '8px', fontSize: '1rem' }}>Code Mode</div>
+          <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Get line-by-line explanation with execution flow.</div>
         </button>
-        <button className="w-pill" onClick={() => setText('Help me write')}>
-          <svg className="w-pill-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8913a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-          </svg>
-          <span className="w-pill-text">Write or edit</span>
-        </button>
-        <button className="w-pill" onClick={() => setText('Look up ')}>
-          <svg className="w-pill-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8913a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-          </svg>
-          <span className="w-pill-text">Look something up</span>
+        <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }} onClick={() => setText('I have a question: ')}>
+          <div style={{ fontWeight: 'bold', color: '#f0ad5e', marginBottom: '8px', fontSize: '1rem' }}>Chat Mode</div>
+          <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Ask anything and get instant AI responses.</div>
         </button>
       </div>
     </div>
