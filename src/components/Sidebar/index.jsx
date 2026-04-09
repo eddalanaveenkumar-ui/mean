@@ -85,8 +85,12 @@ export default function Sidebar({ onTeacher, onPpt, onMusic }) {
           </svg>
         </button>
         <div className="sc-spacer" />
-        <button className="sc-avatar" onClick={() => setShowProfile(true)} title={user?.name || 'Profile'}>
-          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+        <button className="sc-avatar" onClick={() => setShowProfile(true)} title={user?.name || 'Profile'} style={{ padding: user?.photoURL ? 0 : undefined, overflow: 'hidden' }}>
+          {user?.photoURL ? (
+            <img src={user.photoURL} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+          ) : (
+            user?.name?.charAt(0)?.toUpperCase() || 'U'
+          )}
         </button>
       </aside>
     );
@@ -177,8 +181,12 @@ export default function Sidebar({ onTeacher, onPpt, onMusic }) {
 
         <div className="sidebar-footer">
           <button className="profile-btn" onClick={() => { setShowProfile(true); setSidebarOpen(false); }}>
-            <div className="profile-avatar">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            <div className="profile-avatar" style={{ overflow: 'hidden' }}>
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                user?.name?.charAt(0)?.toUpperCase() || 'U'
+              )}
             </div>
             <div className="profile-info">
               <span className="profile-name-text">{user?.name || 'User'}</span>

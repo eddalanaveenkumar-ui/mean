@@ -71,9 +71,9 @@ export default function Login() {
                     },
                     body: JSON.stringify({ api_key: theKey })
                 }).then(() => {
-                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt });
+                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
                 }).catch(() => {
-                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt });
+                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
                 });
             } else {
                 login({ id: 'user', name: 'User', apiKey: theKey });
@@ -121,10 +121,10 @@ export default function Login() {
             headers: { 'Authorization': `Bearer ${backendJwt}` }
          });
          const keyData = await keyResp.json();
-         login({ id: user.email, name: finalName, apiKey: keyData.openrouter_api_key, jwt: backendJwt });
+         login({ id: user.email, name: finalName, apiKey: keyData.openrouter_api_key, jwt: backendJwt, photoURL: user.photoURL });
       } else {
          // Ask for API key
-         setTempUser({ email: user.email, name: finalName, jwt: backendJwt });
+         setTempUser({ email: user.email, name: finalName, jwt: backendJwt, photoURL: user.photoURL });
          setStep(2);
       }
   };
@@ -174,7 +174,7 @@ export default function Login() {
         }
         
         // Fallback: local session login directly
-        login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: apiKeyInput.trim() });
+        login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: apiKeyInput.trim(), photoURL: tempUser?.photoURL });
     } finally {
         setIsLoading(false);
     }
@@ -224,7 +224,7 @@ export default function Login() {
                   if (tempUser) {
                       sessionStorage.setItem('mean_temp_user', JSON.stringify(tempUser));
                   }
-                  window.location.href = "https://openrouter.ai/auth?callback_url=https://mean-beta.vercel.app/";
+                  window.location.href = `https://openrouter.ai/auth?callback_url=${window.location.origin}`;
               }} 
               style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333', marginTop: '20px', borderRadius: '50px' }}
             >
