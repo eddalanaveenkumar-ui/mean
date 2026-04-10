@@ -658,30 +658,12 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     setMediaLoading(false);
   }, [subject, topic, lang, APP_YT_KEY]);
 
-  // ===== STRUCTURED BLOCK-BASED TEACHING PROMPT =====
-  const buildTeachingPrompt = (slide, prevContext) => {
-    const fileContext = fileContent
-      ? `\nDOCUMENT: "${fileName}" (${fileType})\n${fileContent.slice(0, 1200)}\nUse this as primary reference.`
-      : '';
-
-    return `${subject} teacher explaining "${slide.title}" — ${slide.subtitle} for ${level} level.
-Points: ${slide.points.join(', ')}
-${prevContext ? `Context: ${prevContext.slice(0, 200)}` : ''}${fileContext}
-
-FOR THEORY — use these ## sections:
-## Topic Name | ## Definition (max 20 words) | ## Core Explanation (step-by-step) | ## Why It Matters | ## Examples (2+) | ## Summary
-
-FOR CODE — use these ## sections:
-## Goal (1-2 lines) | ## The Code (full code block)
-## Line-by-Line Explanation ← THIS MUST BE THE LONGEST SECTION
-For EVERY line: → \`code\` then **What:** / **Why:** / **Effect:**
-NEVER skip any line. Not even print() or assignments.
-## Dry Run (table with variables at each step)
-## Output (exact output + how each line was produced)
-## Key Insight (1-2 sentences)
-
-RULES: Use natural ## titles (NOT "Block 1"). Use → arrows for code lines. Use tables for dry runs. Be thorough with code explanations.
-Markdown output.`;
+  // ===== ARCHITECTURAL ROADMAP PROMPT =====
+  const buildTeachingPrompt = (node, prevContext) => {
+    return `Generate detailed explanation for node "${node.address}".
+Title: ${node['in-content']}
+Context: ${prevContext}
+Ensure you strictly follow the roadmap context.`;
   };
 
   // ===== START CLASS =====
@@ -699,14 +681,19 @@ Markdown output.`;
       ? `\n\nThe student has attached a ${fileType} document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\n\nUse this document as the primary source.`
       : '';
 
-    const outlinePrompt = `Expert ${subject} teacher. Create a slide outline for "${topic}" at ${level} level.
-${fileContext}
+    const outlinePrompt = `Expert ${subject} teacher. You are creating a visual block-diagram interactive Roadmap for "${topic}" at ${level} level.
+You must return ONLY a JSON array representing the flow.
+Current Year context: 2026. Use updated info. Fact check internet.
 
-Return ONLY a JSON array. Each slide: {"title": "...", "subtitle": "...", "points": ["..."]}
-
-Generate 3-5 slides: Introduction, Core (1-2), Examples, Summary.
-${fileContent ? 'Use the attached document.' : ''}
-Return ONLY the JSON array.`;
+JSON STRUCTURE RULES:
+- Use {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square", "explanation": "Detailed tooltip text...", "connect": ["child_id1", ...]}
+- Nodes support 'shape'. Options: "square" (default), "circle", "star". Use 'star' for the final goal/conclusion, 'circle' for prerequisites.
+- For EVERY connection inside "connect", YOU MUST also output an arrow object detailing the flow:
+  {"type": "arrow", "in-content": "short relationship label", "explanation": "Why do these connect?", "first-connection": "parent_id", "next-connection": "child_id"}
+  
+Keep it dense, accurate, and map out the concept logically (min 6 blocks).
+${fileContext ? 'Use the attached document specifically.' : ''}
+Return ONLY valid JSON array. No markdown blocks outside it.`;
 
     try {
       const cleanedKey = apiKey ? apiKey.trim() : '';
@@ -718,7 +705,7 @@ Return ONLY the JSON array.`;
           const g_resp = await fetch(g_url, {
              method: 'POST', headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
-                systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY. Format: [{"title": "...", "subtitle": "...", "points": ["..."]}]' }]},
+                systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing node graph.' }]},
                 contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
              })
@@ -726,53 +713,35 @@ Return ONLY the JSON array.`;
           const g_data = await g_resp.json();
           initialContent = g_data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       } else {
-          const content = await fetchAI([{ role: 'user', content: outlinePrompt }], 800);
+          // If the user searches google natively
+          const reqPrompt = webSearchActive ? outlinePrompt + "\n[SEARCH REQUIRED: Find the latest 2026 info on this]" : outlinePrompt;
+          const content = await fetchAI([{ role: 'user', content: reqPrompt }], 1500);
           initialContent = content;
       }
-      
-      console.log('[Classroom] Outline response:', initialContent?.slice(0, 200));
       
       let parsed = null;
       try {
         let cleanContent = initialContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-        // Extract array from first [ to last ]
         const match = cleanContent.match(/\[[\s\S]*\]/);
         if (match) parsed = JSON.parse(match[0]);
       } catch (parseErr) {
-        console.warn('[Classroom] JSON parse failed:', parseErr);
-        console.log('[Classroom] Attempted to parse:', content);
+        console.warn('[Roadmap] JSON parse failed', parseErr);
       }
       
       if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
-        console.warn('[Classroom] Using fallback slides');
-        parsed = [
-          { title: 'Introduction', subtitle: `Overview of ${topic}`, points: ['What is it?', 'Why is it important?', 'Prerequisites'] },
-          { title: 'Core Concepts', subtitle: 'Fundamental ideas', points: ['Concept 1', 'Concept 2'] },
-          { title: 'Examples', subtitle: 'Real-world applications', points: ['Example 1', 'Example 2'] },
-          { title: 'Summary', subtitle: 'Key takeaways', points: ['Recap', 'Next steps'] },
-        ];
+        setPhase('error'); return;
       }
+
+      setCacheProp('slides', parsed);
+      setPhase('teaching');
       
-      setSlides(parsed);
-      setCurrentSlideIdx(0);
-
-      // Load first slide content — but DON'T block on it
-      try {
-        await loadSlideContent(parsed, 0);
-      } catch (slideErr) {
-        console.warn('[Classroom] First slide load failed:', slideErr);
-      }
-      
-      if (!activeRef.current) return;
-
-      setPhase('presenting');
-
-      // Start timer (pauses when buffering)
-      timerRef.current = setInterval(() => {
-        if (!isLoadingRef.current) {
-          setTimeLeft(prev => { if (prev <= 1) { endClass(); return 0; } return prev - 1; });
+      // Inject into iframe delayed slightly to ensure iframe exists
+      setTimeout(() => {
+        const frame = document.getElementById('roadmapFrame');
+        if(frame && frame.contentWindow) {
+           frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed }, '*');
         }
-      }, 1000);
+      }, 500);
     } catch (e) {
       console.error('[Classroom] Fatal error:', e);
       alert('Failed to generate outline. Check your API key.');
@@ -1210,277 +1179,47 @@ Return ONLY the JSON array.`;
       <div className="tc-overlay">
         <div className="tc-loading-card">
           <div className="tc-loading-spinner" />
-          <h3>Preparing your structured lesson...</h3>
-          <p>Generating slides for <strong>{topic}</strong></p>
-          <p className="tc-loading-hint">It may take 4 - 7 mins to generate all blocks</p>
-          {uploadedFile && <p className="tc-loading-file">📎 Processing: {fileName}</p>}
+          <h3>Preparing interactive roadmap...</h3>
+          <p>Generating architectural diagram for <strong>{topic}</strong></p>
+          <p className="tc-loading-hint">Using live 2026 network to scan facts...</p>
         </div>
       </div>
     );
   }
 
-  // ===== COMPLETE =====
-  if (phase === 'complete') {
-    return (
+  // ===== ERROR/RETRY =====
+  if (phase === 'error') {
+     return (
       <div className="tc-overlay">
         <div className="tc-complete-card">
-          <div className="tc-complete-emoji">🎓</div>
-          <h2>Class Complete!</h2>
-          <p>Great job, {user?.name || 'Student'}! You covered {slides.length} slides on <strong>{topic}</strong> using the Block-Based teaching method.</p>
-          <div className="tc-complete-actions">
-            <button className="tc-download-btn" onClick={downloadPDF}>
-              <i className="fas fa-file-pdf" /> Download Notes (PDF)
-            </button>
-            <button className="tc-restart-btn" onClick={() => { setPhase('setup'); setSlides([]); setMediaItems([]); }}>
-              <i className="fas fa-redo" /> Start New Lesson
-            </button>
-            <button className="tc-close-btn" onClick={handleClose}>
-              <i className="fas fa-times" /> Close
-            </button>
-          </div>
+           <div className="tc-complete-emoji">⚠️</div>
+           <h2>Generation Failed</h2>
+           <p>The AI was unable to structure the roadmap cleanly. Please try a simpler topic or check your proxy limits.</p>
+           <button className="tc-restart-btn" onClick={() => setPhase('setup')}>Try Again</button>
         </div>
       </div>
-    );
+     );
   }
 
-  // ===== PRESENTING — SPLIT BOARD =====
-
+  // ===== TEACHING (ROADMAP RENDER) =====
   return (
     <div className="tc-overlay tc-presentation">
-      {/* Particle Grid Background */}
-      <div className="tc-particle-grid">
-        {particles.map((p, i) => (
-          <div key={i} className="tc-particle" style={{ left: p.left, top: p.top }} />
-        ))}
-      </div>
-
-      {/* Header */}
       <header className="tc-pres-header">
         <button className="tc-pres-back" onClick={handleClose}><i className="fas fa-arrow-left" /></button>
         <div className="tc-pres-info">
           <span className="tc-pres-subject">{subject}</span>
           <span className="tc-pres-topic">{topic}</span>
         </div>
-        <div className="tc-pres-method-badge">Block Teaching</div>
-        <div className="tc-pres-meta">
-          <span className={`tc-pres-timer ${timeLeft < 120 ? 'warn' : ''}`}>
-            <i className="fas fa-clock" /> {formatTime(timeLeft)}
-          </span>
-          <span className="tc-pres-slide-num">
-            {currentSlideIdx + 1}/{slides.length}
-          </span>
-          {voiceState === 'speaking' && <span className="tc-pres-speaking">🔊</span>}
-        </div>
+        <div className="tc-pres-method-badge">AI Architecture Explorer</div>
       </header>
-
-      {/* Slide Progress Bar */}
-      <div className="tc-progress-bar">
-        {slides.map((_, i) => (
-          <div key={i} className={`tc-progress-dot ${i === currentSlideIdx ? 'active' : i < currentSlideIdx ? 'done' : ''}`}
-            onClick={() => { if (slideContents.has(i)) { setCurrentSlideIdx(i); window.speechSynthesis?.cancel(); const cached = slideContents.get(i); if (cached) fetchMediaForSlide(cached.slide.title, cached.content); } }}
-          />
-        ))}
-      </div>
-
-      {/* ===== SPLIT BOARD ===== */}
-      <div className="tc-split-board">
-        {/* LEFT COLUMN — D.S.E.C.A.R Content */}
-        <div className="tc-board-left" ref={contentRef}>
-          {loading ? (
-            <div className="tc-pres-loading">
-              <div className="tc-loading-spinner small" />
-              <p>Generating block-by-block explanation...</p>
-            </div>
-          ) : currentContent ? (
-            <div className="tc-pres-slide">
-              <div className="tc-slide-title-bar">
-                <div className="tc-slide-title-row">
-                  <span className="tc-slide-badge">Slide {currentSlideIdx + 1}</span>
-                  <span className="tc-dsecar-badge">📐 Block Teaching</span>
-                </div>
-                <h1 className="tc-slide-title">{currentContent.slide.title}</h1>
-                {currentContent.slide.subtitle && (
-                  <p className="tc-slide-subtitle">{currentContent.slide.subtitle}</p>
-                )}
-              </div>
-              <StaticSlideBody html={currentHtml} innerRef={slideBodyRef} />
-            </div>
-          ) : (
-            <div className="tc-pres-loading"><p>No content available</p></div>
-          )}
-
-          {/* Doubt Answer */}
-          {doubtAnswer && (
-            <div className="tc-doubt-answer">
-              <h4>💬 Answer</h4>
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(doubtAnswer) }} />
-              <button onClick={() => setDoubtAnswer('')}><i className="fas fa-times" /> Dismiss</button>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN — Media Panel */}
-        <div className="tc-board-right">
-          <div className="tc-media-header">
-            <h3><i className="fas fa-photo-video" /> Resources</h3>
-            <span className="tc-media-hint">Videos & visual aids</span>
-          </div>
-
-          {mediaLoading ? (
-            <div className="tc-media-loading">
-              <div className="tc-loading-spinner small" />
-              <p>Finding relevant resources...</p>
-            </div>
-          ) : (
-            <div className="tc-media-content">
-              {/* ===== CODE VISUALIZER ===== */}
-              {currentContent && currentContent.content.includes('```') && (
-                <div className="tc-media-section tc-code-visualizer">
-                  <h4><i className="fas fa-code" /> Code Visualizer</h4>
-                  <div className="tc-code-workspace" id="tc-live-visualizer-inject">
-                    <div className="tc-live-header"><i className="fas fa-check"></i> Code Ready</div>
-                    <pre className="tc-live-code-block"><code>
-                      {(() => {
-                        const match = currentContent.content.match(/```(?:\w+)?\n([\s\S]*?)```/);
-                        return match ? match[1] : 'No code block found';
-                      })()}
-                    </code></pre>
-                  </div>
-                </div>
-              )}
-
-              {/* Embedded YouTube Videos */}
-              {mediaItems.youtube && mediaItems.youtube.length > 0 && (
-                <div className="tc-media-section">
-                  <h4><i className="fab fa-youtube" /> Videos</h4>
-                  {mediaItems.youtube.map((video, i) => (
-                    <div key={i} className="tc-yt-embed-card">
-                      {video.videoId ? (
-                        <div className="tc-yt-embed-wrapper">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${video.videoId}`}
-                            title={video.title}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            loading="lazy"
-                          />
-                        </div>
-                      ) : (
-                        <a
-                          className="tc-youtube-card"
-                          href={`${YOUTUBE_SEARCH_URL}${encodeURIComponent(video.query || video.title)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <div className="tc-yt-thumb">
-                            <i className="fas fa-play-circle" />
-                          </div>
-                          <div className="tc-yt-info">
-                            <span className="tc-yt-title">{video.title}</span>
-                          </div>
-                        </a>
-                      )}
-                      <div className="tc-yt-embed-info">
-                        <span className="tc-yt-title">{video.title}</span>
-                        {video.channel && <span className="tc-yt-channel">{video.channel}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* No YouTube key warning */}
-              {!APP_YT_KEY && (
-                <div className="tc-media-section tc-api-hint">
-                  <p><i className="fas fa-info-circle" /> Set VITE_YOUTUBE_API_KEY in .env to enable embedded videos</p>
-                </div>
-              )}
-
-              {/* Key Terms */}
-              {mediaItems.keyTerms && mediaItems.keyTerms.length > 0 && (
-                <div className="tc-media-section">
-                  <h4><i className="fas fa-tags" /> Key Terms</h4>
-                  <div className="tc-key-terms">
-                    {mediaItems.keyTerms.map((term, i) => (
-                      <span key={i} className="tc-term-chip">{term}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Real Images from Wikimedia */}
-              {mediaItems.images && mediaItems.images.length > 0 && (
-                <div className="tc-media-section">
-                  <h4><i className="fas fa-image" /> Visual Aids</h4>
-                  <div className="tc-real-images">
-                    {mediaItems.images.map((img, i) => (
-                      <div key={i} className="tc-real-image-card">
-                        <img
-                          src={img.url}
-                          alt={img.alt}
-                          loading="lazy"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                        <span className="tc-img-caption">{img.alt}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* D.S.E.C.A.R Legend */}
-              <div className="tc-media-section tc-dsecar-legend">
-                <h4><i className="fas fa-graduation-cap" /> Block Teaching Method</h4>
-                <div className="tc-legend-items">
-                  <div className="tc-legend-item"><span className="tc-legend-letter">T</span> Theory Blocks</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">1</span> Topic / Goal</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">2</span> Definition / Input</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">3</span> Core / Line-by-Line</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">4</span> Why / Dry Run</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">5</span> Examples / Output</div>
-                  <div className="tc-legend-item"><span className="tc-legend-letter">6</span> Summary / Insight</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="tc-pres-controls">
-        {showDoubt ? (
-          <div className="tc-doubt-bar">
-            <input
-              placeholder="Ask your doubt..."
-              value={doubtText}
-              onChange={e => setDoubtText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && askDoubt()}
-              autoFocus
-            />
-            <button className="tc-doubt-send" onClick={askDoubt}><i className="fas fa-paper-plane" /></button>
-            <button className="tc-doubt-cancel" onClick={() => { setShowDoubt(false); setDoubtText(''); }}><i className="fas fa-times" /></button>
-          </div>
-        ) : (
-          <div className="tc-nav-bar">
-            <button className="tc-nav-btn" onClick={prevSlide} disabled={currentSlideIdx === 0}>
-              <i className="fas fa-chevron-left" /> Prev
-            </button>
-            <div className="tc-center-btns">
-              <button className="tc-ctrl-btn" onClick={() => setShowDoubt(true)}>
-                <i className="fas fa-hand-paper" /> Ask Doubt
-              </button>
-              <button className="tc-ctrl-btn" onClick={downloadPDF}>
-                <i className="fas fa-download" /> Notes
-              </button>
-              <button className="tc-ctrl-btn end" onClick={endClass}>
-                <i className="fas fa-stop" /> End
-              </button>
-            </div>
-            <button className="tc-nav-btn primary" onClick={nextSlide} disabled={currentSlideIdx >= slides.length - 1 || loading}>
-              Next <i className="fas fa-chevron-right" />
-            </button>
-          </div>
-        )}
+      
+      <div className="tc-split-board" style={{ padding: '0', background: '#090a0e', flex: 1, position: 'relative' }}>
+         <iframe 
+           id="roadmapFrame" 
+           src="/roadmap.html" 
+           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+           title="Interactive Diagram"
+         />
       </div>
     </div>
   );

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowDeck · AI Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090a0e;--surface:#111318;--surface2:#181b22;--surface3:#1e2230;
+  --border:#1e2235;--border2:#2a304a;--border3:#364060;
+  --text:#d8ddef;--text2:#7a85a8;--text3:#404868;
+  --accent:#4f7ef0;--accent2:#7c5cf5;--green:#3ecb8e;--amber:#f0a030;--red:#f05858;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh}
+
+#topbar{
+  display:none; /* Hidden because React controls it */
+}
+
+/* main layout */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* explain panel */
+#explain-panel{
+  position:fixed;bottom:20px;left:20px;z-index:400;
+  background:rgba(12,14,21,.96);backdrop-filter:blur(16px);
+  border:1px solid var(--border2);border-radius:20px;
+  max-width:360px;width:auto;min-width:220px;
+  box-shadow:0 12px 28px rgba(0,0,0,.5);
+  pointer-events:auto;
+  transition:all .2s ease;
+  font-family:'Syne',sans-serif;
+  display: none;
+}
+.explain-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border2);
+  color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.4px;
+}
+.explain-header button{
+  background:transparent;border:none;color:var(--text3);cursor:pointer;
+  font-size:16px;padding:0 4px;
+}
+.explain-content{
+  padding:14px 16px;
+  font-size:13px;line-height:1.5;color:var(--text);
+  word-break:break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.explain-title{
+  font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;
+}
+.explain-title span{
+  background:var(--surface3);padding:2px 8px;border-radius:20px;font-size:10px;
+  font-family:'JetBrains Mono',monospace;color:var(--text2);
+}
+.explain-text{
+  color:var(--text2);
+  margin-top:8px;
+  border-left:2px solid var(--accent);
+  padding-left:12px;
+  font-style:normal;
+  white-space: pre-wrap;
+}
+#explain-close{opacity:.7;transition:.1s}
+#explain-close:hover{opacity:1;color:var(--red)}
+
+/* canvas */
+#canvas-wrap{
+  flex:1;position:relative;overflow:hidden;
+  background:var(--bg);cursor:grab
+}
+#canvas-wrap.grabbing{cursor:grabbing}
+#canvas-wrap::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,#1e2440 1px,transparent 1px);
+  background-size:28px 28px;pointer-events:none;z-index:0;
+  opacity:.6
+}
+#world{
+  position:absolute;top:0;left:0;
+  transform-origin:0 0;
+  will-change:transform;
+  z-index:2
+}
+#edge-svg{
+  position:absolute;top:0;left:0;
+  pointer-events:none;overflow:visible;z-index:3
+}
+.block-node{
+  position:absolute;
+  background:rgba(17,19,26,.96);
+  border:1px solid var(--border2);
+  border-radius:14px;
+  min-width:170px;max-width:240px;
+  cursor:grab;
+  transition:border-color .18s,box-shadow .18s,transform .1s;
+  user-select:none;
+  backdrop-filter:blur(4px)
+}
+.block-node:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 28px rgba(79,126,240,.18)}
+.block-node.dragging{cursor:grabbing;z-index:999;box-shadow:0 0 0 1.5px var(--accent),0 16px 40px rgba(0,0,0,.6)}
+
+/* SHAPES! */
+.block-node.shape-circle {
+  border-radius: 50%;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 200px; height: 200px;
+}
+.block-node.shape-circle .node-head { border-radius: 50% 50% 0 0; border: none; background: transparent !important; justify-content: center; padding-top:20px; }
+.block-node.shape-circle .node-badge { display: none; }
+.block-node.shape-circle .node-addr { text-align: center; font-size: 11px; }
+
+.block-node.shape-star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  border-radius: 0; min-width: 240px; min-height: 240px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  background: rgba(17,19,26,.98); border: none; padding: 40px;
+}
+.block-node.shape-star .node-head { background: transparent !important; border:none; }
+.block-node.shape-star .node-badge { display: none; }
+
+.node-head{
+  padding:8px 11px 7px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:7px;border-radius:13px 13px 0 0
+}
+.node-badge{
+  width:22px;height:22px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8.5px;font-weight:700;flex-shrink:0;color:#fff;
+  font-family:'JetBrains Mono',monospace
+}
+.node-addr{font-size:9px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.node-body{padding:9px 11px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1;}
+.node-content{font-size:12px;line-height:1.5;color:var(--text);word-break:break-word;text-align:center}
+.node-explanation-badge{
+  margin-top:8px;
+  padding:4px 8px;
+  background:rgba(79,126,240,.12);
+  border-radius:18px;
+  font-size:9px;
+  color:var(--accent);
+  text-align:center;
+  cursor:pointer;
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  transition:.1s;
+}
+.node-explanation-badge:hover{
+  background:rgba(79,126,240,.3);
+  text-decoration:underline;
+}
+#minimap{
+  position:absolute;bottom:16px;right:16px;z-index:300;
+  width:160px;height:110px;
+  background:rgba(9,10,15,.88);
+  border:1px solid var(--border2);border-radius:10px;
+  overflow:hidden;cursor:pointer;
+  backdrop-filter:blur(8px)
+}
+#minimap canvas{display:block;width:100%;height:100%}
+#minimap-label{
+  position:absolute;top:6px;left:8px;
+  font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;pointer-events:none
+}
+#float-controls{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  z-index:300;display:flex;gap:6px;
+  background:rgba(9,10,15,.88);border:1px solid var(--border2);border-radius:10px;
+  padding:6px 8px;backdrop-filter:blur(8px)
+}
+.fc-btn{
+  width:32px;height:32px;border-radius:7px;border:1px solid var(--border2);
+  background:transparent;color:var(--text2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:.15s all;font-family:inherit
+}
+.fc-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border3)}
+.fc-btn:active{transform:scale(.93)}
+.fc-btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+@keyframes nodeIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="main">
+  <div id="canvas-wrap">
+    <div id="world"><svg id="edge-svg"></svg></div>
+    <div id="minimap"><canvas id="mm-canvas"></canvas><div id="minimap-label">overview</div></div>
+    <div id="float-controls">
+      <button class="fc-btn" onclick="addZoom(.15)">+</button>
+      <button class="fc-btn" onclick="addZoom(-.15)">−</button>
+      <button class="fc-btn accent" onclick="fitView()">⊡</button>
+      <button class="fc-btn" onclick="resetView()">↺</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="explain-panel">
+  <div class="explain-header">
+    <span>📖 EXPLANATION</span>
+    <button id="explain-close">✕</button>
+  </div>
+  <div class="explain-content">
+    <div class="explain-title"><span id="exp-target"></span></div>
+    <div class="explain-text" id="exp-text"></div>
+  </div>
+</div>
+
+<script>
+// ---------- GLOBAL STATE ----------
+let tx=0,ty=0,scale=1;
+let isPanning=false,panStart={x:0,y:0};
+let nodeData={};
+let edges=[];
+let nodeDragging=null,nodeDragOff={x:0,y:0};
+
+const wrap=document.getElementById('canvas-wrap');
+const world=document.getElementById('world');
+const edgeSvg=document.getElementById('edge-svg');
+const svgNS='http://www.w3.org/2000/svg';
+
+const PAL=[
+  {bg:'rgba(28,22,52,.95)',border:'#5a48c8',text:'#c0b4ff',badge:'#6c5adf'},
+  {bg:'rgba(10,32,22,.95)',border:'#1e8060',text:'#50d498',badge:'#159858'},
+  {bg:'rgba(36,16,12,.95)',border:'#aa3c18',text:'#f09070',badge:'#d04020'},
+  {bg:'rgba(10,22,40,.95)',border:'#1e5890',text:'#70a8f0',badge:'#1858b8'},
+  {bg:'rgba(36,26,8,.95)',border:'#a05808',text:'#f0b848',badge:'#c07010'},
+];
+let palIdx=0,palMap={};
+function getpal(addr){if(!palMap[addr]){palMap[addr]=PAL[palIdx%PAL.length];palIdx++;}return palMap[addr];}
+
+const explainPanel=document.getElementById('explain-panel');
+const expTargetSpan=document.getElementById('exp-target');
+const expTextDiv=document.getElementById('exp-text');
+document.getElementById('explain-close').addEventListener('click',()=>{explainPanel.style.display='none';});
+function showExplanation(title, text){
+  if(!text){explainPanel.style.display='none';return;}
+  expTargetSpan.innerText=title;
+  expTextDiv.innerText=text;
+  explainPanel.style.display='block';
+}
+
+function applyT(){
+  world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+  drawEdges();drawMinimap();
+}
+wrap.addEventListener('mousedown',e=>{
+  if(e.target===wrap||e.target===world||e.target===edgeSvg){
+    isPanning=true;panStart={x:e.clientX-tx,y:e.clientY-ty};
+    wrap.classList.add('grabbing');
+  }
+});
+window.addEventListener('mousemove',e=>{
+  if(nodeDragging){
+    const pos=screenToWorld(e.clientX,e.clientY);
+    const nx=pos.x-nodeDragOff.x, ny=pos.y-nodeDragOff.y;
+    nodeDragging.el.style.left=nx+'px'; nodeDragging.el.style.top=ny+'px';
+    nodeDragging.x=nx; nodeDragging.y=ny;
+    drawEdges(); drawMinimap();
+  } else if(isPanning){
+    tx=e.clientX-panStart.x; ty=e.clientY-panStart.y;
+    applyT();
+  }
+});
+window.addEventListener('mouseup',()=>{
+  isPanning=false; nodeDragging=null;
+  wrap.classList.remove('grabbing');
+  document.querySelectorAll('.block-node').forEach(n=>n.classList.remove('dragging'));
+});
+wrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=wrap.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const delta=e.deltaY<0?1.1:.9;
+  const ns=Math.min(Math.max(scale*delta,.12),3);
+  tx=mx-(mx-tx)*(ns/scale); ty=my-(my-ty)*(ns/scale);
+  scale=ns; applyT();
+},{passive:false});
+function screenToWorld(sx,sy){
+  const r=wrap.getBoundingClientRect();
+  return{x:(sx-r.left-tx)/scale, y:(sy-r.top-ty)/scale};
+}
+function addZoom(d){
+  const r=wrap.getBoundingClientRect();
+  const cx=r.width/2,cy=r.height/2;
+  const ns=Math.min(Math.max(scale+d,.12),3);
+  tx=cx-(cx-tx)*(ns/scale); ty=cy-(cy-ty)*(ns/scale);
+  scale=ns; applyT();
+}
+function resetView(){tx=60;ty=60;scale=1;applyT();}
+function fitView(){
+  const addrs=Object.keys(nodeData);
+  if(!addrs.length)return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  addrs.forEach(a=>{const n=nodeData[a];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+(n.w||170));maxY=Math.max(maxY,n.y+(n.h||90));});
+  const r=wrap.getBoundingClientRect();
+  const PAD=60;
+  const ns=Math.min((r.width-PAD*2)/(maxX-minX||1),(r.height-PAD*2)/(maxY-minY||1),1.2);
+  scale=ns;
+  tx=r.width/2-((minX+maxX)/2)*ns;
+  ty=r.height/2-((minY+maxY)/2)*ns;
+  applyT();
+}
+
+window.addEventListener('message', (event) => {
+  if(event.data && event.data.type === 'LOAD_ROADMAP') {
+    renderTree(event.data.payload);
+  }
+});
+
+function renderTree(data){
+  if(!Array.isArray(data)){console.error('Expected JSON array.');return;}
+  palIdx=0; palMap={}; nodeData={}; edges=[];
+  [...world.querySelectorAll('.block-node')].forEach(n=>n.remove());
+  edgeSvg.innerHTML='';
+  explainPanel.style.display='none';
+
+  const blocks=data.filter(n=>n&&n.type==='block');
+  const arrowDefs=data.filter(n=>n&&n.type==='arrow');
+  if(!blocks.length)return;
+  const blockMap={};
+  blocks.forEach(b=>blockMap[b.address]=b);
+  const arrowExplanationMap={};
+  arrowDefs.forEach(a=>{const key=`${a['first-connection']}->${a['next-connection']}`;arrowExplanationMap[key]=a.explanation || a['in-content'] || '';});
+  
+  const hasParent=new Set();
+  blocks.forEach(b=>(b.connect||[]).forEach(c=>hasParent.add(c)));
+  const roots=blocks.filter(b=>!hasParent.has(b.address)).map(b=>b.address);
+  const levelOf={}; roots.forEach(r=>levelOf[r]=0);
+  const q=[...roots];
+  while(q.length){
+    const cur=q.shift(); const nd=blockMap[cur]; if(!nd)continue;
+    (nd.connect||[]).forEach(c=>{if(levelOf[c]===undefined){levelOf[c]=levelOf[cur]+1;q.push(c);}});
+  }
+  blocks.forEach(b=>{if(levelOf[b.address]===undefined)levelOf[b.address]=0;});
+  const byLevel={};
+  blocks.forEach(b=>{const l=levelOf[b.address];if(!byLevel[l])byLevel[l]=[];byLevel[l].push(b);});
+  const NW=200,NH=120,HGAP=80,VGAP=140;
+  
+  const sortedLvls=Object.keys(byLevel).sort((a,b)=>+a-+b);
+  sortedLvls.forEach((lv,li)=>{
+    const row=byLevel[lv];
+    const totalW=row.length*NW+(row.length-1)*HGAP;
+    const startX=-totalW/2;
+    row.forEach((b,bi)=>{
+      const x=startX+bi*(NW+HGAP);
+      const y=li*(NH+VGAP);
+      const c=getpal(b.address);
+      const initials=(b.address||'??').slice(0,2).toUpperCase();
+      const explanation=b.explanation || '';
+      const shapeClass = b.shape ? `shape-${b.shape}` : '';
+      
+      const el=document.createElement('div');
+      el.className=`block-node ${shapeClass}`;
+      el.dataset.addr=b.address;
+      el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px;animation:nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
+      
+      // Dynamic inline styles based on shape
+      let innerHtml = '';
+      if (b.shape === 'star') {
+         el.style.background = c.badge;
+         innerHtml = `
+            <div class="node-body">
+              <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
+            </div>`;
+      } else {
+         innerHtml = `
+          <div class="node-head" style="background:${c.bg}">
+            <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
+            <div class="node-addr" style="color:${c.text}">${esc(b.address)}</div>
+          </div>
+          <div class="node-body">
+            <div class="node-content">${esc(b['in-content']||'')}</div>
+            ${explanation ? `<div class="node-explanation-badge" data-exp="${Math.random()}">📖 explain</div>` : ''}
+          </div>`;
+      }
+      el.innerHTML = innerHtml;
+      
+      if(explanation && b.shape !== 'star'){
+        const badgeDiv=el.querySelector('.node-explanation-badge');
+        if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
+      }
+      if(b.shape === 'star' && explanation) {
+         el.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
+      }
+      
+      el.addEventListener('mousedown',ev=>{
+        ev.stopPropagation();
+        const n=nodeData[b.address];
+        const wp=screenToWorld(ev.clientX,ev.clientY);
+        nodeDragging=n; el.classList.add('dragging');
+        nodeDragOff={x:wp.x-n.x, y:wp.y-n.y};
+      });
+      world.appendChild(el);
+      nodeData[b.address]={x,y,w:NW,h:NH,el,color:c,explanation:explanation};
+    });
+  });
+  blocks.forEach(b=>{
+    (b.connect||[]).forEach(child=>{
+      const key=`${b.address}->${child}`;
+      const arrowLabelRaw=arrowDefs.find(a=>a['first-connection']===b.address && a['next-connection']===child)?.['in-content']||'';
+      edges.push({from:b.address,to:child,label:arrowLabelRaw,explanation:arrowExplanationMap[key] || ''});
+    });
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    blocks.forEach(b=>{const el=nodeData[b.address]?.el;if(el) nodeData[b.address].h=el.offsetHeight;});
+    drawEdges();
+    fitView();
+    drawMinimap();
+  }));
+}
+
+function drawEdges(){
+  edgeSvg.innerHTML='';
+  if(!edges.length)return;
+  const defs=document.createElementNS(svgNS,'defs');
+  defs.innerHTML=`<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M1.5 2L8.5 5L1.5 8" fill="none" stroke="#4f7ef0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>`;
+  edgeSvg.appendChild(defs);
+  edges.forEach(e=>{
+    const fn=nodeData[e.from], tn=nodeData[e.to];
+    if(!fn||!tn)return;
+    const x1=fn.x+fn.w/2, y1=fn.y+fn.h;
+    const x2=tn.x+tn.w/2, y2=tn.y;
+    const cy=(y1+y2)/2;
+    const path=document.createElementNS(svgNS,'path');
+    path.setAttribute('d',`M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','#3a4680');
+    path.setAttribute('stroke-width','1.6');
+    path.setAttribute('marker-end','url(#ah)');
+    edgeSvg.appendChild(path);
+    if(e.label || e.explanation){
+      const lx=(x1+x2)/2, ly=cy-8;
+      const lblText=e.label?`🔹 ${e.label}`:'➡️ arrow';
+      const hasExp=!!e.explanation;
+      const foreign=document.createElementNS(svgNS,'foreignObject');
+      foreign.setAttribute('x',lx-75); foreign.setAttribute('y',ly-10);
+      foreign.setAttribute('width','150'); foreign.setAttribute('height','28');
+      foreign.setAttribute('overflow','visible');
+      let innerHtml=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(9,10,14,.9);border-radius:30px;border:1px solid #2a3660;padding:3px 8px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">${esc(lblText)}`;
+      if(hasExp){
+        innerHtml+=`<span style="background:#1e2a3e;padding:2px 6px;border-radius:12px;color:#7c9cf0;" class="arrow-exp-badge" data-exp="${Math.random()}">📖 explain</span>`;
+      }
+      innerHtml+=`</div>`;
+      foreign.innerHTML=innerHtml;
+      
+      if (hasExp) {
+        foreign.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          showExplanation(`arrow: ${e.from} → ${e.to}`, e.explanation);
+        });
+      }
+      
+      edgeSvg.appendChild(foreign);
+    }
+  });
+  const addrs=Object.keys(nodeData);
+  if(addrs.length){
+    let mx=-Infinity,my=-Infinity;
+    addrs.forEach(a=>{const n=nodeData[a];mx=Math.max(mx,n.x+n.w);my=Math.max(my,n.y+n.h);});
+    edgeSvg.setAttribute('width',mx+300); edgeSvg.setAttribute('height',my+300);
+  }
+}
+
+function drawMinimap(){
+  const mc=document.getElementById('mm-canvas');
+  const mw=mc.offsetWidth, mh=mc.offsetHeight;
+  mc.width=mw*2; mc.height=mh*2;
+  const ctx=mc.getContext('2d');
+  ctx.scale(2,2);
+  ctx.clearRect(0,0,mw,mh);
+  const addrs=Object.keys(nodeData);
+  if(!addrs.length)return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  addrs.forEach(a=>{const n=nodeData[a];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+n.w);maxY=Math.max(maxY,n.y+n.h);});
+  const pad=8;
+  const rw=maxX-minX||1, rh=maxY-minY||1;
+  const sc=Math.min((mw-pad*2)/rw,(mh-pad*2)/rh);
+  const ox=(mw-(rw*sc))/2-minX*sc;
+  const oy=(mh-(rh*sc))/2-minY*sc;
+  ctx.strokeStyle='#3a4a80'; ctx.lineWidth=.8;
+  edges.forEach(e=>{const fn=nodeData[e.from],tn=nodeData[e.to]; if(!fn||!tn)return;ctx.beginPath();ctx.moveTo(fn.x*sc+ox+fn.w*sc/2, fn.y*sc+oy+fn.h*sc);ctx.lineTo(tn.x*sc+ox+tn.w*sc/2, tn.y*sc+oy);ctx.stroke();});
+  addrs.forEach(a=>{const n=nodeData[a];ctx.fillStyle=n.color.badge+'55';ctx.strokeStyle=n.color.border;ctx.lineWidth=.8;ctx.beginPath();ctx.roundRect(n.x*sc+ox,n.y*sc+oy,n.w*sc,n.h*sc,3);ctx.fill();ctx.stroke();});
+  const vr=wrap.getBoundingClientRect();
+  const vx=(-tx/scale)*sc+ox, vy=(-ty/scale)*sc+oy, vw=(vr.width/scale)*sc, vh=(vr.height/scale)*sc;
+  ctx.strokeStyle='rgba(79,126,240,.7)'; ctx.lineWidth=1; ctx.strokeRect(vx,vy,vw,vh);
+}
+document.getElementById('minimap').addEventListener('click',e=>{
+  const mc=document.getElementById('mm-canvas');
+  const mr=mc.getBoundingClientRect();
+  const addrs=Object.keys(nodeData); if(!addrs.length)return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  addrs.forEach(a=>{const n=nodeData[a];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+n.w);maxY=Math.max(maxY,n.y+n.h);});
+  const mw=mc.offsetWidth,mh=mc.offsetHeight,pad=8;
+  const rw=maxX-minX||1,rh=maxY-minY||1;
+  const sc2=Math.min((mw-pad*2)/rw,(mh-pad*2)/rh);
+  const ox=(mw-(rw*sc2))/2-minX*sc2, oy=(mh-(rh*sc2))/2-minY*sc2;
+  const cx=(e.clientX-mr.left-ox)/sc2, cy=(e.clientY-mr.top-oy)/sc2;
+  const vr=wrap.getBoundingClientRect();
+  tx=vr.width/2-cx*scale; ty=vr.height/2-cy*scale;
+  applyT();
+});
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+applyT();
+
+window.parent.postMessage('READY', '*');
+</script>
+</body>
+</html>
