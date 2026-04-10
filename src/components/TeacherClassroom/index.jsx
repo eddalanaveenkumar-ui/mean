@@ -7,7 +7,7 @@ import './TeacherClassroom.css';
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
-const MODEL = 'meta-llama/llama-3.2-3b-instruct:free';
+const MODEL = 'qwen/qwen3-coder:free';
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
 // HashMap for instant slide lookup by index (DSA optimization)
