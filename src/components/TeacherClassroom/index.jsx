@@ -935,208 +935,118 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
 
   if (!isOpen) return null;
 
-  // ===== SETUP SCREEN =====
-  if (phase === 'setup') {
-    return (
-      <div className="tc-overlay">
-        <div className="tc-setup-card">
-          <button className="tc-close-x" onClick={handleClose}><i className="fas fa-times" /></button>
-          <div className="tc-setup-top">
-            <div className="tc-setup-emoji">🏫</div>
-            <h2>AI Classroom</h2>
-            <p>Start an interactive lesson with structured Block-Based teaching</p>
-            <div className="tc-method-badge">
-              <span>📐</span> Block 1 → Block 2 → Block 3 → Block 4 → Block 5 → Block 6
-            </div>
-          </div>
-          <div className="tc-setup-form">
-            <div className="tc-field">
-              <label>📚 Subject</label>
-              <input placeholder="e.g. Computer Science" value={subject} onChange={e => setSubject(e.target.value)} />
-            </div>
-            <div className="tc-field">
-              <label>📖 Topic</label>
-              <input placeholder="e.g. Binary Search Trees" value={topic} onChange={e => setTopic(e.target.value)} />
-            </div>
-
-            {/* File Upload Section — OPTIONAL */}
-            <div className="tc-field">
-              <label>📎 Attach File <span className="tc-label-optional">— Optional</span></label>
-              <span className="tc-label-hint-block">Upload a syllabus, concepts, questions, or snap a photo</span>
-              <div className="tc-file-upload-area">
-                {extracting ? (
-                  <div className="tc-file-extracting">
-                    <div className="tc-extract-spinner" />
-                    <span className="tc-extract-status">{extractStatus}</span>
-                  </div>
-                ) : uploadedFile ? (
-                  <div className="tc-file-attached">
-                    <div className="tc-file-info">
-                      <i className={`fas ${
-                        fileName.endsWith('.pdf') ? 'fa-file-pdf' :
-                        fileName.endsWith('.docx') || fileName.endsWith('.doc') ? 'fa-file-word' :
-                        ['png','jpg','jpeg','bmp','webp'].some(e => fileName.toLowerCase().endsWith(e)) ? 'fa-file-image' :
-                        'fa-file-alt'
-                      }`} />
-                      <div className="tc-file-details">
-                        <span className="tc-file-name">{fileName}</span>
-                        <div className="tc-file-meta-row">
-                          <span className="tc-file-type-badge">{fileType || 'document'}</span>
-                          {extractStatus && <span className="tc-extract-result">{extractStatus}</span>}
-                        </div>
-                      </div>
-                    </div>
-                    <button className="tc-file-remove" onClick={removeFile}>
-                      <i className="fas fa-times" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="tc-upload-options">
-                    {/* File picker — documents & images */}
-                    <label className="tc-file-dropzone" htmlFor="tc-file-input">
-                      <i className="fas fa-cloud-upload-alt" />
-                      <span>Upload File</span>
-                      <span className="tc-file-hint">PDF, DOCX, TXT, Images</span>
-                      <input
-                        ref={fileInputRef}
-                        id="tc-file-input"
-                        type="file"
-                        accept=".txt,.md,.text,.csv,.json,.pdf,.doc,.docx,.png,.jpg,.jpeg,.bmp,.webp,.tiff,.tif,image/*"
-                        onChange={handleFileUpload}
-                        hidden
-                      />
-                    </label>
-
-                    {/* Camera capture — for mobile/Android */}
-                    <label className="tc-camera-btn" htmlFor="tc-camera-input">
-                      <i className="fas fa-camera" />
-                      <span>Scan / Camera</span>
-                      <span className="tc-file-hint">Take photo & OCR</span>
-                      <input
-                        id="tc-camera-input"
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleFileUpload}
-                        hidden
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-              {uploadedFile && !extracting && (
-                <div className="tc-file-type-selector">
-                  <span>Content type:</span>
-                  <button className={fileType === 'syllabus' ? 'active' : ''} onClick={() => setFileType('syllabus')}>📋 Syllabus</button>
-                  <button className={fileType === 'concepts' ? 'active' : ''} onClick={() => setFileType('concepts')}>📖 Concepts</button>
-                  <button className={fileType === 'questions' ? 'active' : ''} onClick={() => setFileType('questions')}>❓ Questions</button>
-                </div>
-              )}
-            </div>
-
-            <div className="tc-field-row">
-              <div className="tc-field">
-                <label>🎯 Level</label>
-                <select value={level} onChange={e => setLevel(e.target.value)}>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="high">High School</option>
-                  <option value="college">College</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-              <div className="tc-field">
-                <label>🌐 Language</label>
-                <select value={lang} onChange={e => setLang(e.target.value)}>
-                  {['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati'].map(l => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="tc-field">
-              <label>⏱ Duration: {duration} min</label>
-              <input type="range" min="5" max="120" value={duration} onChange={e => setDuration(+e.target.value)} />
-            </div>
-
-            <button className="tc-start-btn" onClick={startClass}>
-              <i className="fas fa-play" /> Start Lesson
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== LOADING =====
-  if (phase === 'loading') {
-    return (
-      <div className="tc-overlay" style={{ background: 'var(--bg)' }}>
-        <div className="tc-loading-card" style={{ width: '80%', maxWidth: '800px', padding: '30px', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-            <div className="tc-loading-spinner" style={{ margin: 0, width: '30px', height: '30px' }} />
-            <div>
-              <h3>Architecting Graph: <strong>{topic}</strong></h3>
-              <p className="tc-loading-hint" style={{ margin: 0 }}>Receiving live generative architecture...</p>
-            </div>
-          </div>
-          
-          <div style={{ 
-            background: '#090a0e', 
-            borderRadius: '8px', 
-            padding: '15px', 
-            color: '#a8b2d1',
-            fontFamily: 'Consolas, monospace',
-            fontSize: '13px',
-            whiteSpace: 'pre-wrap',
-            height: '400px',
-            overflowY: 'auto',
-            border: '1px solid var(--border-color)',
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
-          }}>
-             {jsonStreamData || 'Initializing connection to generation cluster...'}
-             <span className="cursor-blink" style={{ color: 'var(--accent)' }}>|</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== ERROR/RETRY =====
-  if (phase === 'error') {
-     return (
-      <div className="tc-overlay">
-        <div className="tc-complete-card">
-           <div className="tc-complete-emoji">⚠️</div>
-           <h2>Generation Failed</h2>
-           <p>The AI was unable to structure the roadmap cleanly. Please try a simpler topic or check your proxy limits.</p>
-           <button className="tc-restart-btn" onClick={() => setPhase('setup')}>Try Again</button>
-        </div>
-      </div>
-     );
-  }
-
-  // ===== TEACHING (ROADMAP RENDER) =====
+  // ===== UNIFIED CANVAS WORKSPACE =====
   return (
-    <div className="tc-overlay tc-presentation">
-      <header className="tc-pres-header">
-        <button className="tc-pres-back" onClick={handleClose}><i className="fas fa-arrow-left" /></button>
-        <div className="tc-pres-info">
-          <span className="tc-pres-subject">{subject}</span>
-          <span className="tc-pres-topic">{topic}</span>
-        </div>
-        <div className="tc-pres-method-badge">AI Architecture Explorer</div>
-      </header>
+    <div className="tc-overlay" style={{ background: '#0e1116', display: 'flex', flexDirection: 'column' }}>
       
-      <div className="tc-split-board" style={{ padding: '0', background: '#090a0e', flex: 1, position: 'relative' }}>
-         <iframe 
-           id="roadmapFrame" 
-           src="/roadmap.html" 
-           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-           title="Interactive Diagram"
-           onLoad={handleIframeLoad}
-         />
+      {/* Top Application Header */}
+      <header className="tc-pres-header" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, background: 'transparent', padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button className="tc-pres-back" onClick={handleClose} 
+            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer' }}
+          >
+            <i className="fas fa-arrow-left" />
+          </button>
+          <span style={{ fontWeight: '600', color: '#fff', fontSize: '15px' }}>Mean AI • Architecture Canvas</span>
+        </div>
+        <div className="tc-pres-method-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+          <i className="fas fa-share-alt" /> Share
+        </div>
+      </header>
+
+      {/* Main Interactive Canvas Background */}
+      <iframe 
+         id="roadmapFrame" 
+         src="/roadmap.html" 
+         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
+         title="Interactive Diagram Sandbox"
+         onLoad={handleIframeLoad}
+      />
+
+      {/* Left Sidebar Agent Log (Visible during processing/errors) */}
+      {(phase === 'loading' || phase === 'error') && (
+        <div style={{
+          position: 'absolute', top: '90px', left: '20px', width: '320px', 
+          background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #333', 
+          borderRadius: '12px', zIndex: 10, display: 'flex', flexDirection: 'column',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.4)', overflow: 'hidden', backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #2a2a2a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: '500' }}>
+              <i className="fas fa-bolt" style={{ color: '#e8913a', marginRight: '6px' }}/> Agent Log
+            </span>
+            {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '14px', height: '14px' }} />}
+            {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '12px' }}>⚠️ Timeout</span>}
+          </div>
+          <div style={{ 
+            padding: '16px', color: '#8b949e', fontFamily: 'SFMono-Regular, Consolas, monospace', 
+            fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '450px', overflowY: 'auto' 
+          }}>
+             {phase === 'error' ? 'Architecture mapping encountered a semantic error. Modify instructions and try again.' : (jsonStreamData || 'Composing structural coordinates...')}
+             {phase === 'loading' && <span className="cursor-blink" style={{ color: 'var(--accent)' }}>|</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Floating Command Bar */}
+      <div style={{
+        position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
+        width: '90%', maxWidth: '700px', background: 'rgba(20, 20, 20, 0.85)', 
+        border: '1px solid #333', borderRadius: '16px', zIndex: 10, 
+        padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '12px', 
+        boxShadow: '0 16px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)'
+      }}>
+        
+        {/* Search / Instruction Input */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <input 
+            style={{ 
+               flex: 1, background: 'transparent', border: 'none', color: '#e6edf3', 
+               fontSize: '15px', outline: 'none', padding: '4px 0'
+            }}
+            placeholder="What architecture would you like to build or explore?"
+            value={topic}
+            onChange={e => { setTopic(e.target.value); setSubject('Architecture'); }}
+            onKeyDown={e => { if (e.key === 'Enter' && topic && phase !== 'loading') startClass(); }}
+            disabled={phase === 'loading'}
+            autoFocus
+          />
+        </div>
+        
+        {/* Utility / Submit Tray */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #2a2a2a', paddingTop: '10px' }}>
+           <div style={{ display: 'flex', gap: '16px' }}>
+             <button style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <i className="fas fa-plus" />
+             </button>
+             <label style={{ cursor: 'pointer', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <i className="fas fa-file-alt" /> {uploadedFile ? fileName : 'Upload Context'}
+                <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.png" hidden disabled={phase==='loading'}/>
+             </label>
+           </div>
+           
+           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <span style={{ color: '#8b949e', fontSize: '12px', background: '#2a2a2a', padding: '4px 8px', borderRadius: '12px' }}>
+               <i className="fas fa-brain" style={{marginRight: '4px'}}/> Auto
+             </span>
+             <button 
+               onClick={startClass}
+               disabled={!topic || phase === 'loading'}
+               style={{ 
+                 background: (topic && phase !== 'loading') ? '#fff' : '#2d2d2d', 
+                 color: (topic && phase !== 'loading') ? '#000' : '#666', 
+                 border: 'none', borderRadius: '50%', width: '30px', height: '30px', 
+                 cursor: (topic && phase !== 'loading') ? 'pointer' : 'default',
+                 display: 'flex', justifyContent: 'center', alignItems: 'center',
+                 transition: 'all 0.2s ease'
+               }}
+             >
+                <i className="fas fa-arrow-up" />
+             </button>
+           </div>
+        </div>
       </div>
+
     </div>
   );
 }
