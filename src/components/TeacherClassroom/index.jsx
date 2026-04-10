@@ -84,41 +84,27 @@ export default function TeacherClassroom({ isOpen, onClose }) {
 
   const fetchAI = useCallback(async (messages, maxTokens = 2000, retryCount = 1) => {
     try {
-      const cleanedKey = apiKey ? apiKey.trim() : '';
-      const isGeminiKey = cleanedKey.includes('AIza');
+      const cleanedKey = localKey ? localKey.trim() : '';
+      if (!cleanedKey) return '';
       
-      let url, headers, body;
-
-      if (isGeminiKey) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
-        headers = { 'Content-Type': 'application/json' };
-        
-        let systemPrompt = "";
-        let contents = [];
-        for (const m of messages) {
-           if (m.role === 'system') systemPrompt += m.content + "\n";
-           else contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
-        }
-        
-        const payload = { contents };
-        if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
-        
-        body = JSON.stringify(payload);
-      } else {
-        url = 'https://openrouter.ai/api/v1/chat/completions';
-        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
-        body = JSON.stringify({ model: MODEL, messages, stream: false, max_tokens: maxTokens });
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
+      const headers = { 'Content-Type': 'application/json' };
+      
+      let systemPrompt = "";
+      let contents = [];
+      for (const m of messages) {
+         if (m.role === 'system') systemPrompt += m.content + "\n";
+         else contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
       }
-
-      const resp = await fetch(url, { method: 'POST', headers, body });
-      const data = await resp.json();
       
-      const content = isGeminiKey 
-        ? data.candidates?.[0]?.content?.parts?.[0]?.text 
-        : data.choices?.[0]?.message?.content;
+      const payload = { contents };
+      if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+
+      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+      const data = await resp.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
       if (!content && retryCount > 0) {
-        // Rate limit hit or bad response on free model. Pause and retry automatically.
         await new Promise(r => setTimeout(r, 500));
         return fetchAI(messages, maxTokens, retryCount - 1);
       }
@@ -130,7 +116,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       }
       return '';
     }
-  }, [apiKey]);
+  }, [localKey]);
 
   // Wrap all visible text nodes inside the slide body with word spans for highlighting
   const wrapWordsInDOM = useCallback(() => {
