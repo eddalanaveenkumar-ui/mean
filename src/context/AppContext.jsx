@@ -310,22 +310,23 @@ export function AppProvider({ children }) {
     
     if (webSearchActive || searchTriggerWords.test(text)) {
       try {
-        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Searching Fast Knowledge Base (Wikipedia)...*\n\n" } }));
+        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Scanning Live Web Sources...*\n\n" } }));
         didSearch = true;
-        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(text)}&utf8=&format=json&origin=*`;
-        const sReq = await fetch(wikiUrl);
-        const sData = await sReq.json();
+        const ddgUrl = `https://corsproxy.io/?${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + text)}`;
+        const sReq = await fetch(ddgUrl);
+        const htmlStr = await sReq.text();
         
+        const regex = /<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
+        let match;
         const results = [];
-        const searchItems = sData.query?.search || [];
-        for (let i = 0; i < Math.min(4, searchItems.length); i++) {
-          let snippet = searchItems[i].snippet.replace(/<[^>]+>/g, '').trim();
+        while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
+          let snippet = match[1].replace(/<[^>]+>/g, '').trim();
           snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-          results.push(`- **${searchItems[i].title}**: ${snippet}`);
+          if (snippet.length > 20) results.push(`- ${snippet}`);
         }
         
         if (results.length > 0) {
-          finalUserContent += `\n\n[REALTIME KNOWLEDGE BASE (Wikipedia)]\n${results.join('\n')}\n(Use this verified info to accurately answer.)`;
+          finalUserContent += `\n\n[LIVE WEB CONTEXT]\n${results.join('\n')}\n(Use this real-time scraped information to formulate an up-to-date and completely accurate answer.)`;
         }
       } catch (e) {
         // silently fail and proceed
