@@ -32,13 +32,16 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
-  const { apiKey, user, webSearchActive } = useApp();
-  const [phase, setPhase] = useState('setup');
-  const [subject, setSubject] = useState('');
+  const { user, webSearchActive } = useApp();
+  const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
-  const [level, setLevel] = useState('high');
-  const [duration, setDuration] = useState(30);
-  const [lang, setLang] = useState('English');
+  const [subject, setSubject] = useState('General');
+  const [level] = useState('high');
+
+  // Settings modal — local Gemini key from AI Studio
+  const [showSettings, setShowSettings] = useState(false);
+  const [localKey, setLocalKey] = useState(() => localStorage.getItem('meanai_gemini_key') || '');
+  const saveKey = (k) => { setLocalKey(k); localStorage.setItem('meanai_gemini_key', k); };
 
   // File upload state
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -670,110 +673,111 @@ Ensure you strictly follow the roadmap context.`;
   // ===== START CLASS =====
   const startClass = async () => {
     if (!topic.trim()) return;
-    if (!subject.trim()) setSubject('General');
+    const key = localKey.trim();
+    if (!key) { setShowSettings(true); return; }
+
     setPhase('loading');
+    setJsonStreamData('');
+    setSlides([]);
     activeRef.current = true;
-    classNotesRef.current = [];
-    sessionVideoRef.current = null;
-    setSlideContents(new SlideCache());
-    setTimeLeft(duration * 60);
-    setMediaItems([]);
 
     const fileContext = fileContent
-      ? `\n\nThe student has attached a ${fileType} document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\n\nUse this document as the primary source.`
+      ? `\n\nAttached document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\nUse this as primary source.`
       : '';
 
-    const outlinePrompt = `Expert ${subject} teacher. You are creating a visual block-diagram interactive Roadmap for "${topic}" at ${level} level.
-You must return ONLY a JSON array representing the flow.
-Current Year context: 2026. Use updated info. Fact check internet.
+    const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
+Return ONLY a JSON array representing the flow. Current year: 2026.
 
 JSON STRUCTURE RULES:
-- Use {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square", "explanation": "Detailed tooltip text...", "connect": ["child_id1", ...]}
-- Nodes support 'shape'. Options: "square" (default), "circle", "star". Use 'star' for the final goal/conclusion, 'circle' for prerequisites.
-- For EVERY connection inside "connect", YOU MUST also output an arrow object detailing the flow:
-  {"type": "arrow", "in-content": "short relationship label", "explanation": "Why do these connect?", "first-connection": "parent_id", "next-connection": "child_id"}
-  
-Keep it dense, accurate, and map out the concept logically (min 6 blocks).
-${fileContext ? 'Use the attached document specifically.' : ''}
-Return ONLY valid JSON array. No markdown blocks outside it.`;
+- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
+- Shapes: "square" (default), "circle" (prerequisite), "star" (final goal)
+- Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
+
+Min 6 blocks. Dense and accurate.${fileContext}
+Return ONLY valid JSON array.`;
 
     try {
-      const cleanedKey = apiKey ? apiKey.trim() : '';
-      const isGeminiKey = cleanedKey.includes('AIza');
-      
-      let initialContent = '';
-      setJsonStreamData('');
-      
-      if (isGeminiKey) {
-          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
-          const g_resp = await fetch(g_url, {
-             method: 'POST', headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-                systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing node graph.' }]},
-                contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }],
-                // We'll remove responseMimeType to ensure pure SSE stream text fragments, then parse the array.
-             })
-          });
+      const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`;
+      const g_resp = await fetch(g_url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing a node graph. No markdown.' }] },
+          contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }]
+        })
+      });
 
-          if (!g_resp.ok) {
-             const errText = await g_resp.text();
-             throw new Error(`Gemini Server Error (${g_resp.status}): ${errText}`);
-          }
-          
-          const reader = g_resp.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-          let buffer = '';
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            let lines = buffer.split('\n');
-            buffer = lines.pop(); // save incomplete line
-
-            for (let line of lines) {
-              if (line.startsWith('data: ')) {
-                const dataStr = line.slice(6).trim();
-                if (dataStr === '[DONE]') continue;
-                try {
-                  const chunk = JSON.parse(dataStr);
-                  const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (chunkText) {
-                    initialContent += chunkText;
-                    setJsonStreamData(initialContent); // Stream visibly into the UI!
-                  }
-                } catch (e) {
-                   // ignore partial chunks
-                }
-              }
-            }
-          }
-      } else {
-          const reqPrompt = webSearchActive ? outlinePrompt + "\n[SEARCH REQUIRED: Find the latest 2026 info on this]" : outlinePrompt;
-          // Non-Gemini fallback (Proxy/OpenRouter). We'll await full fetch for simplicity since free proxy streams usually break JSON.
-          initialContent = await fetchAI([{ role: 'user', content: reqPrompt }], 1500);
-          setJsonStreamData(initialContent);
+      if (!g_resp.ok) {
+        const errText = await g_resp.text();
+        throw new Error(`Gemini Error (${g_resp.status}): ${errText.slice(0, 300)}`);
       }
-      
+
+      const reader = g_resp.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        let lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (let line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(dataStr);
+              const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (chunkText) {
+                fullText += chunkText;
+                setJsonStreamData(fullText);
+
+                // === LIVE BLOCK RENDERING ===
+                // Try to parse partial JSON and send completed nodes to iframe in real-time
+                try {
+                  let clean = fullText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                  const arrMatch = clean.match(/\[[\s\S]*\]/);
+                  if (arrMatch) {
+                    const partial = JSON.parse(arrMatch[0]);
+                    if (Array.isArray(partial) && partial.length > 0) {
+                      setSlides(partial);
+                      const frame = document.getElementById('roadmapFrame');
+                      if (frame?.contentWindow) {
+                        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: partial }, '*');
+                      }
+                    }
+                  }
+                } catch (_) { /* partial JSON not yet complete, skip */ }
+              }
+            } catch (_) { /* ignore partial SSE chunks */ }
+          }
+        }
+      }
+
+      // Final parse
       let parsed = null;
       try {
-        let cleanContent = initialContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const match = cleanContent.match(/\[[\s\S]*\]/);
+        let clean = fullText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const match = clean.match(/\[[\s\S]*\]/);
         if (match) parsed = JSON.parse(match[0]);
-      } catch (parseErr) {
-        console.warn('[Roadmap] JSON parse failed', parseErr);
-      }
-      
+      } catch (_) {}
+
       if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
         setPhase('error'); return;
       }
 
       setSlides(parsed);
-      setPhase('teaching');
+      setPhase('done');
+      const frame = document.getElementById('roadmapFrame');
+      if (frame?.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed }, '*');
+      }
     } catch (e) {
-      console.error('[Classroom] Fatal error:', e);
-      setJsonStreamData(`[FATAL ERROR]\n\nConnection disrupted. Failed to compute coordinate nodes.\n\nTrace: ${e.message || 'Verification failure'}\n\nPlease check your API key, proxy permissions, or your internet connection.`);
+      console.error('[Classroom] Fatal:', e);
+      setJsonStreamData(`[ERROR] ${e.message}`);
       setPhase('error');
     }
   };
@@ -943,113 +947,119 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
   return (
     <div className="tc-overlay" style={{ background: '#0e1116', display: 'flex', flexDirection: 'column' }}>
       
-      {/* Top Application Header */}
-      <header className="tc-pres-header" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, background: 'transparent', padding: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <button className="tc-pres-back" onClick={handleClose} 
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer' }}
-          >
+      {/* Top Header */}
+      <header style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer' }}>
             <i className="fas fa-arrow-left" />
           </button>
-          <span style={{ fontWeight: '600', color: '#fff', fontSize: '15px' }}>Mean AI • Architecture Canvas</span>
+          <span style={{ fontWeight: '600', color: '#fff', fontSize: '15px' }}>Mean AI • Canvas</span>
         </div>
-        <div className="tc-pres-method-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
-          <i className="fas fa-share-alt" /> Share
-        </div>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#8b949e', cursor: 'pointer', fontSize: '14px' }}>
+          <i className="fas fa-cog" />
+        </button>
       </header>
 
-      {/* Main Interactive Canvas Background */}
-      <iframe 
-         id="roadmapFrame" 
-         src="/roadmap.html" 
-         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
-         title="Interactive Diagram Sandbox"
-         onLoad={handleIframeLoad}
-      />
+      {/* Canvas iframe */}
+      <iframe id="roadmapFrame" src="/roadmap.html" 
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
+        title="Canvas" onLoad={handleIframeLoad} />
 
-      {/* Left Sidebar Agent Log (Visible during processing/errors) */}
+      {/* Agent Log — left panel (visible when generating or error) */}
       {(phase === 'loading' || phase === 'error') && (
         <div style={{
-          position: 'absolute', top: '90px', left: '20px', width: '320px', 
-          background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #333', 
-          borderRadius: '12px', zIndex: 10, display: 'flex', flexDirection: 'column',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.4)', overflow: 'hidden', backdropFilter: 'blur(10px)'
+          position: 'absolute', top: '70px', left: '16px', width: '300px',
+          background: 'rgba(12,12,12,0.95)', border: '1px solid #2a2a2a',
+          borderRadius: '12px', zIndex: 10, overflow: 'hidden',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)'
         }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #2a2a2a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#fff', fontSize: '13px', fontWeight: '500' }}>
-              <i className="fas fa-bolt" style={{ color: '#e8913a', marginRight: '6px' }}/> Agent Log
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#fff', fontSize: '12px', fontWeight: '600' }}>
+              <i className="fas fa-bolt" style={{ color: '#e8913a', marginRight: '5px' }}/> Agent Log
             </span>
-            {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '14px', height: '14px' }} />}
-            {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '12px' }}>⚠️ Timeout</span>}
+            {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '12px', height: '12px' }} />}
+            {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '11px' }}>⚠️ Error</span>}
           </div>
-          <div style={{ 
-            padding: '16px', color: '#8b949e', fontFamily: 'SFMono-Regular, Consolas, monospace', 
-            fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '450px', overflowY: 'auto' 
-          }}>
-             {phase === 'error' ? 'Architecture mapping encountered a semantic error. Modify instructions and try again.' : (jsonStreamData || 'Composing structural coordinates...')}
-             {phase === 'loading' && <span className="cursor-blink" style={{ color: 'var(--accent)' }}>|</span>}
+          <div style={{ padding: '12px', color: '#7d8590', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '10px', whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto' }}>
+            {jsonStreamData || 'Waiting for generation...'}
+            {phase === 'loading' && <span className="cursor-blink" style={{ color: '#e8913a' }}>|</span>}
           </div>
         </div>
       )}
 
-      {/* Bottom Floating Command Bar */}
+      {/* Bottom Floating Prompt Bar */}
       <div style={{
-        position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
-        width: '90%', maxWidth: '700px', background: 'rgba(20, 20, 20, 0.85)', 
-        border: '1px solid #333', borderRadius: '16px', zIndex: 10, 
-        padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '12px', 
-        boxShadow: '0 16px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)'
+        position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+        width: '90%', maxWidth: '680px', background: 'rgba(18,18,18,0.9)',
+        border: '1px solid #2a2a2a', borderRadius: '16px', zIndex: 10,
+        padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)'
       }}>
-        
-        {/* Search / Instruction Input */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <input 
-            style={{ 
-               flex: 1, background: 'transparent', border: 'none', color: '#e6edf3', 
-               fontSize: '15px', outline: 'none', padding: '4px 0'
-            }}
-            placeholder="What architecture would you like to build or explore?"
+          <input
+            style={{ flex: 1, background: 'transparent', border: 'none', color: '#e6edf3', fontSize: '14px', outline: 'none' }}
+            placeholder="What would you like to change or create?"
             value={topic}
-            onChange={e => { setTopic(e.target.value); setSubject('Architecture'); }}
-            onKeyDown={e => { if (e.key === 'Enter' && topic && phase !== 'loading') startClass(); }}
+            onChange={e => setTopic(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && topic.trim() && phase !== 'loading') startClass(); }}
             disabled={phase === 'loading'}
             autoFocus
           />
         </div>
-        
-        {/* Utility / Submit Tray */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #2a2a2a', paddingTop: '10px' }}>
-           <div style={{ display: 'flex', gap: '16px' }}>
-             <button style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                <i className="fas fa-plus" />
-             </button>
-             <label style={{ cursor: 'pointer', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                <i className="fas fa-file-alt" /> {uploadedFile ? fileName : 'Upload Context'}
-                <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.png" hidden disabled={phase==='loading'}/>
-             </label>
-           </div>
-           
-           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-             <span style={{ color: '#8b949e', fontSize: '12px', background: '#2a2a2a', padding: '4px 8px', borderRadius: '12px' }}>
-               <i className="fas fa-brain" style={{marginRight: '4px'}}/> Auto
-             </span>
-             <button 
-               onClick={startClass}
-               disabled={!topic || phase === 'loading'}
-               style={{ 
-                 background: (topic && phase !== 'loading') ? '#fff' : '#2d2d2d', 
-                 color: (topic && phase !== 'loading') ? '#000' : '#666', 
-                 border: 'none', borderRadius: '50%', width: '30px', height: '30px', 
-                 cursor: (topic && phase !== 'loading') ? 'pointer' : 'default',
-                 display: 'flex', justifyContent: 'center', alignItems: 'center',
-                 transition: 'all 0.2s ease'
-               }}
-             >
-                <i className="fas fa-arrow-up" />
-             </button>
-           </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', paddingTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', fontSize: '13px' }}>
+              <i className="fas fa-plus" />
+            </button>
+            <label style={{ cursor: 'pointer', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px' }}>
+              <i className="fas fa-paperclip" /> {uploadedFile ? fileName : ''}
+              <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.doc,.docx" hidden disabled={phase==='loading'}/>
+            </label>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: '#7d8590', fontSize: '11px', background: '#1c1c1c', padding: '3px 8px', borderRadius: '10px' }}>
+              <i className="fas fa-gem" style={{ marginRight: '4px', color: '#4285f4' }}/> Gemini 2.0 Flash
+            </span>
+            <button
+              onClick={startClass}
+              disabled={!topic.trim() || phase === 'loading'}
+              style={{
+                background: (topic.trim() && phase !== 'loading') ? '#fff' : '#2d2d2d',
+                color: (topic.trim() && phase !== 'loading') ? '#000' : '#555',
+                border: 'none', borderRadius: '50%', width: '28px', height: '28px',
+                cursor: (topic.trim() && phase !== 'loading') ? 'pointer' : 'default',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
+              }}
+            >
+              <i className="fas fa-arrow-up" style={{ fontSize: '12px' }}/>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowSettings(false)}
+        >
+          <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
+            <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 16px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#4285f4' }}>Google AI Studio</a></p>
+            <input
+              type="password"
+              placeholder="AIza..."
+              value={localKey}
+              onChange={e => saveKey(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '10px' }}>
+              <button onClick={() => setShowSettings(false)} style={{ padding: '8px 20px', background: '#fff', color: '#000', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
