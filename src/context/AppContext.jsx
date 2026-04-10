@@ -304,11 +304,10 @@ export function AppProvider({ children }) {
 
     const allMsgs = chats.find(c => c.id === chatId)?.messages || [];
     let finalUserContent = userContent;
-    // Enhanced Trigger Terminology: Automatically routes to DuckDuckGo for facts.
-    const searchTriggerWords = /latest|news|today|current|recent|price|weather|who is|what is|how to|search|find|history of|unclear|data|statistics|when did|explain the origin|fact check|location of/i;
     let didSearch = false;
     
-    if (webSearchActive || searchTriggerWords.test(text)) {
+    // Explicit manual toggle required to avoid forced database scan latency
+    if (webSearchActive) {
       try {
         if (!isGeminiKey) {
           window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Engine: DDG Open Web Search...*\n\n" } }));
@@ -356,8 +355,8 @@ export function AppProvider({ children }) {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents
        };
-       // Implement true Gemini dynamic web search algorithm if search is active
-       if (webSearchActive || searchTriggerWords.test(text)) {
+       // Implement true Gemini dynamic web search algorithm ONLY if manual search is active
+       if (webSearchActive) {
           geminiPayload.tools = [{ googleSearch: {} }];
           window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Engine: Google Gemini Live Search...*\n\n" } }));
        }
