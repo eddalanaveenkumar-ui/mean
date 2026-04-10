@@ -710,10 +710,14 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
              body: JSON.stringify({
                 systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing node graph.' }]},
                 contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }],
-                // Note: Gemini streams back application/json fragments, not SSE format if responseMimeType is used!
                 // We'll remove responseMimeType to ensure pure SSE stream text fragments, then parse the array.
              })
           });
+
+          if (!g_resp.ok) {
+             const errText = await g_resp.text();
+             throw new Error(`Gemini Server Error (${g_resp.status}): ${errText}`);
+          }
           
           const reader = g_resp.body.getReader();
           const decoder = new TextDecoder('utf-8');
@@ -766,11 +770,10 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
 
       setSlides(parsed);
       setPhase('teaching');
-      
     } catch (e) {
       console.error('[Classroom] Fatal error:', e);
-      alert('Failed to generate outline. Check your API key.');
-      setPhase('setup');
+      setJsonStreamData(`[FATAL ERROR]\n\nConnection disrupted. Failed to compute coordinate nodes.\n\nTrace: ${e.message || 'Verification failure'}\n\nPlease check your API key, proxy permissions, or your internet connection.`);
+      setPhase('error');
     }
   };
 
