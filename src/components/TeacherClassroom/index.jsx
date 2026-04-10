@@ -2,22 +2,31 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import './TeacherClassroom.css';
 
-// Lazy-load heavy libraries to prevent module-level crashes
+// Lazy-loaded library variables
 let pdfjsLib = null;
 let mammoth = null;
 
-try {
-  pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-} catch (e) {
-  console.warn('[Classroom] pdfjs-dist not available:', e.message);
-}
-
-try {
-  mammoth = (await import('mammoth')).default;
-} catch (e) {
-  console.warn('[Classroom] mammoth not available:', e.message);
-}
+// Safe async initializer
+const initLibs = async () => {
+  try {
+    if (!pdfjsLib) {
+       pdfjsLib = await import('pdfjs-dist');
+       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    }
+  } catch (e) {
+    console.warn('[Classroom] pdfjs-dist not available:', e.message);
+  }
+  try {
+    if (!mammoth) {
+       const m = await import('mammoth');
+       mammoth = m.default || m;
+    }
+  } catch (e) {
+    console.warn('[Classroom] mammoth not available:', e.message);
+  }
+};
+// Fire initializer without blocking the module JS export chain
+initLibs();
 
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
