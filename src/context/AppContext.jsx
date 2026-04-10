@@ -212,26 +212,30 @@ export function AppProvider({ children }) {
     try {
       const cleanedKey = apiKey ? apiKey.trim() : '';
       const isGeminiKey = cleanedKey.includes('AIza');
-      const url = isGeminiKey 
-        ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
-        : 'https://openrouter.ai/api/v1/chat/completions';
-      const activeModel = isGeminiKey ? 'gemini-1.5-flash' : MODEL;
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: activeModel,
-          messages: [
-            { role: 'system', content: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.' },
-            { role: 'user', content: userMessage.slice(0, 300) }
-          ],
-          max_tokens: 15, stream: false
-        })
-      });
-      if (!resp.ok) throw new Error('err');
-      const data = await resp.json();
-      let title = data.choices?.[0]?.message?.content?.trim() || '';
+      
+      let title = '';
+      if (isGeminiKey) {
+          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
+          const g_resp = await fetch(g_url, {
+             method: 'POST', headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+                systemInstruction: { parts: [{ text: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.' }]},
+                contents: [{ role: 'user', parts: [{ text: userMessage.slice(0, 300) }] }]
+             })
+          });
+          if (!g_resp.ok) throw new Error('err');
+          const data = await g_resp.json();
+          title = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      } else {
+          const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.' }, { role: 'user', content: userMessage.slice(0, 300) }], max_tokens: 15, stream: false })
+          });
+          if (!resp.ok) throw new Error('err');
+          const data = await resp.json();
+          title = data.choices?.[0]?.message?.content?.trim() || '';
+      }
       title = title.replace(/^["'`#*]+|["'`#*]+$/g, '').trim();
       if (title.length > 40) title = title.substring(0, 37) + '…';
       if (!title) throw new Error('empty');
@@ -305,25 +309,35 @@ export function AppProvider({ children }) {
       { role: 'user', content: userContent }
     ];
 
-    const payload = { model: MODEL, messages: apiMessages, stream: true };
-    if (webSearchActive) payload.plugins = [{ id: 'web', max_results: 5 }];
-
     const cleanedKey = apiKey ? apiKey.trim() : '';
     const isGeminiKey = cleanedKey.includes('AIza');
-    const url = isGeminiKey 
-      ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
-      : 'https://openrouter.ai/api/v1/chat/completions';
     
+    let url, headers, body;
+
     if (isGeminiKey) {
-       payload.model = 'gemini-1.5-flash';
-       delete payload.plugins; // Gemini direct api doesn't support openrouter web plugins
+       url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
+       headers = { 'Content-Type': 'application/json' };
+       let contents = [];
+       apiMessages.forEach(m => {
+          if (m.role !== 'system') contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
+       });
+       body = JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents
+       });
+    } else {
+       url = 'https://openrouter.ai/api/v1/chat/completions';
+       headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
+       const payload = { model: MODEL, messages: apiMessages, stream: true };
+       if (webSearchActive) payload.plugins = [{ id: 'web', max_results: 5 }];
+       body = JSON.stringify(payload);
     }
 
     try {
       const resp = await fetch(url, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers,
+        body,
         signal: streamAbortRef.current.signal
       });
 
@@ -333,7 +347,6 @@ export function AppProvider({ children }) {
       let assistantText = '';
       let buffer = '';
 
-      // Dispatch streaming events
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -347,7 +360,12 @@ export function AppProvider({ children }) {
           if (trimmed.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(trimmed.slice(6));
-              const delta = parsed.choices?.[0]?.delta?.content;
+              let delta = '';
+              if (isGeminiKey) {
+                 delta = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+              } else {
+                 delta = parsed.choices?.[0]?.delta?.content || '';
+              }
               if (delta) {
                 assistantText += delta;
                 window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: assistantText } }));

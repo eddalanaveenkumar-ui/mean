@@ -82,19 +82,37 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     try {
       const cleanedKey = apiKey ? apiKey.trim() : '';
       const isGeminiKey = cleanedKey.includes('AIza');
-      const url = isGeminiKey 
-        ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
-        : 'https://openrouter.ai/api/v1/chat/completions';
-      const activeModel = isGeminiKey ? 'gemini-1.5-flash' : MODEL;
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: activeModel, messages, stream: false, max_tokens: maxTokens })
-      });
-      const data = await resp.json();
-      const content = data.choices?.[0]?.message?.content;
       
+      let url, headers, body;
+
+      if (isGeminiKey) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        
+        let systemPrompt = "";
+        let contents = [];
+        for (const m of messages) {
+           if (m.role === 'system') systemPrompt += m.content + "\n";
+           else contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
+        }
+        
+        const payload = { contents };
+        if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+        
+        body = JSON.stringify(payload);
+      } else {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
+        body = JSON.stringify({ model: MODEL, messages, stream: false, max_tokens: maxTokens });
+      }
+
+      const resp = await fetch(url, { method: 'POST', headers, body });
+      const data = await resp.json();
+      
+      const content = isGeminiKey 
+        ? data.candidates?.[0]?.content?.parts?.[0]?.text 
+        : data.choices?.[0]?.message?.content;
+        
       if (!content && retryCount > 0) {
         // Rate limit hit or bad response on free model. Pause and retry automatically.
         await new Promise(r => setTimeout(r, 500));
@@ -691,13 +709,32 @@ ${fileContent ? 'Use the attached document.' : ''}
 Return ONLY the JSON array.`;
 
     try {
-      const content = await fetchAI([{ role: 'user', content: outlinePrompt }], 800);
-      console.log('[Classroom] Outline response:', content?.slice(0, 200));
+      const cleanedKey = apiKey ? apiKey.trim() : '';
+      const isGeminiKey = cleanedKey.includes('AIza');
+      
+      let initialContent = '';
+      if (isGeminiKey) {
+          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
+          const g_resp = await fetch(g_url, {
+             method: 'POST', headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+                systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY. Format: [{"title": "...", "subtitle": "...", "points": ["..."]}]' }]},
+                contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+             })
+          });
+          const g_data = await g_resp.json();
+          initialContent = g_data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+          const content = await fetchAI([{ role: 'user', content: outlinePrompt }], 800);
+          initialContent = content;
+      }
+      
+      console.log('[Classroom] Outline response:', initialContent?.slice(0, 200));
       
       let parsed = null;
       try {
-        // Strip markdown backticks if present
-        let cleanContent = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+        let cleanContent = initialContent.replace(/```json/gi, '').replace(/```/g, '').trim();
         // Extract array from first [ to last ]
         const match = cleanContent.match(/\[[\s\S]*\]/);
         if (match) parsed = JSON.parse(match[0]);
