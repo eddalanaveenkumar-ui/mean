@@ -1,13 +1,24 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
 import './TeacherClassroom.css';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Lazy-load heavy libraries to prevent module-level crashes
+let pdfjsLib = null;
+let mammoth = null;
 
-const MODEL = 'arcee-ai/trinity-large-preview:free';
+try {
+  pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+} catch (e) {
+  console.warn('[Classroom] pdfjs-dist not available:', e.message);
+}
+
+try {
+  mammoth = (await import('mammoth')).default;
+} catch (e) {
+  console.warn('[Classroom] mammoth not available:', e.message);
+}
+
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
 // HashMap for instant slide lookup by index (DSA optimization)
