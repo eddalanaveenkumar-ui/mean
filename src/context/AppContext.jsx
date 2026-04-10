@@ -303,10 +303,40 @@ export function AppProvider({ children }) {
       : `${PERSONA}\nYou are Mean AI, a powerful and friendly assistant.\n\nFORMATTING RULES:\n- Use emojis to make responses lively and engaging\n- Use 👉 for bullet points instead of plain dashes\n- Use 📌 for key takeaways, 💡 for tips, ⚡ for important info, ✅ for steps/conclusions, 🔥 for highlights, 📝 for notes\n- Use ## headers for major sections\n- Use **bold** for emphasis on key terms\n- Use code blocks with language tags for code\n- Keep responses well-structured with clear visual hierarchy\n- Be concise but thorough`;
 
     const allMsgs = chats.find(c => c.id === chatId)?.messages || [];
+    let finalUserContent = userContent;
+    const searchTriggerWords = /latest|news|today|current|recent|price|weather|who is|what is|how to|search|find/i;
+    let didSearch = false;
+    
+    if (webSearchActive || searchTriggerWords.test(text)) {
+      try {
+        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Searching DuckDuckGo (Open Source)...*\n\n" } }));
+        didSearch = true;
+        const ddgUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + text)}`;
+        const sReq = await fetch(ddgUrl);
+        const sData = await sReq.json();
+        const htmlStr = sData.contents || '';
+        
+        const regex = /<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
+        let match;
+        const results = [];
+        while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
+          let snippet = match[1].replace(/<[^>]+>/g, '').trim();
+          snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+          if (snippet) results.push(`- ${snippet}`);
+        }
+        
+        if (results.length > 0) {
+          finalUserContent += `\n\n[REALTIME WEB SEARCH (DuckDuckGo)]\n${results.join('\n')}\n(Use this real-time info to answer accurately.)`;
+        }
+      } catch (e) {
+        // silently fail and proceed
+      }
+    }
+
     const apiMessages = [
       { role: 'system', content: systemPrompt },
       ...allMsgs.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: userContent }
+      { role: 'user', content: finalUserContent }
     ];
 
     const cleanedKey = apiKey ? apiKey.trim() : '';
@@ -328,9 +358,7 @@ export function AppProvider({ children }) {
     } else {
        url = 'https://openrouter.ai/api/v1/chat/completions';
        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
-       const payload = { model: MODEL, messages: apiMessages, stream: true };
-       if (webSearchActive) payload.plugins = [{ id: 'web', max_results: 5 }];
-       body = JSON.stringify(payload);
+       body = JSON.stringify({ model: MODEL, messages: apiMessages, stream: true });
     }
 
     try {
@@ -344,7 +372,7 @@ export function AppProvider({ children }) {
       if (!resp.ok) throw new Error(`API error ${resp.status}`);
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let assistantText = '';
+      let assistantText = didSearch ? "🌍 *Searched DuckDuckGo*\n\n" : "";
       let buffer = '';
 
       while (true) {
