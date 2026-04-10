@@ -57,6 +57,8 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState('General');
   const [level] = useState('high');
+  const lang = 'English';
+  const duration = 30;
 
   // Settings modal — local Gemini key from AI Studio
   const [showSettings, setShowSettings] = useState(false);
