@@ -785,12 +785,16 @@ Return ONLY valid JSON array.`;
                 setJsonStreamData(fullText);
 
                 // === LIVE BLOCK RENDERING ===
-                // Try to parse partial JSON and send completed nodes to iframe in real-time
+                // Aggressive partial JSON parsing to render live nodes character-by-character
                 try {
                   let clean = fullText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                  const arrMatch = clean.match(/\[[\s\S]*\]/);
-                  if (arrMatch) {
-                    const partial = JSON.parse(arrMatch[0]);
+                  const firstBracket = clean.indexOf('[');
+                  const lastBrace = clean.lastIndexOf('}');
+                  
+                  if (firstBracket !== -1 && lastBrace > firstBracket) {
+                    // Force complete the array by slicing at the last fully closed object and adding ]
+                    const partialStr = clean.substring(firstBracket, lastBrace + 1) + ']';
+                    const partial = JSON.parse(partialStr);
                     if (Array.isArray(partial) && partial.length > 0) {
                       setSlides(partial);
                       const frame = document.getElementById('roadmapFrame');
