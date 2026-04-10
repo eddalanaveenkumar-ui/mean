@@ -12,31 +12,45 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
   const [isStreamActive, setIsStreamActive] = useState(false);
 
   useEffect(() => {
-    let timeoutId;
-    let currentBuffer = '';
+    let queuedText = '';
+    let renderedText = '';
+    let isTyping = false;
+    let timerId = null;
 
-    const onUpdate = (e) => { 
-      currentBuffer = e.detail.text;
-      setIsStreamActive(true); 
-      
-      if (!timeoutId) {
-        timeoutId = setTimeout(() => {
-          setStreamText(currentBuffer);
-          timeoutId = null;
-        }, 30); // ~30fps throttle: guarantees smooth UI without lagging the text parser.
+    const pumpQueue = () => {
+      if (renderedText.length < queuedText.length) {
+        const diff = queuedText.length - renderedText.length;
+        // If falling far behind (e.g. large network burst), accelerate typing smoothly
+        const charsPop = diff > 60 ? 4 : diff > 30 ? 2 : 1;
+        renderedText = queuedText.substring(0, renderedText.length + charsPop);
+        setStreamText(renderedText);
+        timerId = setTimeout(pumpQueue, 15); // 15ms interval for ultra-smooth typing effect
+      } else {
+        isTyping = false;
       }
     };
+
+    const onUpdate = (e) => { 
+      queuedText = e.detail.text;
+      setIsStreamActive(true); 
+      if (!isTyping) {
+        isTyping = true;
+        pumpQueue();
+      }
+    };
+
     const onEnd = () => { 
-      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      if (timerId) clearTimeout(timerId);
       setStreamText(''); 
       setIsStreamActive(false); 
     };
+
     window.addEventListener('stream-update', onUpdate);
     window.addEventListener('stream-end', onEnd);
     return () => { 
       window.removeEventListener('stream-update', onUpdate); 
       window.removeEventListener('stream-end', onEnd); 
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timerId) clearTimeout(timerId);
     };
   }, []);
 
