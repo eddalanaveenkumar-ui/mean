@@ -210,11 +210,12 @@ export function AppProvider({ children }) {
   // Generate AI title
   const generateTitle = useCallback(async (userMessage, chatId) => {
     try {
-      const isGeminiKey = apiKey && apiKey.startsWith('AIza');
+      const cleanedKey = apiKey ? apiKey.trim() : '';
+      const isGeminiKey = cleanedKey.includes('AIza');
       const url = isGeminiKey 
         ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
         : 'https://openrouter.ai/api/v1/chat/completions';
-      const activeModel = isGeminiKey ? 'gemini-2.0-flash' : MODEL;
+      const activeModel = isGeminiKey ? 'gemini-1.5-flash' : MODEL;
 
       const resp = await fetch(url, {
         method: 'POST',
@@ -307,13 +308,14 @@ export function AppProvider({ children }) {
     const payload = { model: MODEL, messages: apiMessages, stream: true };
     if (webSearchActive) payload.plugins = [{ id: 'web', max_results: 5 }];
 
-    const isGeminiKey = apiKey && apiKey.startsWith('AIza');
+    const cleanedKey = apiKey ? apiKey.trim() : '';
+    const isGeminiKey = cleanedKey.includes('AIza');
     const url = isGeminiKey 
       ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
       : 'https://openrouter.ai/api/v1/chat/completions';
     
     if (isGeminiKey) {
-       payload.model = 'gemini-2.0-flash';
+       payload.model = 'gemini-1.5-flash';
        delete payload.plugins; // Gemini direct api doesn't support openrouter web plugins
     }
 

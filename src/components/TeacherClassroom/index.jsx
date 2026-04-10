@@ -80,11 +80,12 @@ export default function TeacherClassroom({ isOpen, onClose }) {
 
   const fetchAI = useCallback(async (messages, maxTokens = 2000, retryCount = 1) => {
     try {
-      const isGeminiKey = apiKey && apiKey.startsWith('AIza');
+      const cleanedKey = apiKey ? apiKey.trim() : '';
+      const isGeminiKey = cleanedKey.includes('AIza');
       const url = isGeminiKey 
         ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' 
         : 'https://openrouter.ai/api/v1/chat/completions';
-      const activeModel = isGeminiKey ? 'gemini-2.0-flash' : MODEL;
+      const activeModel = isGeminiKey ? 'gemini-1.5-flash' : MODEL;
 
       const resp = await fetch(url, {
         method: 'POST',
