@@ -304,7 +304,8 @@ export function AppProvider({ children }) {
 
     const allMsgs = chats.find(c => c.id === chatId)?.messages || [];
     let finalUserContent = userContent;
-    const searchTriggerWords = /latest|news|today|current|recent|price|weather|who is|what is|how to|search|find/i;
+    // Enhanced Trigger Terminology: Automatically routes to DuckDuckGo for facts.
+    const searchTriggerWords = /latest|news|today|current|recent|price|weather|who is|what is|how to|search|find|history of|unclear|data|statistics|when did|explain the origin|fact check|location of/i;
     let didSearch = false;
     
     if (webSearchActive || searchTriggerWords.test(text)) {
