@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const AppContext = createContext(null);
 
-const MODEL = "qwen/qwen3-coder:free";
+const MODEL = "arcee-ai/trinity-large-preview:free";
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);

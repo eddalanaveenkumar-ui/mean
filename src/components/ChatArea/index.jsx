@@ -12,11 +12,32 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
   const [isStreamActive, setIsStreamActive] = useState(false);
 
   useEffect(() => {
-    const onUpdate = (e) => { setStreamText(e.detail.text); setIsStreamActive(true); };
-    const onEnd = () => { setStreamText(''); setIsStreamActive(false); };
+    let timeoutId;
+    let currentBuffer = '';
+
+    const onUpdate = (e) => { 
+      currentBuffer = e.detail.text;
+      setIsStreamActive(true); 
+      
+      if (!timeoutId) {
+        timeoutId = setTimeout(() => {
+          setStreamText(currentBuffer);
+          timeoutId = null;
+        }, 30); // ~30fps throttle: guarantees smooth UI without lagging the text parser.
+      }
+    };
+    const onEnd = () => { 
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      setStreamText(''); 
+      setIsStreamActive(false); 
+    };
     window.addEventListener('stream-update', onUpdate);
     window.addEventListener('stream-end', onEnd);
-    return () => { window.removeEventListener('stream-update', onUpdate); window.removeEventListener('stream-end', onEnd); };
+    return () => { 
+      window.removeEventListener('stream-update', onUpdate); 
+      window.removeEventListener('stream-end', onEnd); 
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
