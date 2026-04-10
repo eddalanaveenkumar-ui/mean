@@ -23,6 +23,16 @@ const SidebarToggleIcon = () => (
     <rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="3" x2="9" y2="21"/>
   </svg>
 );
+const WebSearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+  </svg>
+);
+const DeepdiveIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+  </svg>
+);
 
 export default function Sidebar({ onTeacher, onPpt, onMusic }) {
   const {
@@ -30,7 +40,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic }) {
     sidebarCollapsed, setSidebarCollapsed,
     classes,
     newChat, deleteChat, loadChat,
-    setShowProfile, user
+    setShowProfile, user,
+    webSearchActive, setWebSearchActive,
+    deepdiveActive, setDeepdiveActive
   } = useApp();
   const [search, setSearch] = useState('');
 
@@ -84,6 +96,13 @@ export default function Sidebar({ onTeacher, onPpt, onMusic }) {
             <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
           </svg>
         </button>
+        <div className="sc-divider" />
+        <button className={`sc-icon ${webSearchActive ? 'active' : ''}`} onClick={() => setWebSearchActive(!webSearchActive)} title="Live Search">
+          <WebSearchIcon />
+        </button>
+        <button className={`sc-icon ${deepdiveActive ? 'active' : ''}`} onClick={() => setDeepdiveActive(!deepdiveActive)} title="Deepdive Mode">
+          <DeepdiveIcon />
+        </button>
         <div className="sc-spacer" />
         <button className="sc-avatar" onClick={() => setShowProfile(true)} title={user?.name || 'Profile'} style={{ padding: user?.photoURL ? 0 : undefined, overflow: 'hidden' }}>
           {user?.photoURL ? (
@@ -136,6 +155,14 @@ export default function Sidebar({ onTeacher, onPpt, onMusic }) {
           <button className="tool-item" onClick={() => { onMusic?.(); setSidebarOpen(false); }}>
             <i className="fas fa-music" />
             <span>Music Player</span>
+          </button>
+          <button className={`tool-item ${webSearchActive ? 'active' : ''}`} onClick={() => setWebSearchActive(!webSearchActive)}>
+            <i className="fas fa-globe" style={{color: webSearchActive ? 'var(--accent)' : ''}}/>
+            <span style={{color: webSearchActive ? 'var(--accent)' : '', fontWeight: webSearchActive ? 'bold' : ''}}>Live Web Search {webSearchActive && '✓'}</span>
+          </button>
+          <button className={`tool-item ${deepdiveActive ? 'active' : ''}`} onClick={() => setDeepdiveActive(!deepdiveActive)}>
+            <i className="fas fa-microscope" style={{color: deepdiveActive ? 'var(--accent)' : ''}}/>
+            <span style={{color: deepdiveActive ? 'var(--accent)' : '', fontWeight: deepdiveActive ? 'bold' : ''}}>Deepdive Gen {deepdiveActive && '✓'}</span>
           </button>
         </div>
 
