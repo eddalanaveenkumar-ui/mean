@@ -19,7 +19,19 @@ export default function Login() {
   const [step, setStep] = useState(1);
   const [tempUser, setTempUser] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+
+  // Handle long loading state to inform user about cold starts
+  useEffect(() => {
+    let timer;
+    if (isLoading) {
+      timer = setTimeout(() => setIsWakingUp(true), 5000);
+    } else {
+      setIsWakingUp(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   // Intercept openrouter and firebase auth redirect
   useEffect(() => {
@@ -186,7 +198,13 @@ export default function Login() {
         {isLoading ? (
           <div className="login-spinner-overlay">
             <div className="spinner"></div>
-            <div className="loading-text">Authenticating securely...</div>
+            <div className="loading-text" style={{ textAlign: 'center', lineHeight: '1.4' }}>
+              {isWakingUp ? (
+                <>Waking up secure server...<br/><span style={{fontSize: '12px', color: '#888'}}>This can take up to 50 seconds on cold start.</span></>
+              ) : (
+                'Authenticating securely...'
+              )}
+            </div>
           </div>
         ) : step === 1 ? (
           <>
