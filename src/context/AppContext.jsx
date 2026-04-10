@@ -303,6 +303,9 @@ export function AppProvider({ children }) {
       : `${PERSONA}\nYou are Mean AI, a powerful and friendly assistant.\n\nFORMATTING RULES:\n- Use emojis to make responses lively and engaging\n- Use 👉 for bullet points instead of plain dashes\n- Use 📌 for key takeaways, 💡 for tips, ⚡ for important info, ✅ for steps/conclusions, 🔥 for highlights, 📝 for notes\n- Use ## headers for major sections\n- Use **bold** for emphasis on key terms\n- Use code blocks with language tags for code\n- Keep responses well-structured with clear visual hierarchy\n- Be concise but thorough`;
 
     const allMsgs = chats.find(c => c.id === chatId)?.messages || [];
+    const cleanedKey = apiKey ? apiKey.trim() : '';
+    const isGeminiKey = cleanedKey.includes('AIza');
+
     let finalUserContent = userContent;
     let didSearch = false;
     
@@ -320,13 +323,14 @@ export function AppProvider({ children }) {
           let match;
           const results = [];
           while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
-          let snippet = match[1].replace(/<[^>]+>/g, '').trim();
-          snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-          if (snippet.length > 20) results.push(`- ${snippet}`);
-        }
-        
-        if (results.length > 0) {
-          finalUserContent += `\n\n[LIVE WEB CONTEXT]\n${results.join('\n')}\n(Use this real-time scraped information to formulate an up-to-date and completely accurate answer.)`;
+            let snippet = match[1].replace(/<[^>]+>/g, '').trim();
+            snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+            if (snippet.length > 20) results.push(`- ${snippet}`);
+          }
+          
+          if (results.length > 0) {
+            finalUserContent += `\n\n[LIVE WEB CONTEXT]\n${results.join('\n')}\n(Use this real-time scraped information to formulate an up-to-date and completely accurate answer.)`;
+          }
         }
       } catch (e) {
         // silently fail and proceed
@@ -338,9 +342,6 @@ export function AppProvider({ children }) {
       ...allMsgs.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: finalUserContent }
     ];
-
-    const cleanedKey = apiKey ? apiKey.trim() : '';
-    const isGeminiKey = cleanedKey.includes('AIza');
     
     let url, headers, body;
 
