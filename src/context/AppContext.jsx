@@ -310,24 +310,22 @@ export function AppProvider({ children }) {
     
     if (webSearchActive || searchTriggerWords.test(text)) {
       try {
-        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Searching DuckDuckGo (Open Source)...*\n\n" } }));
+        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Searching Fast Knowledge Base (Wikipedia)...*\n\n" } }));
         didSearch = true;
-        const ddgUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + text)}`;
-        const sReq = await fetch(ddgUrl);
+        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(text)}&utf8=&format=json&origin=*`;
+        const sReq = await fetch(wikiUrl);
         const sData = await sReq.json();
-        const htmlStr = sData.contents || '';
         
-        const regex = /<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
-        let match;
         const results = [];
-        while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
-          let snippet = match[1].replace(/<[^>]+>/g, '').trim();
+        const searchItems = sData.query?.search || [];
+        for (let i = 0; i < Math.min(4, searchItems.length); i++) {
+          let snippet = searchItems[i].snippet.replace(/<[^>]+>/g, '').trim();
           snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-          if (snippet) results.push(`- ${snippet}`);
+          results.push(`- **${searchItems[i].title}**: ${snippet}`);
         }
         
         if (results.length > 0) {
-          finalUserContent += `\n\n[REALTIME WEB SEARCH (DuckDuckGo)]\n${results.join('\n')}\n(Use this real-time info to answer accurately.)`;
+          finalUserContent += `\n\n[REALTIME KNOWLEDGE BASE (Wikipedia)]\n${results.join('\n')}\n(Use this verified info to accurately answer.)`;
         }
       } catch (e) {
         // silently fail and proceed
@@ -373,7 +371,7 @@ export function AppProvider({ children }) {
       if (!resp.ok) throw new Error(`API error ${resp.status}`);
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let assistantText = didSearch ? "🌍 *Searched DuckDuckGo*\n\n" : "";
+      let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";
       let buffer = '';
 
       while (true) {
