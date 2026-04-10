@@ -58,6 +58,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const slideBodyRef = useRef(null);
   const [loading, _setLoading] = useState(false);
   const isLoadingRef = useRef(false);
+  const [jsonStreamData, setJsonStreamData] = useState('');
   const setLoading = useCallback((val) => { isLoadingRef.current = val; _setLoading(val); }, []);
   const fetchingRefs = useRef(new Set());
   const [showDoubt, setShowDoubt] = useState(false);
@@ -700,23 +701,54 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
       const isGeminiKey = cleanedKey.includes('AIza');
       
       let initialContent = '';
+      setJsonStreamData('');
+      
       if (isGeminiKey) {
-          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
+          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
           const g_resp = await fetch(g_url, {
              method: 'POST', headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
                 systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing node graph.' }]},
                 contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
+                // Note: Gemini streams back application/json fragments, not SSE format if responseMimeType is used!
+                // We'll remove responseMimeType to ensure pure SSE stream text fragments, then parse the array.
              })
           });
-          const g_data = await g_resp.json();
-          initialContent = g_data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          
+          const reader = g_resp.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            let lines = buffer.split('\n');
+            buffer = lines.pop(); // save incomplete line
+
+            for (let line of lines) {
+              if (line.startsWith('data: ')) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === '[DONE]') continue;
+                try {
+                  const chunk = JSON.parse(dataStr);
+                  const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (chunkText) {
+                    initialContent += chunkText;
+                    setJsonStreamData(initialContent); // Stream visibly into the UI!
+                  }
+                } catch (e) {
+                   // ignore partial chunks
+                }
+              }
+            }
+          }
       } else {
-          // If the user searches google natively
           const reqPrompt = webSearchActive ? outlinePrompt + "\n[SEARCH REQUIRED: Find the latest 2026 info on this]" : outlinePrompt;
-          const content = await fetchAI([{ role: 'user', content: reqPrompt }], 1500);
-          initialContent = content;
+          // Non-Gemini fallback (Proxy/OpenRouter). We'll await full fetch for simplicity since free proxy streams usually break JSON.
+          initialContent = await fetchAI([{ role: 'user', content: reqPrompt }], 1500);
+          setJsonStreamData(initialContent);
       }
       
       let parsed = null;
@@ -1039,12 +1071,32 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
   // ===== LOADING =====
   if (phase === 'loading') {
     return (
-      <div className="tc-overlay">
-        <div className="tc-loading-card">
-          <div className="tc-loading-spinner" />
-          <h3>Preparing interactive roadmap...</h3>
-          <p>Generating architectural diagram for <strong>{topic}</strong></p>
-          <p className="tc-loading-hint">Using live 2026 network to scan facts...</p>
+      <div className="tc-overlay" style={{ background: 'var(--bg)' }}>
+        <div className="tc-loading-card" style={{ width: '80%', maxWidth: '800px', padding: '30px', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+            <div className="tc-loading-spinner" style={{ margin: 0, width: '30px', height: '30px' }} />
+            <div>
+              <h3>Architecting Graph: <strong>{topic}</strong></h3>
+              <p className="tc-loading-hint" style={{ margin: 0 }}>Receiving live generative architecture...</p>
+            </div>
+          </div>
+          
+          <div style={{ 
+            background: '#090a0e', 
+            borderRadius: '8px', 
+            padding: '15px', 
+            color: '#a8b2d1',
+            fontFamily: 'Consolas, monospace',
+            fontSize: '13px',
+            whiteSpace: 'pre-wrap',
+            height: '400px',
+            overflowY: 'auto',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
+          }}>
+             {jsonStreamData || 'Initializing connection to generation cluster...'}
+             <span className="cursor-blink" style={{ color: 'var(--accent)' }}>|</span>
+          </div>
         </div>
       </div>
     );
