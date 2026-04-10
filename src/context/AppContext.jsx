@@ -310,16 +310,17 @@ export function AppProvider({ children }) {
     
     if (webSearchActive || searchTriggerWords.test(text)) {
       try {
-        window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Scanning Live Web Sources...*\n\n" } }));
-        didSearch = true;
-        const ddgUrl = `https://corsproxy.io/?${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + text)}`;
-        const sReq = await fetch(ddgUrl);
-        const htmlStr = await sReq.text();
-        
-        const regex = /<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
-        let match;
-        const results = [];
-        while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
+        if (!isGeminiKey) {
+          window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Engine: DDG Open Web Search...*\n\n" } }));
+          didSearch = true;
+          const ddgUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://html.duckduckgo.com/html/?q=' + text)}`;
+          const sReq = await fetch(ddgUrl);
+          const htmlStr = await sReq.text();
+          
+          const regex = /<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
+          let match;
+          const results = [];
+          while ((match = regex.exec(htmlStr)) !== null && results.length < 5) {
           let snippet = match[1].replace(/<[^>]+>/g, '').trim();
           snippet = snippet.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
           if (snippet.length > 20) results.push(`- ${snippet}`);
@@ -351,10 +352,16 @@ export function AppProvider({ children }) {
        apiMessages.forEach(m => {
           if (m.role !== 'system') contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
        });
-       body = JSON.stringify({
+       const geminiPayload = {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents
-       });
+       };
+       // Implement true Gemini dynamic web search algorithm if search is active
+       if (webSearchActive || searchTriggerWords.test(text)) {
+          geminiPayload.tools = [{ googleSearch: {} }];
+          window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: "🌍 *Engine: Google Gemini Live Search...*\n\n" } }));
+       }
+       body = JSON.stringify(geminiPayload);
     } else {
        url = 'https://openrouter.ai/api/v1/chat/completions';
        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
