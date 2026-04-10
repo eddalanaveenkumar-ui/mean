@@ -732,16 +732,9 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
         setPhase('error'); return;
       }
 
-      setCacheProp('slides', parsed);
+      setSlides(parsed);
       setPhase('teaching');
       
-      // Inject into iframe delayed slightly to ensure iframe exists
-      setTimeout(() => {
-        const frame = document.getElementById('roadmapFrame');
-        if(frame && frame.contentWindow) {
-           frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed }, '*');
-        }
-      }, 500);
     } catch (e) {
       console.error('[Classroom] Fatal error:', e);
       alert('Failed to generate outline. Check your API key.');
@@ -749,143 +742,13 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
     }
   };
 
-  // ===== LOAD SLIDE CONTENT =====
-  const loadSlideContent = async (slideData, idx) => {
-    if (!activeRef.current || idx >= slideData.length) return;
-    setLoading(true);
-
-    const slide = slideData[idx];
-    const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
-
-    const explainPrompt = buildTeachingPrompt(slide, prevContext);
-
-    try {
-      let content = await fetchAI([
-        { role: 'system', content: `You are a ${subject} teacher who explains code LINE BY LINE like a real classroom instructor. CRITICAL RULE: When there is ANY code, you MUST explain EVERY SINGLE LINE using → arrows. The line-by-line Block 3 must be the LONGEST section. NEVER just show code and output — the explanation between code and output IS the lesson. For each line write: → \`code\` then What/Why/Effect. Then do a dry run table. Then show output. Level: ${level}.` },
-        { role: 'user', content: explainPrompt }
-      ], 3000);
-      
-      // Fallback if the Free API completely drops the request even after retries
-      if (!content || content.trim() === '') {
-        content = "## ⚠️ AI API Rate Limit Reached\n\nThe free AI provider (OpenRouter) is currently dropping requests due to high network traffic on your API Key.\n\n👉 **What to do:** Slide content will retry automatically in the background, or you can skip to the next slide.";
-      }
-
-      // Cache the content safely
-      setSlideContents(prevCache => {
-        const newCache = new SlideCache();
-        newCache.map = new Map(prevCache.map);
-        newCache.set(idx, { slide, content, explained: false });
-        return newCache;
-      });
-
-      classNotesRef.current.push({
-        slideIdx: idx,
-        title: slide.title,
-        content: content,
-        timestamp: new Date().toLocaleTimeString()
-      });
-
-      setLoading(false);
-      setCurrentSlideIdx(idx);
-
-      // Auto-scroll content
-      setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-
-      // Fetch media for right panel
-      fetchMediaForSlide(slide.title, content);
-
-      // Trigger background buffering for the next slide automatically
-      prefetchNextSlide(slideData, idx);
-
-      // Non-blocking TTS (Reads actual slide content, saving an API call!)
-      if (activeRef.current) speakText(content);
-    } catch (e) {
-      setLoading(false);
+  const handleIframeLoad = (e) => {
+    if (e.target && e.target.contentWindow && slides.length > 0) {
+      e.target.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: slides }, '*');
     }
   };
 
-  // ===== BACKGROUND PREFETCH =====
-  const prefetchNextSlide = async (slidesArray, currentIndex) => {
-    const nextIdx = currentIndex + 1;
-    if (!activeRef.current || nextIdx >= slidesArray.length) return;
-    
-    // If it's already cached or actively fetching, try the next one
-    if (slideContents.has(nextIdx) || fetchingRefs.current.has(nextIdx)) {
-      prefetchNextSlide(slidesArray, nextIdx);
-      return;
-    }
 
-    fetchingRefs.current.add(nextIdx);
-    
-    // Minimal pause before prefetch
-    await new Promise(r => setTimeout(r, 300));
-    if (!activeRef.current) return;
-
-    const slide = slidesArray[nextIdx];
-    const prevContext = classNotesRef.current.slice(-2).map(n => n.content).join('\n');
-    const explainPrompt = buildTeachingPrompt(slide, prevContext);
-
-    try {
-      let content = await fetchAI([
-        { role: 'system', content: `Expert ${subject} teacher. CRITICAL: For ANY code, you MUST explain EVERY LINE using → arrows with What/Why/Effect for each. Block 3 (Line-by-Line) must be the LONGEST block. NEVER skip any line — not even print statements or variable assignments. Do a full dry run with a table. Then show how output is produced step by step.` },
-        { role: 'user', content: explainPrompt }
-      ], 3000);
-      
-      if (!content || content.trim() === '') {
-        content = "## ⚠️ AI API Rate Limit Reached\n\nThe free AI provider (OpenRouter) is currently dropping requests due to high network traffic on your API Key.\n\n👉 **What to do:** Reload the classroom to retry.";
-      }
-      
-      if (activeRef.current) {
-        setSlideContents(prevCache => {
-          const newCache = new SlideCache();
-          newCache.map = new Map(prevCache.map);
-          newCache.set(nextIdx, { slide, content, explained: false });
-          return newCache;
-        });
-        
-        // Auto-prefetch the slide after this one
-        prefetchNextSlide(slidesArray, nextIdx);
-      }
-    } catch (e) {
-      console.warn('Background prefetch failed:', e);
-    } finally {
-      fetchingRefs.current.delete(nextIdx);
-    }
-  };
-
-  // ===== NAVIGATION =====
-  const nextSlide = () => {
-    if (currentSlideIdx < slides.length - 1) {
-      const next = currentSlideIdx + 1;
-      window.speechSynthesis?.cancel();
-      if (slideContents.has(next)) {
-        setCurrentSlideIdx(next);
-        // Re-fetch media for this slide
-        const cached = slideContents.get(next);
-        if (cached) {
-          fetchMediaForSlide(cached.slide.title, cached.content);
-          if (activeRef.current) speakText(cached.content);
-        }
-        setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-      } else {
-        loadSlideContent(slides, next);
-      }
-    }
-  };
-
-  const prevSlide = () => {
-    if (currentSlideIdx > 0) {
-      window.speechSynthesis?.cancel();
-      const prev = currentSlideIdx - 1;
-      setCurrentSlideIdx(prev);
-      const cached = slideContents.get(prev);
-      if (cached) {
-        fetchMediaForSlide(cached.slide.title, cached.content);
-        if (activeRef.current) speakText(cached.content);
-      }
-      setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-    }
-  };
 
   // ===== DOUBT =====
   const askDoubt = async () => {
@@ -1219,6 +1082,7 @@ Return ONLY valid JSON array. No markdown blocks outside it.`;
            src="/roadmap.html" 
            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
            title="Interactive Diagram"
+           onLoad={handleIframeLoad}
          />
       </div>
     </div>
