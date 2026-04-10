@@ -360,6 +360,7 @@ export function AppProvider({ children }) {
        body = JSON.stringify({ model: MODEL, messages: apiMessages, stream: true });
     }
 
+    let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";
     try {
       const resp = await fetch(url, {
         method: 'POST',
@@ -371,7 +372,6 @@ export function AppProvider({ children }) {
       if (!resp.ok) throw new Error(`API error ${resp.status}`);
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
-      let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";
       let buffer = '';
 
       while (true) {
@@ -410,7 +410,11 @@ export function AppProvider({ children }) {
       }
     } catch (err) {
       window.dispatchEvent(new CustomEvent('stream-end'));
-      if (err.name !== 'AbortError') {
+      if (err.name === 'AbortError') {
+        if (assistantText.trim()) {
+           addMessage('assistant', assistantText);
+        }
+      } else {
         addMessage('assistant', `⚠️ Error: ${err.message}`);
       }
     } finally {

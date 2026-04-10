@@ -77,8 +77,12 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
 
           {/* Right side: mic + send/voice */}
           <div className="input-right-btns">
-            {hasInput ? (
-              <button className="send-circle-btn" onClick={handleSend}>
+            {isStreaming ? (
+              <button className="send-circle-btn stop-btn" onClick={() => sendMessage('')} title="Stop Generating">
+                <i className="fas fa-stop" />
+              </button>
+            ) : hasInput ? (
+              <button className="send-circle-btn" onClick={handleSend} title="Send Message">
                 <i className="fas fa-arrow-up" />
               </button>
             ) : (

@@ -179,6 +179,20 @@
   box-shadow: 0 4px 16px rgba(232,145,58,0.4);
 }
 
+/* Stop generation button override */
+.stop-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+.stop-btn:hover {
+  background: #ef4444; /* Danger red */
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
 /* ===== TOOLS DROPDOWN ===== */
 .tools-dropdown {
   position: absolute;
