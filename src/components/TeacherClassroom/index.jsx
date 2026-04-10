@@ -68,6 +68,9 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [openRouterKey, setOpenRouterKey] = useState(() => localStorage.getItem('meanai_openrouter_key') || '');
   const saveOpenRouterKey = (k) => { setOpenRouterKey(k); localStorage.setItem('meanai_openrouter_key', k); };
 
+  // Model Selection
+  const [activeEngine, setActiveEngine] = useState('gemini'); // 'gemini' | 'arcee'
+
   // File upload state
   const [uploadedFile, setUploadedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
@@ -109,25 +112,41 @@ export default function TeacherClassroom({ isOpen, onClose }) {
 
   const fetchAI = useCallback(async (messages, maxTokens = 2000, retryCount = 1) => {
     try {
-      const cleanedKey = localKey ? localKey.trim() : '';
-      if (!cleanedKey) return '';
-      
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
-      const headers = { 'Content-Type': 'application/json' };
-      
       let systemPrompt = "";
       let contents = [];
-      for (const m of messages) {
-         if (m.role === 'system') systemPrompt += m.content + "\n";
-         else contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
+      let url, headers, payload;
+
+      if (activeEngine === 'gemini') {
+        const cleanedKey = localKey ? localKey.trim() : '';
+        if (!cleanedKey) return '';
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
+        headers = { 'Content-Type': 'application/json' };
+        for (const m of messages) {
+           if (m.role === 'system') systemPrompt += m.content + "\n";
+           else contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
+        }
+        payload = { contents };
+        if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+      } else {
+        const cleanedKey = openRouterKey ? openRouterKey.trim() : '';
+        if (!cleanedKey) return '';
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        headers = { 'Authorization': `Bearer ${cleanedKey}`, 'Content-Type': 'application/json' };
+        for (const m of messages) {
+            contents.push(m);
+        }
+        payload = { model: 'arcee-ai/trinity-large-preview:free', messages: contents, max_tokens: maxTokens };
       }
-      
-      const payload = { contents };
-      if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
 
       const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
       const data = await resp.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      let content = '';
+      if (activeEngine === 'gemini') {
+        content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      } else {
+        content = data.choices?.[0]?.message?.content;
+      }
         
       if (!content && retryCount > 0) {
         await new Promise(r => setTimeout(r, 500));
@@ -141,7 +160,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       }
       return '';
     }
-  }, [localKey]);
+  }, [localKey, openRouterKey, activeEngine]);
 
   // Wrap all visible text nodes inside the slide body with word spans for highlighting
   const wrapWordsInDOM = useCallback(() => {
@@ -684,7 +703,7 @@ Ensure you strictly follow the roadmap context.`;
   // ===== START CLASS =====
   const startClass = async () => {
     if (!topic.trim()) return;
-    const key = localKey.trim();
+    const key = activeEngine === 'gemini' ? localKey.trim() : openRouterKey.trim();
     if (!key) { setShowSettings(true); return; }
 
     setPhase('loading');
@@ -708,21 +727,35 @@ Min 6 blocks. Dense and accurate.${fileContext}
 Return ONLY valid JSON array.`;
 
     try {
-      const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`;
-      const g_resp = await fetch(g_url, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let url, headers, payload;
+      if (activeEngine === 'gemini') {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`;
+        headers = { 'Content-Type': 'application/json' };
+        payload = {
           systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing a node graph. No markdown.' }] },
           contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }]
-        })
-      });
-
-      if (!g_resp.ok) {
-        const errText = await g_resp.text();
-        throw new Error(`Gemini Error (${g_resp.status}): ${errText.slice(0, 300)}`);
+        };
+      } else {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        headers = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
+        payload = {
+          model: 'arcee-ai/trinity-large-preview:free',
+          messages: [
+            { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
+            { role: 'user', content: outlinePrompt }
+          ],
+          stream: true
+        };
       }
 
-      const reader = g_resp.body.getReader();
+      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`API Error (${resp.status}): ${errText.slice(0, 300)}`);
+      }
+
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let fullText = '';
@@ -741,7 +774,12 @@ Return ONLY valid JSON array.`;
             if (dataStr === '[DONE]') continue;
             try {
               const chunk = JSON.parse(dataStr);
-              const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+              let chunkText = '';
+              if (activeEngine === 'gemini') {
+                chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+              } else {
+                chunkText = chunk.choices?.[0]?.delta?.content;
+              }
               if (chunkText) {
                 fullText += chunkText;
                 setJsonStreamData(fullText);
@@ -1028,9 +1066,20 @@ Return ONLY valid JSON array.`;
             </label>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ color: '#7d8590', fontSize: '11px', background: '#1c1c1c', padding: '3px 8px', borderRadius: '10px' }}>
-              <i className="fas fa-gem" style={{ marginRight: '4px', color: '#4285f4' }}/> Gemini 2.0 Flash
-            </span>
+            <div style={{ display: 'flex', background: '#1c1c1c', borderRadius: '10px', overflow: 'hidden' }}>
+              <button 
+                onClick={() => setActiveEngine('gemini')}
+                style={{ background: activeEngine === 'gemini' ? '#2a2a2a' : 'transparent', border: 'none', color: activeEngine === 'gemini' ? '#fff' : '#7d8590', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <i className="fas fa-gem" style={{ color: '#4285f4', marginRight: '4px' }}/> Gemini
+              </button>
+              <button 
+                onClick={() => setActiveEngine('arcee')}
+                style={{ background: activeEngine === 'arcee' ? '#2a2a2a' : 'transparent', border: 'none', color: activeEngine === 'arcee' ? '#fff' : '#7d8590', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <i className="fas fa-brain" style={{ color: '#863bff', marginRight: '4px' }}/> Arcee
+              </button>
+            </div>
             <button
               onClick={startClass}
               disabled={!topic.trim() || phase === 'loading'}
