@@ -32,7 +32,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
-  const { apiKey, user } = useApp();
+  const { apiKey, user, webSearchActive } = useApp();
   const [phase, setPhase] = useState('setup');
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
@@ -669,7 +669,8 @@ Ensure you strictly follow the roadmap context.`;
 
   // ===== START CLASS =====
   const startClass = async () => {
-    if (!subject.trim() || !topic.trim()) { alert('Fill subject and topic!'); return; }
+    if (!topic.trim()) return;
+    if (!subject.trim()) setSubject('General');
     setPhase('loading');
     activeRef.current = true;
     classNotesRef.current = [];
