@@ -60,10 +60,13 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const lang = 'English';
   const duration = 30;
 
-  // Settings modal — local Gemini key from AI Studio
+  // Settings modal — local keys from AI Studio and OpenRouter
   const [showSettings, setShowSettings] = useState(false);
   const [localKey, setLocalKey] = useState(() => localStorage.getItem('meanai_gemini_key') || '');
   const saveKey = (k) => { setLocalKey(k); localStorage.setItem('meanai_gemini_key', k); };
+
+  const [openRouterKey, setOpenRouterKey] = useState(() => localStorage.getItem('meanai_openrouter_key') || '');
+  const saveOpenRouterKey = (k) => { setOpenRouterKey(k); localStorage.setItem('meanai_openrouter_key', k); };
 
   // File upload state
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -1053,15 +1056,30 @@ Return ONLY valid JSON array.`;
           <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
-            <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 16px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#4285f4' }}>Google AI Studio</a></p>
-            <input
-              type="password"
-              placeholder="AIza..."
-              value={localKey}
-              onChange={e => saveKey(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-            />
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
+              <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 8px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#4285f4' }}>Google AI Studio</a></p>
+              <input
+                type="password"
+                placeholder="AIza..."
+                value={localKey}
+                onChange={e => saveKey(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-star" style={{ color: '#863bff', marginRight: '8px' }}/>OpenRouter API Key</h3>
+              <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: '#999' }}>arcee-ai/trinity-large-preview:free</span></p>
+              <input
+                type="password"
+                placeholder="sk-or-v1-..."
+                value={openRouterKey}
+                onChange={e => saveOpenRouterKey(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '10px' }}>
               <button onClick={() => setShowSettings(false)} style={{ padding: '8px 20px', background: '#fff', color: '#000', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Done</button>
             </div>
