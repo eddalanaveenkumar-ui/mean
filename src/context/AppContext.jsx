@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const AppContext = createContext(null);
 
-const MODEL = "arcee-ai/trinity-large-preview:free";
+const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
