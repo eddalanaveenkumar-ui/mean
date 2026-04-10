@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const AppContext = createContext(null);
 
-const MODEL = "google/gemma-3-12b-it:free";
+const MODEL = "meta-llama/llama-3.2-3b-instruct:free";
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
