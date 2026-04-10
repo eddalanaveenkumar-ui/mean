@@ -38,12 +38,12 @@ export default function ProfilePage() {
         <div className="settings-section">
           <h4 className="settings-label">API Configuration</h4>
           <div className="settings-field">
-            <label>OpenRouter API Key</label>
+            <label>API Key (OpenRouter or Google Gemini)</label>
             <input
               type="password"
               value={editApiKey}
               onChange={e => setEditApiKey(e.target.value)}
-              placeholder="sk-or-..."
+              placeholder="sk-or-... or AIzaSy..."
             />
           </div>
         </div>
