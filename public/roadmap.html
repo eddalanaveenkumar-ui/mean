@@ -127,6 +127,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .block-node.shape-star .node-head { background: transparent !important; border:none; }
 .block-node.shape-star .node-badge { display: none; }
 
+.block-node.shape-text-field {
+  border-radius: 8px; background: rgba(22, 24, 32, 0.98); 
+  min-width: 260px; text-align: left;
+}
+.block-node.shape-text-field .node-head {
+  justify-content: space-between; border-bottom: 2px solid var(--border3);
+  background: transparent !important; padding: 10px 14px;
+}
+.block-node.shape-text-field .node-addr { font-size: 13px; font-weight: 700; color: var(--text) !important; font-family: 'Syne', sans-serif; text-align: left; }
+.block-node.shape-text-field .node-badge { display: none; }
+.block-node.shape-text-field .node-body { align-items: flex-start; padding: 14px; }
+.block-node.shape-text-field .node-content { text-align: left; font-size: 13px; font-family: 'JetBrains Mono', monospace; line-height: 1.6; color: var(--text2); }
+.tf-speak-btn { background: transparent; border: none; cursor: pointer; font-size: 15px; opacity: 0.7; transition: .2s; }
+.tf-speak-btn:hover { opacity: 1; transform: scale(1.1); }
+
 .node-head{
   padding:8px 11px 7px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:7px;border-radius:13px 13px 0 0
@@ -222,6 +237,13 @@ let isPanning=false,panStart={x:0,y:0};
 let nodeData={};
 let edges=[];
 let nodeDragging=null,nodeDragOff={x:0,y:0};
+
+function speakNodeText(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  window.speechSynthesis.speak(u);
+}
 
 const wrap=document.getElementById('canvas-wrap');
 const world=document.getElementById('world');
@@ -398,6 +420,16 @@ function renderTree(data, isPartial = false){
             <div class="node-body">
               <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
             </div>`;
+      } else if (b.shape === 'text-field') {
+         el.style.background = '';
+         innerHtml = `
+          <div class="node-head">
+            <div class="node-addr">${esc(b.address)}</div>
+            <button class="tf-speak-btn" onclick="speakNodeText('${esc(b['in-content']||'')}')">🔊</button>
+          </div>
+          <div class="node-body">
+            <div class="node-content">${esc(b['in-content']||'')}</div>
+          </div>`;
       } else {
          el.style.background = ''; // reset to default
          innerHtml = `

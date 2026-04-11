@@ -720,9 +720,12 @@ Ensure you strictly follow the roadmap context.`;
     const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
 Return ONLY a JSON array representing the flow. Current year: 2026.
 
+IMPORTANT GRAPH RULE:
+DO NOT output a single, monolithic, giant deeply-connected tree. Instead, intentionally SPLIT the flow into multiple smaller, disconnected parts (e.g., Part 1, Part 2) to prevent the diagram from getting too deep and unreadable.
+
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
-- Shapes: "square" (default), "circle" (prerequisite), "star" (final goal)
+- Shapes: "square" (default), "circle" (prerequisite), "star" (final goal), "text-field" (for giving text explanations of definitions or matters)
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
 
 Min 6 blocks. Dense and accurate.${fileContext}
