@@ -81,6 +81,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
   background-size:28px 28px;pointer-events:none;z-index:0;
   opacity:.6
 }
+#canvas-wrap::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle, var(--accent) 1.5px, transparent 1.5px);
+  background-size:28px 28px;pointer-events:none;z-index:1;
+  mask-image: radial-gradient(350px circle at var(--mouse-x, -100%) var(--mouse-y, -100%), black, transparent);
+  -webkit-mask-image: radial-gradient(350px circle at var(--mouse-x, -100%) var(--mouse-y, -100%), black, transparent);
+  opacity: .95;
+  transition: opacity 0.2s;
+}
 #world{
   position:absolute;top:0;left:0;
   transform-origin:0 0;
@@ -282,6 +291,11 @@ wrap.addEventListener('mousedown',e=>{
   }
 });
 window.addEventListener('mousemove',e=>{
+  // CSS Particle Glow Tracking
+  const rect = wrap.getBoundingClientRect();
+  wrap.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+  wrap.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+
   if(nodeDragging){
     const pos=screenToWorld(e.clientX,e.clientY);
     const nx=pos.x-nodeDragOff.x, ny=pos.y-nodeDragOff.y;
@@ -363,7 +377,15 @@ function renderTree(data, isPartial = false){
   arrowDefs.forEach(a=>{const key=`${a['first-connection']}->${a['next-connection']}`;arrowExplanationMap[key]=a.explanation || a['in-content'] || '';});
   
   const hasParent=new Set();
-  blocks.forEach(b=>(b.connect||[]).forEach(c=>hasParent.add(c)));
+  const dirAdj = {};
+  blocks.forEach(b => { dirAdj[b.address] = []; });
+  blocks.forEach(b => {
+     (b.connect||[]).forEach(child => {
+         if(!dirAdj[b.address]) dirAdj[b.address]=[];
+         dirAdj[b.address].push(child);
+         hasParent.add(child);
+     });
+  });
 
   // 1. Weakly Connected Components (Disjoint Sets) to group separate sub-trees
   const adj = {};
@@ -395,57 +417,30 @@ function renderTree(data, isPartial = false){
      }
   });
 
-  const NW=200,NH=120,HGAP=80,VGAP=140;
-  let globalOffsetX = 0; // Tracks X position to place trees side-by-side!
+  let globalOffsetY = 0; // Stack components top-to-bottom
 
-  forest.forEach((compAddrs, compIdx) => {
+  forest.forEach((compAddrs) => {
       let compRoots = compAddrs.filter(a => !hasParent.has(a));
       if(compRoots.length === 0) compRoots = [compAddrs[0]];
-      
-      const levelOf = {}; compRoots.forEach(r=>levelOf[r]=0);
-      const q = [...compRoots];
-      while(q.length){
-         const cur = q.shift();
-         const nd = blockMap[cur]; if(!nd) continue;
-         (nd.connect||[]).forEach(c => {
-             if(levelOf[c] === undefined){ levelOf[c]=levelOf[cur]+1; q.push(c); }
-         });
-      }
-      compAddrs.forEach(a => { if(levelOf[a]===undefined) levelOf[a]=0; });
-      
-      const byLevel = {};
-      compAddrs.forEach(a => {
-         const l = levelOf[a];
-         if(!byLevel[l]) byLevel[l] = [];
-         byLevel[l].push(blockMap[a]);
-      });
-      
-      const sortedLvls = Object.keys(byLevel).sort((a,b)=>+a-+b);
-      let maxW = 0;
-      sortedLvls.forEach(lv => {
-         const row = byLevel[lv];
-         let currW = 0;
-         row.forEach(b => { currW += (b.type==='textblock'?300:NW) + HGAP; });
-         if (currW > maxW) maxW = currW;
-      });
 
-      sortedLvls.forEach((lv,li)=>{
-        const row=byLevel[lv];
-        let rowW = 0;
-        row.forEach(b => { rowW += (b.type==='textblock'?300:NW) + HGAP; });
-        rowW -= HGAP;
-        
-        let localStartX = globalOffsetX + (maxW / 2) - (rowW / 2);
+      // DFS Placement
+      function placeNode(addr, currentX) {
+          if (visitedPlacement.has(addr)) return;
+          visitedPlacement.add(addr);
 
-        row.forEach((b,bi)=>{
-          const blockW = b.type==='textblock' ? 300 : NW;
-          const x = localStartX;
-          const y = li*(NH+VGAP);
-          localStartX += blockW + HGAP;
+          const b = blockMap[addr];
+          if(!b) return;
 
-          const c=getpal(b.address);
-          const initials=(b.address||'??').slice(0,2).toUpperCase();
-          const explanation=b.explanation || '';
+          const blockW = (b.type==='textblock') ? 310 : 200;
+          const blockH = (b.type==='textblock') ? 110 : 120; 
+
+          const x = currentX;
+          const y = globalOffsetY;
+          globalOffsetY += blockH + 30; // 30px vertical gap
+
+          const c = getpal(b.address);
+          const initials = (b.address||'??').slice(0,2).toUpperCase();
+          const explanation = b.explanation || '';
           
           let el = existingEls.get(b.address);
           const isNew = !el;
@@ -459,7 +454,7 @@ function renderTree(data, isPartial = false){
           
           el.dataset.addr=b.address;
           el.style.cssText=`left:${x}px;top:${y}px;width:${blockW}px; transition: left 0.3s ease, top 0.3s ease;`;
-          if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
+          if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) both`;
           
           let innerHtml = '';
           if (b.type === 'textblock') {
@@ -506,10 +501,20 @@ function renderTree(data, isPartial = false){
             if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
           }
           
-          nodeData[b.address]={x,y,w:blockW,h:NH,el,color:c,explanation:explanation};
-        });
-      });
-      globalOffsetX += maxW + 150; // Shift for next tree component!
+          nodeData[b.address] = {x, y, w:blockW, h:blockH, el, color:c, explanation:explanation};
+          
+          // Layout children
+          const children = dirAdj[addr] || [];
+          if (children.length > 0) {
+             children.forEach(childAddr => {
+                 placeNode(childAddr, currentX + 80); // indent 80px right
+             });
+          }
+      }
+
+      const visitedPlacement = new Set();
+      compRoots.forEach(r => placeNode(r, 0));
+      globalOffsetY += 80; // Large vertical gap between completely independent disconnected graphs
   });
 
   // Cleanup stale deleted elements
@@ -533,29 +538,39 @@ function drawEdges(){
   edgeSvg.innerHTML='';
   if(!edges.length)return;
   const defs=document.createElementNS(svgNS,'defs');
-  defs.innerHTML=`<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+  // Use orient="auto" so the arrow head points exactly forward along the last trajectory segment
+  defs.innerHTML=`<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
     <path d="M1.5 2L8.5 5L1.5 8" fill="none" stroke="#4f7ef0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </marker>`;
   edgeSvg.appendChild(defs);
   edges.forEach(e=>{
     const fn=nodeData[e.from], tn=nodeData[e.to];
     if(!fn||!tn)return;
-    const x1=fn.x+fn.w/2, y1=fn.y+fn.h;
-    const x2=tn.x+tn.w/2, y2=tn.y;
-    const cy=(y1+y2)/2;
+    
+    // Parent trunk origin (bottom, left aligned)
+    const startX = fn.x + 30;
+    const startY = fn.y + fn.h;
+    
+    // Child attachment point (left side, middle height)
+    const endX = tn.x - 3; // slightly offset so marker doesn't overlap border heavily
+    const endY = tn.y + tn.h / 2;
+    
     const path=document.createElementNS(svgNS,'path');
-    path.setAttribute('d',`M${x1},${y1} L${x1},${cy} L${x2},${cy} L${x2},${y2}`);
+    // Vertical drop, then horizontal shoot to the right
+    path.setAttribute('d',`M${startX},${startY} L${startX},${endY} L${endX},${endY}`);
     path.setAttribute('fill','none');
     path.setAttribute('stroke','#3a4680');
     path.setAttribute('stroke-width','1.6');
     path.setAttribute('marker-end','url(#ah)');
     edgeSvg.appendChild(path);
     if(e.label || e.explanation){
-      const lx=(x1+x2)/2, ly=cy-8;
+      // Position label halfway along the horizontal branch
+      const lx = (startX + endX) / 2;
+      const ly = endY - 18;
       const lblText=e.label?`🔹 ${e.label}`:'➡️ arrow';
       const hasExp=!!e.explanation;
       const foreign=document.createElementNS(svgNS,'foreignObject');
-      foreign.setAttribute('x',lx-75); foreign.setAttribute('y',ly-10);
+      foreign.setAttribute('x',lx-75); foreign.setAttribute('y',ly);
       foreign.setAttribute('width','150'); foreign.setAttribute('height','28');
       foreign.setAttribute('overflow','visible');
       let innerHtml=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(9,10,14,.9);border-radius:30px;border:1px solid #2a3660;padding:3px 8px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">${esc(lblText)}`;

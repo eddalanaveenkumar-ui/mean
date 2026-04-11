@@ -724,7 +724,7 @@ CRITICAL GRAPH FRACTURING RULES:
 1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children. 
 2. FRACTURE SUB-TREES: If a child node (e.g. "B") needs its own children, DO NOT build it inside the same tree. You MUST create a completely separate, disconnected tree where "B" is the new parent. 
 3. DUPLICATE WITH UNIQUE IDs: Because "B" appears as a child in Tree 1, and a parent in Tree 2, you MUST give them different 'address' IDs (e.g. "B_child" and "B_root") so the layout engine draws them as totally separate islands! Do not connect them!
-4. TEXTBLOCK PER TREE: You MUST include exactly one 'textblock' object for EVERY disconnected sub-tree you create to define that specific phase.
+4. TEXTBLOCK PER TREE: You MUST include exactly one 'textblock' object for EVERY disconnected sub-tree you create to define that specific phase. The textblock MUST be connected to the root node of its tree using an Arrow!
 
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
