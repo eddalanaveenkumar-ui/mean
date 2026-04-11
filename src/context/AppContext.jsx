@@ -431,10 +431,39 @@ export function AppProvider({ children }) {
     }
   }, [currentChatId, chats, isStreaming, apiKey, user, deepdiveActive, webSearchActive, addMessage, generateTitle]);
 
+  const saveClass = useCallback(async (name, slides) => {
+    if (!user || !user.jwt) return null;
+    try {
+      const resp = await fetch('https://mean-backend-zg5d.onrender.com/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.jwt}` },
+        body: JSON.stringify({ name, description: `Generated Classroom for ${name}`, slides })
+      });
+      const data = await resp.json();
+      if (data.class_id) {
+        const newCls = { class_id: data.class_id, name, description: `Generated Classroom for ${name}`, slides, created_at: new Date().toISOString() };
+        setClasses(prev => [newCls, ...prev]);
+        return data.class_id;
+      }
+    } catch (e) { console.error('Failed to save class', e); }
+    return null;
+  }, [user]);
+
+  const deleteClass = useCallback(async (classId) => {
+    if (!user || !user.jwt) return;
+    try {
+      await fetch(`https://mean-backend-zg5d.onrender.com/classes/${classId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.jwt}` }
+      });
+      setClasses(prev => prev.filter(c => c.class_id !== classId));
+    } catch (e) { console.error('Failed to delete class', e); }
+  }, [user]);
+
   const value = {
     user, apiKey, login, logout,
     chats, currentChat, currentChatId, setCurrentChatId,
-    classes, setClasses,
+    classes, setClasses, saveClass, deleteClass,
     newChat, deleteChat, loadChat, addMessage, sendMessage,
     isStreaming, setIsStreaming,
     sidebarOpen, setSidebarOpen,

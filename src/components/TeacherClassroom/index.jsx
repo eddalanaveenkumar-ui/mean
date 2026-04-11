@@ -52,7 +52,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
-  const { user, webSearchActive } = useApp();
+  const { user, webSearchActive, saveClass, classes, deleteClass } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState('General');
@@ -100,6 +100,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [isAgentLogExpanded, setIsAgentLogExpanded] = useState(false);
+  const [showClassList, setShowClassList] = useState(false);
 
   // YouTube Data API v3 key from environment variables
   const APP_YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
@@ -825,6 +826,8 @@ Return ONLY valid JSON array.`;
 
       setSlides(parsed);
       setPhase('done');
+      saveClass(topic, parsed); // Save automatically to DB
+      
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed }, '*');
@@ -1008,11 +1011,74 @@ Return ONLY valid JSON array.`;
             <i className="fas fa-arrow-left" />
           </button>
           <span style={{ fontWeight: '600', color: '#fff', fontSize: '15px' }}>Mean AI • Canvas</span>
+          <button 
+            onClick={() => setShowClassList(!showClassList)} 
+            style={{ marginLeft: '10px', background: showClassList ? '#fff' : 'rgba(255,255,255,0.08)', color: showClassList ? '#000' : '#fff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <i className="fas fa-layer-group" /> Collection
+          </button>
         </div>
         <button onClick={() => setShowSettings(true)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#8b949e', cursor: 'pointer', fontSize: '14px' }}>
           <i className="fas fa-cog" />
         </button>
       </header>
+
+      {/* Class Collection Side Panel */}
+      {showClassList && (
+        <div style={{
+          position: 'absolute', top: '70px', left: '20px', width: '320px', bottom: '100px',
+          background: 'rgba(12,12,12,0.95)', border: '1px solid #2a2a2a',
+          borderRadius: '12px', zIndex: 11, overflow: 'hidden',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column'
+        }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>
+               Saved Classes
+            </span>
+            <button onClick={() => setShowClassList(false)} style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer' }}>
+              <i className="fas fa-times" />
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {classes.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 10px', color: '#7d8590', fontSize: '13px' }}>
+                <i className="fas fa-folder-open" style={{ fontSize: '24px', opacity: 0.5, marginBottom: '10px', display: 'block' }}/>
+                No classes saved yet.
+              </div>
+            ) : (
+              classes.map(cls => (
+                <div key={cls.class_id} style={{
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid #222', borderRadius: '8px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                onClick={() => {
+                   if (cls.slides && Array.isArray(cls.slides)) {
+                      setSlides(cls.slides);
+                      setPhase('done');
+                      const frame = document.getElementById('roadmapFrame');
+                      if (frame && frame.contentWindow) {
+                         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: cls.slides }, '*');
+                      }
+                      setShowClassList(false);
+                   }
+                }}>
+                  <div style={{ fontWeight: '500', color: '#e6edf3', fontSize: '13px', marginBottom: '4px' }}>{cls.name}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#7d8590' }}>
+                      {new Date(cls.created_at).toLocaleDateString()}
+                    </span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); deleteClass(cls.class_id); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ff4444', opacity: 0.7, cursor: 'pointer' }}
+                    ><i className="fas fa-trash-alt"/></button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Canvas iframe */}
       <iframe id="roadmapFrame" src="/roadmap.html" 
