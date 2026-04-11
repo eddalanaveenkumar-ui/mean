@@ -354,7 +354,7 @@ function renderTree(data, isPartial = false){
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
 
-  const blocks=data.filter(n=>n&&n.type==='block');
+  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock'));
   const arrowDefs=data.filter(n=>n&&n.type==='arrow');
   if(!blocks.length)return;
   const blockMap={};
@@ -387,7 +387,6 @@ function renderTree(data, isPartial = false){
       const c=getpal(b.address);
       const initials=(b.address||'??').slice(0,2).toUpperCase();
       const explanation=b.explanation || '';
-      const shapeClass = b.shape ? `shape-${b.shape}` : '';
       
       let el = existingEls.get(b.address);
       const isNew = !el;
@@ -396,57 +395,53 @@ function renderTree(data, isPartial = false){
          el = document.createElement('div');
          world.appendChild(el);
       } else {
-         existingEls.delete(b.address); // mark as kept
-         // Force remove any old event listeners by cloning if we needed, but we don't because mousedown is ok
+         existingEls.delete(b.address); 
       }
       
-      // Update class and dataset strictly
-      el.className=`block-node ${shapeClass}`;
+      // Update element baseline
       el.dataset.addr=b.address;
+      el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
+      if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
       
-      // Smooth dynamic positioning without destroying DOM
-      if (isPartial) {
-        el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
-      } else {
-        el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
-        if (isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
-      }
-      
-      // We only recreate inner HTML because it's fast enough inside a single node
       let innerHtml = '';
-      if (b.shape === 'star') {
-         el.style.background = c.badge;
-         innerHtml = `
-            <div class="node-body">
-              <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
-            </div>`;
-      } else if (b.shape === 'text-field') {
+      if (b.type === 'textblock') {
+         el.className = `block-node shape-text-field`;
          el.style.background = '';
          innerHtml = `
           <div class="node-head">
-            <div class="node-addr">${esc(b.address)}</div>
-            <button class="tf-speak-btn" onclick="speakNodeText('${esc(b['in-content']||'')}')">🔊</button>
+            <div class="node-addr">${esc(b.title || b.address || 'Definition')}</div>
+            <button class="tf-speak-btn" onclick="speakNodeText('${esc(b.content||'')}')">🔊</button>
           </div>
           <div class="node-body">
-            <div class="node-content">${esc(b['in-content']||'')}</div>
+            <div class="node-content">${esc(b.content||'')}</div>
           </div>`;
       } else {
-         el.style.background = ''; // reset to default
-         innerHtml = `
-          <div class="node-head" style="background:${c.bg}">
-            <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
-            <div class="node-addr" style="color:${c.text}">${esc(b.address)}</div>
-          </div>
-          <div class="node-body">
-            <div class="node-content">${esc(b['in-content']||'')}</div>
-            ${explanation ? `<div class="node-explanation-badge" data-exp="${Math.random()}">📖 explain</div>` : ''}
-          </div>`;
+         const shapeClass = b.shape ? `shape-${b.shape}` : '';
+         el.className = `block-node ${shapeClass}`;
+         
+         if (b.shape === 'star') {
+            el.style.background = c.badge;
+            innerHtml = `
+               <div class="node-body">
+                 <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
+               </div>`;
+         } else {
+            el.style.background = ''; 
+            innerHtml = `
+             <div class="node-head" style="background:${c.bg}">
+               <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
+               <div class="node-addr" style="color:${c.text}">${esc(b.address)}</div>
+             </div>
+             <div class="node-body">
+               <div class="node-content">${esc(b['in-content']||'')}</div>
+               ${explanation ? `<div class="node-explanation-badge" data-exp="${Math.random()}">📖 explain</div>` : ''}
+             </div>`;
+         }
       }
+      
       el.innerHTML = innerHtml;
       
-      // Attach events only if new to avoid infinite listeners overlapping
       if (isNew) {
-        // We use event delegation or recreate. Doing recreate via inline works
         el.addEventListener('mousedown',ev=>{
           ev.stopPropagation();
           const n=nodeData[b.address];
@@ -457,8 +452,7 @@ function renderTree(data, isPartial = false){
         });
       }
       
-      // Handlers for dynamic explain buttons must be rebound since we overwrite innerHTML
-      if(explanation && b.shape !== 'star'){
+      if(explanation && b.shape !== 'star' && b.type !== 'textblock'){
         const badgeDiv=el.querySelector('.node-explanation-badge');
         if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
       }
@@ -466,7 +460,7 @@ function renderTree(data, isPartial = false){
          el.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
       }
       
-      nodeData[b.address]={x,y,w:NW,h:NH,el,color:c,explanation:explanation};
+      nodeData[b.address]={x,y,w:(b.type==='textblock'?260:NW),h:NH,el,color:c,explanation:explanation};
     });
   });
   

@@ -720,15 +720,17 @@ Ensure you strictly follow the roadmap context.`;
     const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
 Return ONLY a JSON array representing the flow. Current year: 2026.
 
-IMPORTANT GRAPH RULE:
-DO NOT output a single, monolithic, giant deeply-connected tree. Instead, intentionally SPLIT the flow into multiple smaller, disconnected parts (e.g., Part 1, Part 2) to prevent the diagram from getting too deep and unreadable.
+IMPORTANT GRAPH RULES:
+1. Branching Trees, NOT Linked Lists: DO NOT output simple sequential/linear chains (A->B->C->D). You MUST generate wide branching TREE structures where a block splits into multiple sub-children branches.
+2. Split Sub-Trees: Do not build one monolithic tree. Explicitly split the flowchart into smaller, completely disconnected sub-trees (e.g., Part 1, Part 2).
+3. Textblocks are Mandatory: You MUST include dedicated textblocks to provide definitions and long-form explanations for the concepts alongside the diagrams.
 
 JSON STRUCTURE RULES:
-- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
-- Shapes: "square" (default), "circle" (prerequisite), "star" (final goal), "text-field" (for giving text explanations of definitions or matters)
+- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle|star", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
+- Textblock (MANDATORY): {"type": "textblock", "address": "unique_id", "title": "Matter Title", "content": "Detailed explanation text..."}
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
 
-Min 6 blocks. Dense and accurate.${fileContext}
+Min 6 flow blocks + at least 1 textblock. Dense and accurate.${fileContext}
 Return ONLY valid JSON array.`;
 
     try {
