@@ -89,6 +89,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const slideBodyRef = useRef(null);
   const [loading, _setLoading] = useState(false);
   const isLoadingRef = useRef(false);
+  const abortControllerRef = useRef(null);
   const [jsonStreamData, setJsonStreamData] = useState('');
   const setLoading = useCallback((val) => { isLoadingRef.current = val; _setLoading(val); }, []);
   const fetchingRefs = useRef(new Set());
@@ -708,6 +709,11 @@ Ensure you strictly follow the roadmap context.`;
     const key = activeEngine === 'gemini' ? localKey.trim() : openRouterKey.trim();
     if (!key) { setShowSettings(true); return; }
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setPhase('loading');
     setJsonStreamData('');
     setSlides([]);
@@ -756,7 +762,7 @@ Return ONLY valid JSON array.`;
         };
       }
 
-      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal: abortControllerRef.current.signal });
 
       if (!resp.ok) {
         const errText = await resp.text();
@@ -839,6 +845,10 @@ Return ONLY valid JSON array.`;
         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
       }
     } catch (e) {
+      if (e.name === 'AbortError') {
+        console.log('[Classroom] Generation aborted by user.');
+        return;
+      }
       console.error('[Classroom] Fatal:', e);
       setJsonStreamData(`[ERROR] ${e.message}`);
       setPhase('error');
@@ -1171,19 +1181,34 @@ Return ONLY valid JSON array.`;
                 <i className="fas fa-brain" style={{ color: '#863bff', marginRight: '4px' }}/> Arcee
               </button>
             </div>
-            <button
-              onClick={startClass}
-              disabled={!topic.trim() || phase === 'loading'}
-              style={{
-                background: (topic.trim() && phase !== 'loading') ? '#fff' : '#2d2d2d',
-                color: (topic.trim() && phase !== 'loading') ? '#000' : '#555',
-                border: 'none', borderRadius: '50%', width: '28px', height: '28px',
-                cursor: (topic.trim() && phase !== 'loading') ? 'pointer' : 'default',
-                display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
-              }}
-            >
-              <i className="fas fa-arrow-up" style={{ fontSize: '12px' }}/>
-            </button>
+            {phase === 'loading' ? (
+              <button
+                onClick={() => {
+                   if (abortControllerRef.current) abortControllerRef.current.abort();
+                   setPhase('idle');
+                }}
+                style={{
+                  background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
+                }}
+              >
+                <i className="fas fa-stop" style={{ fontSize: '10px' }}/>
+              </button>
+            ) : (
+              <button
+                onClick={startClass}
+                disabled={!topic.trim()}
+                style={{
+                  background: topic.trim() ? '#fff' : '#2d2d2d',
+                  color: topic.trim() ? '#000' : '#555',
+                  border: 'none', borderRadius: '50%', width: '28px', height: '28px',
+                  cursor: topic.trim() ? 'pointer' : 'default',
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
+                }}
+              >
+                <i className="fas fa-arrow-up" style={{ fontSize: '12px' }}/>
+              </button>
+            )}
           </div>
         </div>
       </div>
