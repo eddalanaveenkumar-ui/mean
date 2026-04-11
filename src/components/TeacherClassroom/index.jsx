@@ -726,7 +726,7 @@ IMPORTANT GRAPH RULES:
 3. Textblocks are Mandatory: You MUST include dedicated textblocks to provide definitions and long-form explanations for the concepts alongside the diagrams.
 
 JSON STRUCTURE RULES:
-- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle|star", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
+- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
 - Textblock (MANDATORY): {"type": "textblock", "address": "unique_id", "title": "Matter Title", "content": "Detailed explanation text..."}
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
 

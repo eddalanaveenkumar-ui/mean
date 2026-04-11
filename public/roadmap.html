@@ -364,106 +364,154 @@ function renderTree(data, isPartial = false){
   
   const hasParent=new Set();
   blocks.forEach(b=>(b.connect||[]).forEach(c=>hasParent.add(c)));
-  const roots=blocks.filter(b=>!hasParent.has(b.address)).map(b=>b.address);
-  const levelOf={}; roots.forEach(r=>levelOf[r]=0);
-  const q=[...roots];
-  while(q.length){
-    const cur=q.shift(); const nd=blockMap[cur]; if(!nd)continue;
-    (nd.connect||[]).forEach(c=>{if(levelOf[c]===undefined){levelOf[c]=levelOf[cur]+1;q.push(c);}});
-  }
-  blocks.forEach(b=>{if(levelOf[b.address]===undefined)levelOf[b.address]=0;});
-  const byLevel={};
-  blocks.forEach(b=>{const l=levelOf[b.address];if(!byLevel[l])byLevel[l]=[];byLevel[l].push(b);});
-  const NW=200,NH=120,HGAP=80,VGAP=140;
-  
-  const sortedLvls=Object.keys(byLevel).sort((a,b)=>+a-+b);
-  sortedLvls.forEach((lv,li)=>{
-    const row=byLevel[lv];
-    const totalW=row.length*NW+(row.length-1)*HGAP;
-    const startX=-totalW/2;
-    row.forEach((b,bi)=>{
-      const x=startX+bi*(NW+HGAP);
-      const y=li*(NH+VGAP);
-      const c=getpal(b.address);
-      const initials=(b.address||'??').slice(0,2).toUpperCase();
-      const explanation=b.explanation || '';
-      
-      let el = existingEls.get(b.address);
-      const isNew = !el;
-      
-      if (isNew) {
-         el = document.createElement('div');
-         world.appendChild(el);
-      } else {
-         existingEls.delete(b.address); 
-      }
-      
-      // Update element baseline
-      el.dataset.addr=b.address;
-      el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
-      if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
-      
-      let innerHtml = '';
-      if (b.type === 'textblock') {
-         el.className = `block-node shape-text-field`;
-         el.style.background = '';
-         innerHtml = `
-          <div class="node-head">
-            <div class="node-addr">${esc(b.title || b.address || 'Definition')}</div>
-            <button class="tf-speak-btn" onclick="speakNodeText('${esc(b.content||'')}')">🔊</button>
-          </div>
-          <div class="node-body">
-            <div class="node-content">${esc(b.content||'')}</div>
-          </div>`;
-      } else {
-         const shapeClass = b.shape ? `shape-${b.shape}` : '';
-         el.className = `block-node ${shapeClass}`;
-         
-         if (b.shape === 'star') {
-            el.style.background = c.badge;
-            innerHtml = `
-               <div class="node-body">
-                 <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
-               </div>`;
-         } else {
-            el.style.background = ''; 
-            innerHtml = `
-             <div class="node-head" style="background:${c.bg}">
-               <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
-               <div class="node-addr" style="color:${c.text}">${esc(b.address)}</div>
-             </div>
-             <div class="node-body">
-               <div class="node-content">${esc(b['in-content']||'')}</div>
-               ${explanation ? `<div class="node-explanation-badge" data-exp="${Math.random()}">📖 explain</div>` : ''}
-             </div>`;
-         }
-      }
-      
-      el.innerHTML = innerHtml;
-      
-      if (isNew) {
-        el.addEventListener('mousedown',ev=>{
-          ev.stopPropagation();
-          const n=nodeData[b.address];
-          if(!n)return;
-          const wp=screenToWorld(ev.clientX,ev.clientY);
-          nodeDragging=n; el.classList.add('dragging');
-          nodeDragOff={x:wp.x-n.x, y:wp.y-n.y};
-        });
-      }
-      
-      if(explanation && b.shape !== 'star' && b.type !== 'textblock'){
-        const badgeDiv=el.querySelector('.node-explanation-badge');
-        if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
-      }
-      if(b.shape === 'star' && explanation) {
-         el.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
-      }
-      
-      nodeData[b.address]={x,y,w:(b.type==='textblock'?260:NW),h:NH,el,color:c,explanation:explanation};
-    });
+
+  // 1. Weakly Connected Components (Disjoint Sets) to group separate sub-trees
+  const adj = {};
+  blocks.forEach(b => { adj[b.address] = []; });
+  blocks.forEach(b => {
+     (b.connect||[]).forEach(c => {
+         if(!adj[b.address]) adj[b.address] = [];
+         if(!adj[c]) adj[c] = [];
+         adj[b.address].push(c);
+         adj[c].push(b.address);
+     });
   });
-  
+
+  const forest = [];
+  const visited = new Set();
+  blocks.forEach(b => {
+     if(!visited.has(b.address)) {
+        const comp = [];
+        const q = [b.address];
+        visited.add(b.address);
+        while(q.length){
+           const cur = q.shift();
+           comp.push(cur);
+           (adj[cur]||[]).forEach(nbr => {
+               if(!visited.has(nbr)){ visited.add(nbr); q.push(nbr); }
+           });
+        }
+        forest.push(comp);
+     }
+  });
+
+  const NW=200,NH=120,HGAP=80,VGAP=140;
+  let globalOffsetX = 0; // Tracks X position to place trees side-by-side!
+
+  forest.forEach((compAddrs, compIdx) => {
+      let compRoots = compAddrs.filter(a => !hasParent.has(a));
+      if(compRoots.length === 0) compRoots = [compAddrs[0]];
+      
+      const levelOf = {}; compRoots.forEach(r=>levelOf[r]=0);
+      const q = [...compRoots];
+      while(q.length){
+         const cur = q.shift();
+         const nd = blockMap[cur]; if(!nd) continue;
+         (nd.connect||[]).forEach(c => {
+             if(levelOf[c] === undefined){ levelOf[c]=levelOf[cur]+1; q.push(c); }
+         });
+      }
+      compAddrs.forEach(a => { if(levelOf[a]===undefined) levelOf[a]=0; });
+      
+      const byLevel = {};
+      compAddrs.forEach(a => {
+         const l = levelOf[a];
+         if(!byLevel[l]) byLevel[l] = [];
+         byLevel[l].push(blockMap[a]);
+      });
+      
+      const sortedLvls = Object.keys(byLevel).sort((a,b)=>+a-+b);
+      let maxW = 0;
+      sortedLvls.forEach(lv => {
+         const row = byLevel[lv];
+         let currW = 0;
+         row.forEach(b => { currW += (b.type==='textblock'?300:NW) + HGAP; });
+         if (currW > maxW) maxW = currW;
+      });
+
+      sortedLvls.forEach((lv,li)=>{
+        const row=byLevel[lv];
+        let rowW = 0;
+        row.forEach(b => { rowW += (b.type==='textblock'?300:NW) + HGAP; });
+        rowW -= HGAP;
+        
+        let localStartX = globalOffsetX + (maxW / 2) - (rowW / 2);
+
+        row.forEach((b,bi)=>{
+          const blockW = b.type==='textblock' ? 300 : NW;
+          const x = localStartX;
+          const y = li*(NH+VGAP);
+          localStartX += blockW + HGAP;
+
+          const c=getpal(b.address);
+          const initials=(b.address||'??').slice(0,2).toUpperCase();
+          const explanation=b.explanation || '';
+          
+          let el = existingEls.get(b.address);
+          const isNew = !el;
+          
+          if (isNew) {
+             el = document.createElement('div');
+             world.appendChild(el);
+          } else {
+             existingEls.delete(b.address); 
+          }
+          
+          el.dataset.addr=b.address;
+          el.style.cssText=`left:${x}px;top:${y}px;width:${blockW}px; transition: left 0.3s ease, top 0.3s ease;`;
+          if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
+          
+          let innerHtml = '';
+          if (b.type === 'textblock') {
+             el.className = `block-node shape-text-field`;
+             el.style.background = '';
+             innerHtml = `
+              <div class="node-head">
+                <div class="node-addr">${esc(b.title || b.address || 'Definition')}</div>
+                <button class="tf-speak-btn" onclick="speakNodeText('${esc(b.content||'')}')">🔊</button>
+              </div>
+              <div class="node-body">
+                <div class="node-content" style="text-align:left;">${esc(b.content||'')}</div>
+              </div>`;
+          } else {
+             const shapeClass = b.shape ? `shape-${b.shape}` : '';
+             el.className = `block-node ${shapeClass}`;
+             el.style.background = ''; 
+             innerHtml = `
+                 <div class="node-head" style="background:${c.bg}">
+                   <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
+                   <div class="node-addr" style="color:${c.text}">${esc(b.address)}</div>
+                 </div>
+                 <div class="node-body">
+                   <div class="node-content">${esc(b['in-content']||'')}</div>
+                   ${explanation ? `<div class="node-explanation-badge" data-exp="${Math.random()}">📖 explain</div>` : ''}
+                 </div>`;
+          }
+          
+          el.innerHTML = innerHtml;
+          
+          if (isNew) {
+            el.addEventListener('mousedown',ev=>{
+              ev.stopPropagation();
+              const n=nodeData[b.address];
+              if(!n)return;
+              const wp=screenToWorld(ev.clientX,ev.clientY);
+              nodeDragging=n; el.classList.add('dragging');
+              nodeDragOff={x:wp.x-n.x, y:wp.y-n.y};
+            });
+          }
+          
+          if(explanation && b.type !== 'textblock'){
+            const badgeDiv=el.querySelector('.node-explanation-badge');
+            if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
+          }
+          
+          nodeData[b.address]={x,y,w:blockW,h:NH,el,color:c,explanation:explanation};
+        });
+      });
+      globalOffsetX += maxW + 150; // Shift for next tree component!
+  });
+
   // Cleanup stale deleted elements
   existingEls.forEach(el => el.remove());
   blocks.forEach(b=>{
@@ -496,7 +544,7 @@ function drawEdges(){
     const x2=tn.x+tn.w/2, y2=tn.y;
     const cy=(y1+y2)/2;
     const path=document.createElementNS(svgNS,'path');
-    path.setAttribute('d',`M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}`);
+    path.setAttribute('d',`M${x1},${y1} L${x1},${cy} L${x2},${cy} L${x2},${y2}`);
     path.setAttribute('fill','none');
     path.setAttribute('stroke','#3a4680');
     path.setAttribute('stroke-width','1.6');
