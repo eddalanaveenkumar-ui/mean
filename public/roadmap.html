@@ -313,14 +313,22 @@ function fitView(){
 
 window.addEventListener('message', (event) => {
   if(event.data && event.data.type === 'LOAD_ROADMAP') {
-    renderTree(event.data.payload);
+    renderTree(event.data.payload, event.data.isPartial);
   }
 });
 
-function renderTree(data){
+function renderTree(data, isPartial = false){
   if(!Array.isArray(data)){console.error('Expected JSON array.');return;}
-  palIdx=0; palMap={}; nodeData={}; edges=[];
-  [...world.querySelectorAll('.block-node')].forEach(n=>n.remove());
+  palIdx=0; palMap={}; 
+  
+  // Save previous node data and elements for smart diffing!
+  const prevData = nodeData;
+  nodeData = {}; 
+  edges=[];
+  
+  const existingEls = new Map();
+  world.querySelectorAll('.block-node').forEach(n => existingEls.set(n.dataset.addr, n));
+  
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
 
@@ -359,12 +367,30 @@ function renderTree(data){
       const explanation=b.explanation || '';
       const shapeClass = b.shape ? `shape-${b.shape}` : '';
       
-      const el=document.createElement('div');
+      let el = existingEls.get(b.address);
+      const isNew = !el;
+      
+      if (isNew) {
+         el = document.createElement('div');
+         world.appendChild(el);
+      } else {
+         existingEls.delete(b.address); // mark as kept
+         // Force remove any old event listeners by cloning if we needed, but we don't because mousedown is ok
+      }
+      
+      // Update class and dataset strictly
       el.className=`block-node ${shapeClass}`;
       el.dataset.addr=b.address;
-      el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px;animation:nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
       
-      // Dynamic inline styles based on shape
+      // Smooth dynamic positioning without destroying DOM
+      if (isPartial) {
+        el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
+      } else {
+        el.style.cssText=`left:${x}px;top:${y}px;width:${NW}px; transition: left 0.3s ease, top 0.3s ease;`;
+        if (isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) ${li*60+bi*35}ms both`;
+      }
+      
+      // We only recreate inner HTML because it's fast enough inside a single node
       let innerHtml = '';
       if (b.shape === 'star') {
          el.style.background = c.badge;
@@ -373,6 +399,7 @@ function renderTree(data){
               <div class="node-content" style="color:#fff;font-weight:bold;">${esc(b['in-content']||'')}</div>
             </div>`;
       } else {
+         el.style.background = ''; // reset to default
          innerHtml = `
           <div class="node-head" style="background:${c.bg}">
             <div class="node-badge" style="background:${c.badge}">${esc(initials)}</div>
@@ -385,6 +412,20 @@ function renderTree(data){
       }
       el.innerHTML = innerHtml;
       
+      // Attach events only if new to avoid infinite listeners overlapping
+      if (isNew) {
+        // We use event delegation or recreate. Doing recreate via inline works
+        el.addEventListener('mousedown',ev=>{
+          ev.stopPropagation();
+          const n=nodeData[b.address];
+          if(!n)return;
+          const wp=screenToWorld(ev.clientX,ev.clientY);
+          nodeDragging=n; el.classList.add('dragging');
+          nodeDragOff={x:wp.x-n.x, y:wp.y-n.y};
+        });
+      }
+      
+      // Handlers for dynamic explain buttons must be rebound since we overwrite innerHTML
       if(explanation && b.shape !== 'star'){
         const badgeDiv=el.querySelector('.node-explanation-badge');
         if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
@@ -393,17 +434,12 @@ function renderTree(data){
          el.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
       }
       
-      el.addEventListener('mousedown',ev=>{
-        ev.stopPropagation();
-        const n=nodeData[b.address];
-        const wp=screenToWorld(ev.clientX,ev.clientY);
-        nodeDragging=n; el.classList.add('dragging');
-        nodeDragOff={x:wp.x-n.x, y:wp.y-n.y};
-      });
-      world.appendChild(el);
       nodeData[b.address]={x,y,w:NW,h:NH,el,color:c,explanation:explanation};
     });
   });
+  
+  // Cleanup stale deleted elements
+  existingEls.forEach(el => el.remove());
   blocks.forEach(b=>{
     (b.connect||[]).forEach(child=>{
       const key=`${b.address}->${child}`;
@@ -414,7 +450,7 @@ function renderTree(data){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     blocks.forEach(b=>{const el=nodeData[b.address]?.el;if(el) nodeData[b.address].h=el.offsetHeight;});
     drawEdges();
-    fitView();
+    if (!isPartial) { fitView(); } // only run fitView when fully loaded, keep manual scale while loading!
     drawMinimap();
   }));
 }

@@ -801,7 +801,7 @@ Return ONLY valid JSON array.`;
                       setSlides(partial);
                       const frame = document.getElementById('roadmapFrame');
                       if (frame?.contentWindow) {
-                        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: partial }, '*');
+                        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: partial, isPartial: true }, '*');
                       }
                     }
                   }
@@ -830,7 +830,7 @@ Return ONLY valid JSON array.`;
       
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
-        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed }, '*');
+        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
       }
     } catch (e) {
       console.error('[Classroom] Fatal:', e);
