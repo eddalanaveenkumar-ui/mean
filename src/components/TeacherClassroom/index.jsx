@@ -720,17 +720,18 @@ Ensure you strictly follow the roadmap context.`;
     const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
 Return ONLY a JSON array representing the flow. Current year: 2026.
 
-IMPORTANT GRAPH RULES:
-1. Branching Trees, NOT Linked Lists: DO NOT output simple sequential/linear chains (A->B->C->D). You MUST generate wide branching TREE structures where a block splits into multiple sub-children branches.
-2. Split Sub-Trees: Do not build one monolithic tree. Explicitly split the flowchart into smaller, completely disconnected sub-trees (e.g., Part 1, Part 2).
-3. Textblocks are Mandatory: You MUST include dedicated textblocks to provide definitions and long-form explanations for the concepts alongside the diagrams.
+CRITICAL GRAPH FRACTURING RULES:
+1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children. 
+2. FRACTURE SUB-TREES: If a child node (e.g. "B") needs its own children, DO NOT build it inside the same tree. You MUST create a completely separate, disconnected tree where "B" is the new parent. 
+3. DUPLICATE WITH UNIQUE IDs: Because "B" appears as a child in Tree 1, and a parent in Tree 2, you MUST give them different 'address' IDs (e.g. "B_child" and "B_root") so the layout engine draws them as totally separate islands! Do not connect them!
+4. TEXTBLOCK PER TREE: You MUST include exactly one 'textblock' object for EVERY disconnected sub-tree you create to define that specific phase.
 
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
 - Textblock (MANDATORY): {"type": "textblock", "address": "unique_id", "title": "Matter Title", "content": "Detailed explanation text..."}
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
 
-Min 6 flow blocks + at least 1 textblock. Dense and accurate.${fileContext}
+Dense and accurate.${fileContext}
 Return ONLY valid JSON array.`;
 
     try {
