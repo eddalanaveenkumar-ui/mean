@@ -99,6 +99,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   // Right panel — YouTube videos & images
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
+  const [isAgentLogExpanded, setIsAgentLogExpanded] = useState(false);
 
   // YouTube Data API v3 key from environment variables
   const APP_YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
@@ -1021,22 +1022,36 @@ Return ONLY valid JSON array.`;
       {/* Agent Log — left panel (visible when generating or error) */}
       {(phase === 'loading' || phase === 'error') && (
         <div style={{
-          position: 'absolute', top: '70px', left: '16px', width: '300px',
-          background: 'rgba(12,12,12,0.95)', border: '1px solid #2a2a2a',
+          position: 'absolute', top: '70px', left: '16px', width: isAgentLogExpanded ? '400px' : 'auto',
+          background: '#0c0c0c', border: '1px solid #2a2a2a',
           borderRadius: '12px', zIndex: 10, overflow: 'hidden',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)'
+          boxShadow: '0 8px 30px rgba(0,0,0,0.8)' // Solid bg + shadow fixes Chromium composite flickering
         }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#fff', fontSize: '12px', fontWeight: '600' }}>
-              <i className="fas fa-bolt" style={{ color: '#e8913a', marginRight: '5px' }}/> Agent Log
+          <div 
+             style={{ padding: '10px 14px', borderBottom: isAgentLogExpanded ? '1px solid #222' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', gap: '16px' }}
+             onClick={() => setIsAgentLogExpanded(!isAgentLogExpanded)}
+             title={isAgentLogExpanded ? "Hide Logs" : "Show Agent Logs"}
+          >
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fas fa-terminal" style={{ color: '#10b981' }}/> Agent Log
             </span>
-            {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '12px', height: '12px' }} />}
-            {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '11px' }}>⚠️ Error</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '14px', height: '14px', opacity: isAgentLogExpanded ? 1 : 0.6 }} />}
+              {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '12px' }}>⚠️ Error</span>}
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsAgentLogExpanded(!isAgentLogExpanded); }}
+                style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+              >
+                <i className={`fas fa-chevron-${isAgentLogExpanded ? 'up' : 'down'}`} />
+              </button>
+            </div>
           </div>
-          <div style={{ padding: '12px', color: '#7d8590', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '10px', whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto' }}>
-            {jsonStreamData || 'Waiting for generation...'}
-            {phase === 'loading' && <span className="cursor-blink" style={{ color: '#e8913a' }}>|</span>}
-          </div>
+          {isAgentLogExpanded && (
+            <div style={{ padding: '14px', color: '#8892b0', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto' }}>
+              {jsonStreamData || 'Waiting for generation...'}
+              {phase === 'loading' && <span className="cursor-blink" style={{ color: '#10b981', fontWeight: 'bold' }}>|</span>}
+            </div>
+          )}
         </div>
       )}
 
