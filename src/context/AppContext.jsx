@@ -19,6 +19,48 @@ export function AppProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'system');
   const streamAbortRef = useRef(null);
 
+  // Tokens state
+  const [adTokens, setAdTokens] = useState(0);
+  const [adTokensLastUpdated, setAdTokensLastUpdated] = useState(null);
+  const [premiumTokens, setPremiumTokens] = useState(0);
+
+  // Load tokens
+  useEffect(() => {
+    const storedAdTokens = localStorage.getItem('mean_ad_tokens');
+    const storedAdTime = localStorage.getItem('mean_ad_tokens_time');
+    const storedPremium = localStorage.getItem('mean_premium_tokens');
+
+    if (storedPremium) setPremiumTokens(parseInt(storedPremium));
+
+    if (storedAdTokens && storedAdTime) {
+      const time = parseInt(storedAdTime);
+      const isExpired = Date.now() - time > 24 * 60 * 60 * 1000;
+      if (isExpired) {
+        setAdTokens(0);
+        localStorage.setItem('mean_ad_tokens', '0');
+      } else {
+        setAdTokens(parseInt(storedAdTokens));
+        setAdTokensLastUpdated(time);
+      }
+    }
+  }, []);
+
+  const addAdToken = useCallback(() => {
+    setAdTokens(prev => {
+      const now = Date.now();
+      const updatedTokens = Math.min(prev + 1, 10);
+      localStorage.setItem('mean_ad_tokens', updatedTokens.toString());
+      localStorage.setItem('mean_ad_tokens_time', now.toString());
+      setAdTokensLastUpdated(now);
+      return updatedTokens;
+    });
+  }, []);
+
+  const resetAdTokens = useCallback(() => {
+    setAdTokens(0);
+    localStorage.setItem('mean_ad_tokens', '0');
+  }, []);
+
   // Theme application and synchronization
   useEffect(() => {
     localStorage.setItem('mean_theme', theme);
@@ -473,6 +515,7 @@ export function AppProvider({ children }) {
     webSearchActive, setWebSearchActive,
     theme, setTheme,
     persistChats, setChats, setApiKey,
+    adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

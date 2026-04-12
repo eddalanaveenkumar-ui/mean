@@ -9,6 +9,8 @@ import TeacherClassroom from './components/TeacherClassroom';
 import PptModal from './components/PptModal';
 import MusicPlayer from './components/MusicPlayer';
 import LandingPage from './components/LandingPage';
+import TokenBank from './components/TokenBank';
+import PremiumPlans from './components/PremiumPlans';
 import './App.css';
 
 export default function App() {
@@ -20,12 +22,16 @@ export default function App() {
   const [showTeacher, setShowTeacher] = useState(false);
   const [showPpt, setShowPpt] = useState(false);
   const [showMusic, setShowMusic] = useState(false);
+  const [showTokenBank, setShowTokenBank] = useState(false);
+  const [showPremiumPlans, setShowPremiumPlans] = useState(false);
 
   const overlayProps = {
     onVoice: () => setShowVoice(true),
     onPpt: () => setShowPpt(true),
     onTeacher: () => setShowTeacher(true),
     onMusic: () => setShowMusic(true),
+    onTokenBank: () => setShowTokenBank(true),
+    onPremiumPlans: () => setShowPremiumPlans(true),
   };
 
   if (!user) {
@@ -51,6 +57,8 @@ export default function App() {
       <TeacherClassroom isOpen={showTeacher} onClose={() => setShowTeacher(false)} />
       <PptModal isOpen={showPpt} onClose={() => setShowPpt(false)} />
       <MusicPlayer isOpen={showMusic} onClose={() => setShowMusic(false)} />
+      <TokenBank isOpen={showTokenBank} onClose={() => setShowTokenBank(false)} />
+      <PremiumPlans isOpen={showPremiumPlans} onClose={() => setShowPremiumPlans(false)} />
     </div>
   );
 }
