@@ -12,11 +12,15 @@ export default function TokenBank({ isOpen, onClose }) {
 
   const handleWatchAd = (adId) => {
     setActiveAd(adId);
-    // Simulate watching ad
+    
+    // Open Monetag direct link in a new tab
+    window.open('https://omg10.com/4/10867131', '_blank');
+    
+    // Check back after 5 seconds to grant the token to give them time to view
     setTimeout(() => {
       addAdToken();
       setActiveAd(null);
-    }, 2000);
+    }, 5000);
   };
 
   return (
