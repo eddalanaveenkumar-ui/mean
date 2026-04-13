@@ -122,7 +122,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         {/* Header — logo + toggle */}
         <header className="sidebar-header">
-          <img src={theme === 'light' ? "/logo-light.png" : "/logo.png"} alt="Mean AI" className="sidebar-logo" style={{ borderRadius: '50%' }} />
+          <img src={theme === 'light' ? "/logo-light.png" : "/logo.png"} alt="Mean AI" className="sidebar-logo" />
           <button className="sidebar-toggle-btn" onClick={() => { setSidebarCollapsed(true); setSidebarOpen(false); }} title="Collapse sidebar">
             <SidebarToggleIcon />
           </button>
