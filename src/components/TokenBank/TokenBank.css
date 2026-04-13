@@ -181,15 +181,52 @@
 
 .ad-button.watching {
   cursor: wait;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+  animation: watchPulse 1.5s ease-in-out infinite;
 }
 
-.spinner-mini {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255,255,255,0.3);
+@keyframes watchPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.ad-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ad-countdown span {
+  font-size: 0.8rem;
+  color: #3b82f6;
+}
+
+.countdown-circle {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border-top-color: var(--accent);
-  animation: spin 1s ease-in-out infinite;
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: countSpin 1s linear infinite;
+}
+
+.countdown-circle span {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+@keyframes countSpin {
+  0% { border-color: #3b82f6 transparent transparent transparent; }
+  25% { border-color: #3b82f6 #3b82f6 transparent transparent; }
+  50% { border-color: #3b82f6 #3b82f6 #3b82f6 transparent; }
+  75% { border-color: #3b82f6 #3b82f6 #3b82f6 #3b82f6; }
+  100% { border-color: #3b82f6 transparent transparent transparent; }
 }
 
 .max-tokens-warning {
@@ -201,10 +238,6 @@
   color: #ef4444;
   text-align: center;
   font-size: 0.9rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {

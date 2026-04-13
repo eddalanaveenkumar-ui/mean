@@ -1,26 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import './TokenBank.css';
 
 export default function TokenBank({ isOpen, onClose }) {
   const { adTokens, addAdToken, premiumTokens } = useApp();
   const [activeAd, setActiveAd] = useState(null);
+  const [countdown, setCountdown] = useState(0);
   
   if (!isOpen) return null;
 
   const ads = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleWatchAd = (adId) => {
+    if (activeAd || adTokens + premiumTokens >= 10) return;
+    
     setActiveAd(adId);
+    setCountdown(10);
+
+    // The AdsTerra Social Bar is already loaded globally via index.html
+    // It will show ads automatically. We grant the token after a 10-second wait
+    // to ensure the user has engaged with the ad content.
     
-    // Open Monetag direct link in a new tab
-    window.open('https://omg10.com/4/10867131', '_blank');
-    
-    // Check back after 5 seconds to grant the token to give them time to view
-    setTimeout(() => {
-      addAdToken();
-      setActiveAd(null);
-    }, 5000);
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          addAdToken();
+          setActiveAd(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   return (
@@ -60,11 +71,16 @@ export default function TokenBank({ isOpen, onClose }) {
                 <button 
                   key={adId} 
                   className={`ad-button ${isLocked ? 'locked' : ''} ${isWatching ? 'watching' : ''}`}
-                  onClick={() => !isLocked && !isWatching && handleWatchAd(adId)}
-                  disabled={isLocked || isWatching}
+                  onClick={() => !isLocked && !isWatching && !activeAd && handleWatchAd(adId)}
+                  disabled={isLocked || isWatching || !!activeAd}
                 >
                   {isWatching ? (
-                    <div className="spinner-mini"></div>
+                    <div className="ad-countdown">
+                      <div className="countdown-circle">
+                        <span>{countdown}</span>
+                      </div>
+                      <span>Earning token...</span>
+                    </div>
                   ) : (
                     <>
                       <i className="fas fa-play-circle" />
