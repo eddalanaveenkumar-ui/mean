@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from './context/AppContext';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
@@ -11,13 +12,21 @@ import MusicPlayer from './components/MusicPlayer';
 import LandingPage from './components/LandingPage';
 import TokenBank from './components/TokenBank';
 import PremiumPlans from './components/PremiumPlans';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Public static pages
+import AboutPage from './components/pages/AboutPage';
+import PrivacyPage from './components/pages/PrivacyPage';
+import TermsPage from './components/pages/TermsPage';
+import BlogPage from './components/pages/BlogPage';
+import BlogPostPage from './components/pages/BlogPostPage';
+
 import './App.css';
 
-export default function App() {
-  const { user, sidebarOpen, setSidebarOpen, showProfile } = useApp();
-  const [showLanding, setShowLanding] = useState(true);
+/* ── Dashboard Shell (the authenticated layout) ── */
+function DashboardLayout() {
+  const { sidebarOpen, setSidebarOpen, showProfile } = useApp();
 
-  // Shared overlay states
   const [showVoice, setShowVoice] = useState(false);
   const [showTeacher, setShowTeacher] = useState(false);
   const [showPpt, setShowPpt] = useState(false);
@@ -33,13 +42,6 @@ export default function App() {
     onTokenBank: () => setShowTokenBank(true),
     onPremiumPlans: () => setShowPremiumPlans(true),
   };
-
-  if (!user) {
-    if (showLanding) {
-      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
-    }
-    return <Login />;
-  }
 
   return (
     <div className="app-container">
@@ -60,5 +62,42 @@ export default function App() {
       <TokenBank isOpen={showTokenBank} onClose={() => setShowTokenBank(false)} />
       <PremiumPlans isOpen={showPremiumPlans} onClose={() => setShowPremiumPlans(false)} />
     </div>
+  );
+}
+
+/* ── Home Route — decides landing vs login vs dashboard ── */
+function HomePage() {
+  const { user } = useApp();
+  const [showLanding, setShowLanding] = useState(true);
+
+  if (user) return <DashboardLayout />;
+  if (showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+  return <Login />;
+}
+
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Public pages — accessible without login */}
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
+
+      {/* Protected profile route */}
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <DashboardLayout />
+        </ProtectedRoute>
+      } />
+
+      {/* Main app */}
+      <Route path="/" element={<HomePage />} />
+
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
