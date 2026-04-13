@@ -1140,14 +1140,14 @@ Return ONLY valid JSON array.`;
       {/* Bottom Floating Prompt Bar */}
       <div style={{
         position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
-        width: '90%', maxWidth: '680px', background: 'rgba(18,18,18,0.9)',
-        border: '1px solid #2a2a2a', borderRadius: '16px', zIndex: 10,
-        padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)'
+        width: '90%', maxWidth: '720px', background: 'var(--input-bg)',
+        border: '1px solid var(--border-color)', borderRadius: '32px', zIndex: 10,
+        padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '10px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <input
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#e6edf3', fontSize: '14px', outline: 'none' }}
+            style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '15px', outline: 'none', fontWeight: 500 }}
             placeholder="What would you like to change or create?"
             value={topic}
             onChange={e => setTopic(e.target.value)}
@@ -1156,29 +1156,29 @@ Return ONLY valid JSON array.`;
             autoFocus
           />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', paddingTop: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', fontSize: '13px' }}>
+            <button style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px', transition: 'transform 0.2s' }} onMouseOver={e=>e.currentTarget.style.color='var(--text-primary)'} onMouseOut={e=>e.currentTarget.style.color='var(--text-secondary)'}>
               <i className="fas fa-plus" />
             </button>
-            <label style={{ cursor: 'pointer', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px' }}>
+            <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 500, transition: 'color 0.2s' }} onMouseOver={e=>e.currentTarget.style.color='var(--text-primary)'} onMouseOut={e=>e.currentTarget.style.color='var(--text-secondary)'}>
               <i className="fas fa-paperclip" /> {uploadedFile ? fileName : ''}
               <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.doc,.docx" hidden disabled={phase==='loading'}/>
             </label>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ display: 'flex', background: '#1c1c1c', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
               <button 
                 onClick={() => setActiveEngine('gemini')}
-                style={{ background: activeEngine === 'gemini' ? '#2a2a2a' : 'transparent', border: 'none', color: activeEngine === 'gemini' ? '#fff' : '#7d8590', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ background: activeEngine === 'gemini' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'gemini' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'gemini' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <i className="fas fa-gem" style={{ color: '#4285f4', marginRight: '4px' }}/> Gemini
+                <i className="fas fa-gem" style={{ color: '#0A84FF', marginRight: '6px' }}/> Gemini
               </button>
               <button 
                 onClick={() => setActiveEngine('arcee')}
-                style={{ background: activeEngine === 'arcee' ? '#2a2a2a' : 'transparent', border: 'none', color: activeEngine === 'arcee' ? '#fff' : '#7d8590', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ background: activeEngine === 'arcee' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'arcee' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'arcee' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <i className="fas fa-brain" style={{ color: '#863bff', marginRight: '4px' }}/> Arcee
+                <i className="fas fa-brain" style={{ color: '#5E5CE6', marginRight: '6px' }}/> Arcee
               </button>
             </div>
             {phase === 'loading' ? (
@@ -1188,25 +1188,26 @@ Return ONLY valid JSON array.`;
                    setPhase('idle');
                 }}
                 style={{
-                  background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px',
-                  cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
+                  background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)', boxShadow: '0 4px 12px rgba(255, 69, 58, 0.4)'
                 }}
               >
-                <i className="fas fa-stop" style={{ fontSize: '10px' }}/>
+                <i className="fas fa-stop" style={{ fontSize: '11px' }}/>
               </button>
             ) : (
               <button
                 onClick={startClass}
                 disabled={!topic.trim()}
                 style={{
-                  background: topic.trim() ? '#fff' : '#2d2d2d',
-                  color: topic.trim() ? '#000' : '#555',
-                  border: 'none', borderRadius: '50%', width: '28px', height: '28px',
+                  background: topic.trim() ? 'linear-gradient(135deg, var(--accent), var(--accent-light))' : 'var(--hover-bg)',
+                  color: topic.trim() ? '#fff' : 'var(--text-muted)',
+                  border: 'none', borderRadius: '50%', width: '32px', height: '32px',
                   cursor: topic.trim() ? 'pointer' : 'default',
-                  display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.2s'
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  boxShadow: topic.trim() ? 'var(--shadow-glow)' : 'none'
                 }}
               >
-                <i className="fas fa-arrow-up" style={{ fontSize: '12px' }}/>
+                <i className="fas fa-arrow-up" style={{ fontSize: '13px' }}/>
               </button>
             )}
           </div>

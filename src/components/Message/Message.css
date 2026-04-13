@@ -6,24 +6,30 @@
 /* ===== USER MESSAGE — dark rounded pill ===== */
 .msg-user {
   justify-content: flex-end;
-  padding: 4px 0;
+  padding: 6px 0;
 }
 
 .msg-user-bubble {
-  max-width: 70%;
-  background: #303030;
-  color: #ececec;
-  border-radius: 20px;
-  padding: 10px 18px;
-  font-size: 0.93rem;
-  line-height: 1.6;
+  max-width: 75%;
+  background: rgba(36, 36, 38, 0.85); /* Apple dark tint */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #F5F5F7;
+  border-radius: 20px 20px 6px 20px; /* iMessage style bottom-right pinch */
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
   word-break: break-word;
   white-space: pre-wrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 body.light-theme .msg-user-bubble {
-  background: #e8e8e8;
-  color: #0d0d0d;
+  background: rgba(229, 229, 234, 0.85);
+  border-color: rgba(0, 0, 0, 0.04);
+  color: #1D1D1F;
 }
 
 /* ===== BOT MESSAGE ===== */
