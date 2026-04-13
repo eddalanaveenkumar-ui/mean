@@ -34,7 +34,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 /* explain panel */
 #explain-panel{
   position:fixed;bottom:20px;left:20px;z-index:400;
-  background:rgba(12,14,21,.96);backdrop-filter:blur(16px);
+  background:var(--surface);backdrop-filter:blur(16px);
   border:1px solid var(--border2);border-radius:20px;
   max-width:360px;width:auto;min-width:220px;
   box-shadow:0 12px 28px rgba(0,0,0,.5);
@@ -110,7 +110,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 }
 .block-node{
   position:absolute;
-  background:rgba(17,19,26,.96);
+  background:var(--surface);
   border:1px solid var(--border2);
   border-radius:14px;
   min-width:170px;max-width:240px;
@@ -139,13 +139,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   border-radius: 0; min-width: 240px; min-height: 240px;
   display: flex; flex-direction: column; justify-content: center; align-items: center;
-  background: rgba(17,19,26,.98); border: none; padding: 40px;
+  background: var(--surface); border: none; padding: 40px;
 }
 .block-node.shape-star .node-head { background: transparent !important; border:none; }
 .block-node.shape-star .node-badge { display: none; }
 
 .block-node.shape-text-field {
-  border-radius: 8px; background: rgba(22, 24, 32, 0.98); 
+  border-radius: 8px; background: var(--surface2); 
   min-width: 260px; text-align: left;
 }
 .block-node.shape-text-field .node-head {
@@ -192,7 +192,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 #minimap{
   position:absolute;bottom:16px;right:16px;z-index:300;
   width:160px;height:110px;
-  background:rgba(9,10,15,.88);
+  background:var(--surface);
   border:1px solid var(--border2);border-radius:10px;
   overflow:hidden;cursor:pointer;
   backdrop-filter:blur(8px)
@@ -205,7 +205,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 #float-controls{
   position:absolute;bottom:140px;right:16px;transform:none;
   z-index:300;display:flex;flex-direction:column;gap:6px;
-  background:rgba(9,10,15,.88);border:1px solid var(--border2);border-radius:10px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:10px;
   padding:8px 6px;backdrop-filter:blur(8px)
 }
 .fc-btn{

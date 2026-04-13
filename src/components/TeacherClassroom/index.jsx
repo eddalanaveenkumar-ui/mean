@@ -1040,23 +1040,23 @@ Return ONLY valid JSON array.`;
 
   // ===== UNIFIED CANVAS WORKSPACE =====
   return (
-    <div className="tc-overlay" style={{ background: '#0e1116', display: 'flex', flexDirection: 'column' }}>
+    <div className="tc-overlay" style={{ background: 'var(--bg-dark)', display: 'flex', flexDirection: 'column' }}>
       
       {/* Top Header */}
       <header style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={handleClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer' }}>
+          <button onClick={handleClose} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <i className="fas fa-arrow-left" />
           </button>
-          <span style={{ fontWeight: '600', color: '#fff', fontSize: '15px' }}>Mean AI • Canvas</span>
+          <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '15px' }}>Mean AI • Canvas</span>
           <button 
             onClick={() => setShowClassList(!showClassList)} 
-            style={{ marginLeft: '10px', background: showClassList ? '#fff' : 'rgba(255,255,255,0.08)', color: showClassList ? '#000' : '#fff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ marginLeft: '10px', background: showClassList ? 'var(--text-primary)' : 'var(--hover-bg)', color: showClassList ? 'var(--bg-dark)' : 'var(--text-primary)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <i className="fas fa-layer-group" /> Collection
           </button>
         </div>
-        <button onClick={() => setShowSettings(true)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#8b949e', cursor: 'pointer', fontSize: '14px' }}>
+        <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
           <i className="fas fa-cog" />
         </button>
       </header>
@@ -1065,15 +1065,15 @@ Return ONLY valid JSON array.`;
       {showClassList && (
         <div style={{
           position: 'absolute', top: '70px', left: '20px', width: '320px', bottom: '100px',
-          background: 'rgba(12,12,12,0.95)', border: '1px solid #2a2a2a',
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)',
           borderRadius: '12px', zIndex: 11, overflow: 'hidden',
           boxShadow: '0 8px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column'
         }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600' }}>
                Saved Classes
             </span>
-            <button onClick={() => setShowClassList(false)} style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer' }}>
+            <button onClick={() => setShowClassList(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
               <i className="fas fa-times" />
             </button>
           </div>
@@ -1086,10 +1086,10 @@ Return ONLY valid JSON array.`;
             ) : (
               classes.map(cls => (
                 <div key={cls.class_id} style={{
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid #222', borderRadius: '8px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s'
+                  background: 'var(--hover-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--input-bg)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                 onClick={() => {
                    if (cls.slides && Array.isArray(cls.slides)) {
                       setSlides(cls.slides);
@@ -1101,7 +1101,7 @@ Return ONLY valid JSON array.`;
                       setShowClassList(false);
                    }
                 }}>
-                  <div style={{ fontWeight: '500', color: '#e6edf3', fontSize: '13px', marginBottom: '4px' }}>{cls.name}</div>
+                  <div style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '13px', marginBottom: '4px' }}>{cls.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '11px', color: '#7d8590' }}>
                       {new Date(cls.created_at).toLocaleDateString()}
@@ -1127,16 +1127,16 @@ Return ONLY valid JSON array.`;
       {(phase === 'loading' || phase === 'error') && (
         <div style={{
           position: 'absolute', top: '70px', left: '16px', width: isAgentLogExpanded ? '400px' : 'auto',
-          background: '#0c0c0c', border: '1px solid #2a2a2a',
+          background: 'var(--card-bg)', border: '1px solid var(--border-color)',
           borderRadius: '12px', zIndex: 10, overflow: 'hidden',
           boxShadow: '0 8px 30px rgba(0,0,0,0.8)' // Solid bg + shadow fixes Chromium composite flickering
         }}>
           <div 
-             style={{ padding: '10px 14px', borderBottom: isAgentLogExpanded ? '1px solid #222' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', gap: '16px' }}
+             style={{ padding: '10px 14px', borderBottom: isAgentLogExpanded ? '1px solid var(--border-color)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', gap: '16px' }}
              onClick={() => setIsAgentLogExpanded(!isAgentLogExpanded)}
              title={isAgentLogExpanded ? "Hide Logs" : "Show Agent Logs"}
           >
-            <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <i className="fas fa-terminal" style={{ color: '#10b981' }}/> Agent Log
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1144,14 +1144,14 @@ Return ONLY valid JSON array.`;
               {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '12px' }}>⚠️ Error</span>}
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsAgentLogExpanded(!isAgentLogExpanded); }}
-                style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
               >
                 <i className={`fas fa-chevron-${isAgentLogExpanded ? 'up' : 'down'}`} />
               </button>
             </div>
           </div>
           {isAgentLogExpanded && (
-            <div style={{ padding: '14px', color: '#8892b0', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto' }}>
+            <div style={{ padding: '14px', color: 'var(--text-secondary)', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto' }}>
               {jsonStreamData || 'Waiting for generation...'}
               {phase === 'loading' && <span className="cursor-blink" style={{ color: '#10b981', fontWeight: 'bold' }}>|</span>}
             </div>
@@ -1165,7 +1165,7 @@ Return ONLY valid JSON array.`;
         width: '90%', maxWidth: '720px', background: 'var(--input-bg)',
         border: '1px solid var(--border-color)', borderRadius: '32px', zIndex: 10,
         padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '10px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)'
+        boxShadow: '0 8px 32px rgba(0,0,0,0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <input
@@ -1241,35 +1241,35 @@ Return ONLY valid JSON array.`;
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowSettings(false)}
         >
-          <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}
           >
             <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
-              <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 8px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#4285f4' }}>Google AI Studio</a></p>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 8px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#0a84ff' }}>Google AI Studio</a></p>
               <input
                 type="password"
                 placeholder="AIza..."
                 value={localKey}
                 onChange={e => saveKey(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             
             <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ color: '#fff', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-star" style={{ color: '#863bff', marginRight: '8px' }}/>OpenRouter API Key</h3>
-              <p style={{ color: '#8b949e', fontSize: '13px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: '#999' }}>arcee-ai/trinity-large-preview:free</span></p>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-star" style={{ color: '#5e5ce6', marginRight: '8px' }}/>OpenRouter API Key</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: 'var(--text-muted)' }}>arcee-ai/trinity-large-preview:free</span></p>
               <input
                 type="password"
                 placeholder="sk-or-v1-..."
                 value={openRouterKey}
                 onChange={e => saveOpenRouterKey(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0d', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '10px' }}>
-              <button onClick={() => setShowSettings(false)} style={{ padding: '8px 20px', background: '#fff', color: '#000', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Done</button>
+              <button onClick={() => setShowSettings(false)} style={{ padding: '8px 20px', background: 'var(--text-primary)', color: 'var(--bg-dark)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Done</button>
             </div>
           </div>
         </div>
