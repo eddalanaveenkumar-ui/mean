@@ -1,34 +1,49 @@
 import React from 'react';
+import './FooterPages.css';
 
-export const AboutPage = () => (
-  <div style={{ padding: '40px', color: '#ececec', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-    <h1 style={{ color: '#f0ad5e', marginBottom: '20px' }}>About MeanAI</h1>
-    <p>MeanAI was built to solve a common problem: students don’t understand code — they memorize it.</p>
-    <p>Our goal is to make learning programming simple, structured, and clear using AI that teaches like a real teacher.</p>
-    <p>Whether you're debugging code or learning a new concept, MeanAI helps you understand — not just copy.</p>
-  </div>
-);
+export default function FooterPages({ page, onClose }) {
+  if (!page) return null;
 
-export const BlogPage = () => (
-  <div style={{ padding: '40px', color: '#ececec', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-    <h1 style={{ color: '#f0ad5e', marginBottom: '20px' }}>Learn Programming Smarter</h1>
-    <p>Guides, tutorials, and explanations designed for beginners.</p>
-  </div>
-);
+  return (
+    <div className="footer-page-overlay" onClick={onClose}>
+      <div className="footer-page-modal" onClick={e => e.stopPropagation()}>
+        <button className="fp-close-btn" onClick={onClose}>&times;</button>
+        <div className="fp-content">
+          {page === 'about' && (
+            <>
+              <h2>About Mean AI</h2>
+              <p>Mean AI is an advanced educational ecosystem that bridges the gap between structured learning and dynamic artificial intelligence. Designed to feel like a real teacher, our platform breaks down complex concepts, specifically in computer science and programming, line by line.</p>
+              <p>Our mission is to help individuals stop guessing and start understanding through personalized, interactive execution flows.</p>
+            </>
+          )}
 
-export const PrivacyPage = () => (
-  <div style={{ padding: '40px', color: '#ececec', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-    <h1 style={{ color: '#f0ad5e', marginBottom: '20px' }}>Privacy Policy</h1>
-    <p>We respect your privacy.</p>
-    <p>We only collect necessary data to provide authentication and improve your experience.</p>
-    <p>We do not sell your data to third parties.</p>
-  </div>
-);
+          {page === 'privacy' && (
+            <>
+              <h2>Privacy Policy</h2>
+              <p>Your privacy is important to us. This policy outlines how Mean AI collects, uses, and protects your information.</p>
+              <h3>1. Data Collection</h3>
+              <p>We only collect data necessary to provide and improve our services, including interaction logs and account metadata via secure authentication providers like Google.</p>
+              <h3>2. Data Usage</h3>
+              <p>Your chat interactions and generated sessions are securely stored to provide you with continuous, persistent learning experiences. We do not sell your personal data.</p>
+              <h3>3. Third-party Services</h3>
+              <p>Mean AI utilizes robust third-party APIs such as OpenRouter to process AI prompts, which may be governed by their own usage policies.</p>
+            </>
+          )}
 
-export const TermsPage = () => (
-  <div style={{ padding: '40px', color: '#ececec', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-    <h1 style={{ color: '#f0ad5e', marginBottom: '20px' }}>Terms of Service</h1>
-    <p>By using MeanAI, you agree to use the platform responsibly.</p>
-    <p>Do not misuse the service for harmful or illegal activities.</p>
-  </div>
-);
+          {page === 'terms' && (
+            <>
+              <h2>Terms & Conditions</h2>
+              <p>By using Mean AI, you agree to these terms. Please read them carefully.</p>
+              <h3>1. Usage Terms</h3>
+              <p>You agree to use Mean AI only for educational and lawful purposes.</p>
+              <h3>2. Account Responsibility</h3>
+              <p>You are responsible for safeguarding your account access and any API keys you connect to our service.</p>
+              <h3>3. Service Availability</h3>
+              <p>Mean AI aims to provide uninterrupted service, but does not guarantee 100% uptime. Services may be modified or discontinued without notice.</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

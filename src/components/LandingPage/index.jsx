@@ -38,10 +38,13 @@ const StarIcon = () => (
 );
 
 
+import FooterPages from '../FooterPages';
+
 export default function LandingPage({ onGetStarted }) {
   const [scrolled, setScrolled] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: -1000, y: -1000 });
   const [visibleSections, setVisibleSections] = useState(new Set());
+  const [legalPage, setLegalPage] = useState(null);
 
   useEffect(() => {
     const container = document.querySelector('.landing-scroll-container');
@@ -248,9 +251,9 @@ export default function LandingPage({ onGetStarted }) {
             
             {/* Legal & About Links */}
             <div className="footer-links" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <a href="#" className="nav-link">About</a>
-              <a href="#" className="nav-link">Privacy Policy</a>
-              <a href="#" className="nav-link">Terms & Conditions</a>
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); setLegalPage('about'); }}>About</a>
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}>Privacy Policy</a>
+              <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}>Terms & Conditions</a>
             </div>
           </div>
           <div className="footer-bottom" style={{ textAlign: 'center', marginTop: '32px' }}>
@@ -258,6 +261,8 @@ export default function LandingPage({ onGetStarted }) {
           </div>
         </footer>
       </div>
+
+      <FooterPages page={legalPage} onClose={() => setLegalPage(null)} />
     </div>
   );
 }
