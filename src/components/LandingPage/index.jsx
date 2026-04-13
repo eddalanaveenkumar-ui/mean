@@ -240,13 +240,20 @@ export default function LandingPage({ onGetStarted }) {
 
         {/* Footer */}
         <footer className="landing-footer">
-          <div className="footer-inner" style={{ justifyContent: 'center' }}>
-            <div className="footer-brand" style={{ textAlign: 'center' }}>
+          <div className="footer-inner" style={{ flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+            <div className="footer-brand" style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img src="/logo.png" alt="Mean AI" className="footer-logo-img" />
               <span className="footer-logo-text">Mean <span className="accent-text">AI</span></span>
             </div>
+            
+            {/* Legal & About Links */}
+            <div className="footer-links" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <a href="#" className="nav-link">About</a>
+              <a href="#" className="nav-link">Privacy Policy</a>
+              <a href="#" className="nav-link">Terms & Conditions</a>
+            </div>
           </div>
-          <div className="footer-bottom" style={{ textAlign: 'center' }}>
+          <div className="footer-bottom" style={{ textAlign: 'center', marginTop: '32px' }}>
             <span>© {new Date().getFullYear()} Mean AI. All rights reserved.</span>
           </div>
         </footer>
