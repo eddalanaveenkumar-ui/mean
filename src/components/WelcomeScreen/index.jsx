@@ -110,11 +110,11 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
       {/* Action cards */}
       <div className="welcome-pills" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { onTeacher?.(); }}>
-          <div style={{ fontWeight: 'bold', color: '#f0ad5e', marginBottom: '8px', fontSize: '1rem' }}>📚 Teach a Topic</div>
+          <div style={{ fontWeight: 'bold', color: '#0A84FF', marginBottom: '8px', fontSize: '1rem' }}>📚 Teach a Topic</div>
           <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Get a full classroom session on any topic.</div>
         </button>
         <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { onPpt?.(); }}>
-          <div style={{ fontWeight: 'bold', color: '#f0ad5e', marginBottom: '8px', fontSize: '1rem' }}>📊 Create PPTs</div>
+          <div style={{ fontWeight: 'bold', color: '#0A84FF', marginBottom: '8px', fontSize: '1rem' }}>📊 Create PPTs</div>
           <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Auto-generate presentations from any topic.</div>
         </button>
         <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { setWebSearchActive(!webSearchActive); }}>
