@@ -6,7 +6,7 @@ import InputArea from '../InputArea';
 import './ChatArea.css';
 
 export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat } = useApp();
+  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme } = useApp();
   const chatRef = useRef(null);
   const [streamText, setStreamText] = useState('');
   const [isStreamActive, setIsStreamActive] = useState(false);
@@ -72,7 +72,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
             <i className="fas fa-bars" />
           </button>
           <span className="header-brand">
-            <img src="/logo.png" alt="" className="header-brand-icon" style={{ borderRadius: '50%' }} />
+            <img src={theme === 'light' ? '/logo-light.png' : '/logo.png'} alt="" className="header-brand-icon" style={{ borderRadius: '50%' }} />
             <span className="hb-mean">Mean</span>
             <span className="hb-ai">AI</span>
           </span>
