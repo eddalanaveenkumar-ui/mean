@@ -14,24 +14,53 @@ const GoogleIcon = () => (
   </svg>
 );
 
+// Helper: fetch with timeout
+const fetchWithTimeout = (url, options = {}, timeoutMs = 45000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+};
+
 export default function Login() {
   const { login } = useApp();
   const [step, setStep] = useState(1);
   const [tempUser, setTempUser] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
-  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('Authenticating securely...');
+  const [showSkip, setShowSkip] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [firebaseUser, setFirebaseUser] = useState(null);
 
-  // Handle long loading state to inform user about cold starts
+  // Show skip button after 8 seconds of loading
   useEffect(() => {
-    let timer;
+    let skipTimer, msgTimer;
     if (isLoading) {
-      timer = setTimeout(() => setIsWakingUp(true), 5000);
+      msgTimer = setTimeout(() => {
+        setLoadingMsg('Waking up secure server... this may take a moment.');
+      }, 5000);
+      skipTimer = setTimeout(() => setShowSkip(true), 8000);
     } else {
-      setIsWakingUp(false);
+      setShowSkip(false);
+      setLoadingMsg('Authenticating securely...');
     }
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(skipTimer); clearTimeout(msgTimer); };
   }, [isLoading]);
+
+  // Skip backend and go straight to API key entry
+  const handleSkipToApiKey = () => {
+    setIsLoading(false);
+    setShowSkip(false);
+    if (firebaseUser) {
+      setTempUser({
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+        jwt: null,
+        photoURL: firebaseUser.photoURL
+      });
+    }
+    setStep(2);
+  };
 
   // Intercept openrouter and firebase auth redirect
   useEffect(() => {
@@ -39,8 +68,23 @@ export default function Login() {
     getRedirectResult(auth).then(async (result) => {
       if (result && result.user) {
         setIsLoading(true);
-        const idToken = await result.user.getIdToken();
-        await processBackendAuth(result.user, idToken);
+        setFirebaseUser(result.user);
+        try {
+          const idToken = await result.user.getIdToken();
+          await processBackendAuth(result.user, idToken);
+        } catch(e) {
+          console.error('Redirect auth error:', e);
+          // Fall through to Step 2 gracefully
+          setTempUser({
+            email: result.user.email,
+            name: result.user.displayName || 'User',
+            jwt: null,
+            photoURL: result.user.photoURL
+          });
+          setStep(2);
+        } finally {
+          setIsLoading(false);
+        }
       }
     }).catch(err => {
       console.error("Redirect login error:", err);
@@ -71,22 +115,26 @@ export default function Login() {
       .then(data => {
          if (data.key) {
             setApiKeyInput(data.key);
-            // DO NOT stop at step 2, automatically link the key!
             const theKey = data.key;
             if (savedTemp && savedTemp !== 'null') {
                 const u = JSON.parse(savedTemp);
-                fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
-                    method: 'POST',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${u.jwt}` 
-                    },
-                    body: JSON.stringify({ api_key: theKey })
-                }).then(() => {
-                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
-                }).catch(() => {
-                    login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
-                });
+                if (u.jwt) {
+                  fetchWithTimeout('https://mean-backend-zg5d.onrender.com/update-api-key', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${u.jwt}` 
+                      },
+                      body: JSON.stringify({ api_key: theKey })
+                  }).then(() => {
+                      login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
+                  }).catch(() => {
+                      // Backend save failed, but still log in locally
+                      login({ id: u.email, name: u.name, apiKey: theKey, jwt: u.jwt, photoURL: u.photoURL });
+                  });
+                } else {
+                  login({ id: u.email, name: u.name, apiKey: theKey, photoURL: u.photoURL });
+                }
             } else {
                 login({ id: 'user', name: 'User', apiKey: theKey });
             }
@@ -107,8 +155,10 @@ export default function Login() {
 
   // Reusable backend linkage
   const processBackendAuth = async (user, idToken, overrideName = null) => {
-      // Step 1: Send Firebase token to Backend
-      const response = await fetch('https://mean-backend-zg5d.onrender.com/google-login', {
+      setLoadingMsg('Connecting to secure server...');
+
+      // Step 1: Send Firebase token to Backend (with timeout)
+      const response = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/google-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: idToken })
@@ -118,8 +168,10 @@ export default function Login() {
       const data = await response.json();
       const backendJwt = data.access_token;
       
+      setLoadingMsg('Checking your account...');
+
       // Step 2: Check if OpenRouter API is linked
-      const meResponse = await fetch('https://mean-backend-zg5d.onrender.com/me', {
+      const meResponse = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/me', {
          method: 'GET',
          headers: { 'Authorization': `Bearer ${backendJwt}` }
       });
@@ -129,7 +181,7 @@ export default function Login() {
 
       if (meData.has_api_key) {
          // Log them in entirely.
-         const keyResp = await fetch('https://mean-backend-zg5d.onrender.com/me/api_key', {
+         const keyResp = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/me/api_key', {
             headers: { 'Authorization': `Bearer ${backendJwt}` }
          });
          const keyData = await keyResp.json();
@@ -144,19 +196,31 @@ export default function Login() {
   const handleGoogleLogin = async (e) => {
     if (e) e.preventDefault();
     setIsLoading(true);
+    setLoadingMsg('Authenticating with Google...');
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      setFirebaseUser(result.user);
+      setLoadingMsg('Connecting to secure server...');
       const idToken = await result.user.getIdToken();
       await processBackendAuth(result.user, idToken);
     } catch (err) {
       console.error(err);
       if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
-          // Fallback to redirect if popup is blocked or running in Capacitor/Mobile WebView
           signInWithRedirect(auth, googleProvider);
-          return; // Do not unset loading, let it redirect
+          return;
+      } else if (err.name === 'AbortError') {
+          // Backend timed out — skip to API key step
+          setTempUser({
+            email: firebaseUser?.email || 'user',
+            name: firebaseUser?.displayName || 'User',
+            jwt: null,
+            photoURL: firebaseUser?.photoURL
+          });
+          setStep(2);
       } else if (err.code !== 'auth/popup-closed-by-user') {
-          alert('Google Login Failed. Please try again.');
+          alert('Login failed. Please try again.');
       }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -169,24 +233,27 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-        // Connect OpenRouter API to new backend
+        // Try to connect to backend if we have a JWT
         if (tempUser?.jwt) {
-          const response = await fetch('https://mean-backend-zg5d.onrender.com/update-api-key', {
-            method: 'POST',
-            headers: { 
-               'Content-Type': 'application/json',
-               'Authorization': `Bearer ${tempUser.jwt}` 
-            },
-            body: JSON.stringify({ api_key: apiKeyInput.trim() })
-          });
-          if (!response.ok) {
-             alert('Failed to link API key!');
-             return;
+          try {
+            const response = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/update-api-key', {
+              method: 'POST',
+              headers: { 
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${tempUser.jwt}` 
+              },
+              body: JSON.stringify({ api_key: apiKeyInput.trim() })
+            }, 15000);
+            if (!response.ok) {
+              console.warn('Backend API key save failed, proceeding locally.');
+            }
+          } catch(e) {
+            console.warn('Backend unavailable, proceeding locally.');
           }
         }
         
-        // Fallback: local session login directly
-        login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: apiKeyInput.trim(), photoURL: tempUser?.photoURL });
+        // Login locally regardless
+        login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: apiKeyInput.trim(), jwt: tempUser?.jwt, photoURL: tempUser?.photoURL });
     } finally {
         setIsLoading(false);
     }
@@ -203,13 +270,14 @@ export default function Login() {
               <div className="atom-orbit atom-orbit-2"><div className="atom-electron"></div></div>
               <div className="atom-orbit atom-orbit-3"><div className="atom-electron"></div></div>
             </div>
-            <div className="loading-text" style={{ textAlign: 'center', lineHeight: '1.4' }}>
-              {isWakingUp ? (
-                <>Waking up secure server...<br/><span style={{fontSize: '12px', color: '#888'}}>This can take up to 50 seconds on cold start.</span></>
-              ) : (
-                'Authenticating securely...'
-              )}
+            <div className="loading-text" style={{ textAlign: 'center', lineHeight: '1.6' }}>
+              {loadingMsg}
             </div>
+            {showSkip && (
+              <button className="skip-btn" onClick={handleSkipToApiKey}>
+                Skip — Enter API Key Directly
+              </button>
+            )}
           </div>
         ) : step === 1 ? (
           <>
@@ -227,7 +295,7 @@ export default function Login() {
 
             <div className="ds-legal-text" style={{ marginTop: '20px' }}>
               By continuing, you consent to Mean AI's <br/>
-              <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
+              <a href="/terms">Terms of Use</a> and <a href="/privacy">Privacy Policy</a>.
             </div>
           </>
         ) : (
