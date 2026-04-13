@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
@@ -31,6 +32,8 @@ export default function Login() {
   const [showSkip, setShowSkip] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [firebaseUser, setFirebaseUser] = useState(null);
+  const [checks, setChecks] = useState({ terms: false, privacy: false, data: false });
+  const allChecked = checks.terms && checks.privacy && checks.data;
 
   // Show skip button after 8 seconds of loading
   useEffect(() => {
@@ -285,18 +288,28 @@ export default function Login() {
               <span className="login-logo-text-ds">Continue to MeanAI</span>
             </div>
 
-            <p className="login-subtitle-ds" style={{ textAlign: 'center', marginBottom: '30px', marginTop: '10px' }}>
+            <p className="login-subtitle-ds" style={{ textAlign: 'center', marginBottom: '24px', marginTop: '10px' }}>
                Login to access your personalized AI learning and chat experience.
             </p>
 
-            <button type="button" className="premium-google-btn" onClick={handleGoogleLogin}>
+            <div className="ds-checklist">
+              <label className="ds-check-item">
+                <input type="checkbox" checked={checks.terms} onChange={() => setChecks(p => ({...p, terms: !p.terms}))} className="ds-checkbox" />
+                <span>I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link></span>
+              </label>
+              <label className="ds-check-item">
+                <input type="checkbox" checked={checks.privacy} onChange={() => setChecks(p => ({...p, privacy: !p.privacy}))} className="ds-checkbox" />
+                <span>I accept the <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link></span>
+              </label>
+              <label className="ds-check-item">
+                <input type="checkbox" checked={checks.data} onChange={() => setChecks(p => ({...p, data: !p.data}))} className="ds-checkbox" />
+                <span>I consent to data usage for AI services</span>
+              </label>
+            </div>
+
+            <button type="button" className={`premium-google-btn ${!allChecked ? 'btn-disabled' : ''}`} onClick={handleGoogleLogin} disabled={!allChecked}>
               <GoogleIcon /> Continue with Google
             </button>
-
-            <div className="ds-legal-text" style={{ marginTop: '20px' }}>
-              By continuing, you consent to Mean AI's <br/>
-              <a href="/terms">Terms of Use</a> and <a href="/privacy">Privacy Policy</a>.
-            </div>
           </>
         ) : (
           <>

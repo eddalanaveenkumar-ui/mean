@@ -128,6 +128,83 @@ body.light-theme .login-input-ds {
   text-underline-offset: 2px;
 }
 
+/* ── Agree Checklist ── */
+.ds-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--input-bg, rgba(44, 44, 46, 0.5));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 14px;
+}
+
+.ds-check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #86868B);
+  line-height: 1.4;
+  user-select: none;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.ds-check-item:hover {
+  color: var(--text-primary, #F5F5F7);
+}
+
+.ds-check-item a {
+  color: var(--accent-light, #7D7AFF);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.ds-check-item a:hover {
+  text-decoration: underline;
+}
+
+.ds-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid rgba(94, 92, 230, 0.3);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  margin-top: 1px;
+  transition: all 0.2s;
+}
+
+.ds-checkbox:checked {
+  background: var(--accent, #5E5CE6);
+  border-color: var(--accent, #5E5CE6);
+}
+
+.ds-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Disabled Google button */
+.premium-google-btn.btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .ds-links-row {
   display: flex;
   justify-content: space-between;
