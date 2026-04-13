@@ -52,7 +52,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
-  const { user, webSearchActive, saveClass, classes, deleteClass } = useApp();
+  const { user, webSearchActive, saveClass, classes, deleteClass, theme } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState('General');
@@ -856,10 +856,32 @@ Return ONLY valid JSON array.`;
   };
 
   const handleIframeLoad = (e) => {
-    if (e.target && e.target.contentWindow && slides.length > 0) {
-      e.target.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: slides }, '*');
+    if (e.target && e.target.contentWindow) {
+      if (slides.length > 0) {
+        e.target.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: slides }, '*');
+      }
+      e.target.contentWindow.postMessage({ type: 'SET_THEME', payload: theme }, '*');
     }
   };
+
+  useEffect(() => {
+    const frame = document.getElementById('roadmapFrame');
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'SET_THEME', payload: theme }, '*');
+    }
+  }, [theme]);
+
+  // Forward mouse movements to iframe for particle glow tracking when hovering over React UI
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const frame = document.getElementById('roadmapFrame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'MOUSE_MOVE', payload: { x: e.clientX, y: e.clientY } }, '*');
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
 
 
