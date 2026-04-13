@@ -39,38 +39,13 @@ export default function TokenBank({ isOpen, onClose }) {
     }, 1000);
 
     // Load AdsTerra script inside iframe after a brief delay
-    setTimeout(() => {
-      if (iframeRef.current) {
-        const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-        doc.open();
-        doc.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #fff; font-family: Inter, sans-serif; }
-              .ad-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
-              .ad-loading { color: #888; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class="ad-container">
-              <div class="ad-loading">Loading sponsored content...</div>
-            </div>
-            <script src="${ADSTERRA_SCRIPT}"><\/script>
-          </body>
-          </html>
-        `);
-        doc.close();
-      }
-    }, 200);
+    // (Now handled natively by the iframe src loading /ad.html)
   };
 
   const closeAdPlayer = () => {
     clearInterval(timerRef.current);
     if (iframeRef.current) {
-      const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
-      if (doc) { doc.open(); doc.write(''); doc.close(); }
+      iframeRef.current.src = ''; 
     }
     setActiveAd(null);
     setAdState('idle');
@@ -183,7 +158,8 @@ export default function TokenBank({ isOpen, onClose }) {
                   ref={iframeRef}
                   className="ad-iframe"
                   title="Advertisement"
-                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                  src="/ad.html"
+                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-forms"
                 />
               )}
             </div>
