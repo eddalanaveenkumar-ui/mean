@@ -1,139 +1,80 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import './TokenBank.css';
 
-// Google's sample VAST tags for testing — replace with real VAST tags later
-const VAST_TAGS = [
-  'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_preroll_skippable&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=',
-  'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=',
-];
-
-// Simple VAST parser — extracts video URL from VAST XML
-async function parseVastTag(vastUrl) {
-  try {
-    const res = await fetch(vastUrl);
-    const xmlText = await res.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-    
-    // Try to find MediaFile elements
-    const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
-    for (let i = 0; i < mediaFiles.length; i++) {
-      const mf = mediaFiles[i];
-      const type = mf.getAttribute('type') || '';
-      const url = mf.textContent.trim();
-      if (type.includes('mp4') || url.includes('.mp4')) {
-        return url;
-      }
-    }
-    // Fallback: take first MediaFile
-    if (mediaFiles.length > 0) {
-      return mediaFiles[0].textContent.trim();
-    }
-    return null;
-  } catch (e) {
-    console.error('VAST parse error:', e);
-    return null;
-  }
-}
+// AdsTerra Social Bar script URL
+const ADSTERRA_SCRIPT = 'https://pl29146535.profitablecpmratenetwork.com/35/75/0c/35750c52da61a276b26186d44fbfcc39.js';
 
 export default function TokenBank({ isOpen, onClose }) {
   const { adTokens, addAdToken, premiumTokens } = useApp();
   const [activeAd, setActiveAd] = useState(null);
-  const [adState, setAdState] = useState('idle'); // idle | loading | playing | done | error
+  const [adState, setAdState] = useState('idle'); // idle | playing | done
   const [timeLeft, setTimeLeft] = useState(0);
-  const [adDuration, setAdDuration] = useState(0);
-  const videoRef = useRef(null);
+  const iframeRef = useRef(null);
   const timerRef = useRef(null);
+  const AD_DURATION = 15; // seconds to watch
   
   if (!isOpen) return null;
 
   const ads = Array.from({ length: 10 }, (_, i) => i + 1);
 
-  const handleWatchAd = async (adId) => {
+  const handleWatchAd = (adId) => {
     if (activeAd || adTokens + premiumTokens >= 10) return;
     
     setActiveAd(adId);
-    setAdState('loading');
-
-    // Pick a random VAST tag
-    const vastUrl = VAST_TAGS[Math.floor(Math.random() * VAST_TAGS.length)] + Date.now();
-    const videoUrl = await parseVastTag(vastUrl);
-    
-    if (!videoUrl) {
-      // If VAST fails, fallback: grant token after 15-second countdown (ad-free)
-      setAdState('playing');
-      setTimeLeft(15);
-      setAdDuration(15);
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            addAdToken();
-            setAdState('done');
-            setTimeout(() => { setActiveAd(null); setAdState('idle'); }, 1500);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return;
-    }
-
-    // Play the video ad
     setAdState('playing');
+    setTimeLeft(AD_DURATION);
+
+    // Start countdown
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          addAdToken();
+          setAdState('done');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Load AdsTerra script inside iframe after a brief delay
     setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.src = videoUrl;
-        videoRef.current.play().catch(() => {});
+      if (iframeRef.current) {
+        const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #fff; font-family: Inter, sans-serif; }
+              .ad-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+              .ad-loading { color: #888; font-size: 14px; }
+            </style>
+          </head>
+          <body>
+            <div class="ad-container">
+              <div class="ad-loading">Loading sponsored content...</div>
+            </div>
+            <script src="${ADSTERRA_SCRIPT}"><\/script>
+          </body>
+          </html>
+        `);
+        doc.close();
       }
-    }, 100);
-  };
-
-  const handleVideoMeta = () => {
-    if (videoRef.current) {
-      const dur = Math.ceil(videoRef.current.duration || 15);
-      setAdDuration(dur);
-      setTimeLeft(dur);
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-  };
-
-  const handleVideoEnd = () => {
-    clearInterval(timerRef.current);
-    setTimeLeft(0);
-    addAdToken();
-    setAdState('done');
-    setTimeout(() => { setActiveAd(null); setAdState('idle'); }, 1500);
-  };
-
-  const handleVideoError = () => {
-    clearInterval(timerRef.current);
-    // Fallback: still grant token after showing error briefly
-    setAdState('error');
-    setTimeout(() => {
-      addAdToken();
-      setActiveAd(null);
-      setAdState('idle');
-    }, 2000);
+    }, 200);
   };
 
   const closeAdPlayer = () => {
-    // Only allow closing if ad has completed
-    if (adState === 'done' || adState === 'error') {
-      clearInterval(timerRef.current);
-      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; }
-      setActiveAd(null);
-      setAdState('idle');
+    clearInterval(timerRef.current);
+    if (iframeRef.current) {
+      const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+      if (doc) { doc.open(); doc.write(''); doc.close(); }
     }
+    setActiveAd(null);
+    setAdState('idle');
+    setTimeLeft(0);
   };
 
   return (
@@ -162,7 +103,7 @@ export default function TokenBank({ isOpen, onClose }) {
 
         <div className="ads-section">
           <h3>Earn Tokens (Watch Ads)</h3>
-          <p className="section-desc">Click any ad slot to watch a video ad and earn 1 Token. Tokens expire in 24 hours.</p>
+          <p className="section-desc">Click any ad slot to watch an ad and earn 1 Token. Tokens expire in 24 hours.</p>
           
           <div className="ads-grid">
             {ads.map((adId) => {
@@ -184,7 +125,7 @@ export default function TokenBank({ isOpen, onClose }) {
                   ) : isWatching ? (
                     <div className="ad-countdown">
                       <div className="countdown-circle"><span>▶</span></div>
-                      <span>Loading ad...</span>
+                      <span>Watching...</span>
                     </div>
                   ) : (
                     <>
@@ -205,62 +146,45 @@ export default function TokenBank({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* ── Video Ad Player Modal ── */}
-      {(adState === 'playing' || adState === 'done' || adState === 'error') && (
+      {/* ── Ad Player Modal ── */}
+      {(adState === 'playing' || adState === 'done') && (
         <div className="ad-player-overlay">
           <div className="ad-player-modal">
             <div className="ad-player-header">
               <div className="ad-label">
                 <i className="fas fa-ad" />
-                <span>Advertisement</span>
+                <span>Sponsored Content</span>
               </div>
               {timeLeft > 0 && (
                 <div className="ad-timer">
                   <div className="ad-timer-bar">
                     <div 
                       className="ad-timer-fill" 
-                      style={{ width: `${adDuration > 0 ? ((adDuration - timeLeft) / adDuration) * 100 : 0}%` }}
+                      style={{ width: `${((AD_DURATION - timeLeft) / AD_DURATION) * 100}%` }}
                     />
                   </div>
-                  <span className="ad-timer-text">Ad ends in {timeLeft}s</span>
+                  <span className="ad-timer-text">{timeLeft}s</span>
                 </div>
               )}
-              {(adState === 'done' || adState === 'error') && (
-                <button className="ad-close-btn" onClick={closeAdPlayer}>✕</button>
+              {adState === 'done' && (
+                <button className="ad-close-btn" onClick={closeAdPlayer}>✕ Close</button>
               )}
             </div>
 
             <div className="ad-player-body">
-              {adState === 'error' ? (
-                <div className="ad-fallback">
-                  <i className="fas fa-exclamation-triangle" />
-                  <p>Ad could not load. Token granted anyway!</p>
-                </div>
-              ) : adState === 'done' ? (
+              {adState === 'done' ? (
                 <div className="ad-complete">
                   <div className="ad-complete-icon">✓</div>
-                  <h3>Token Earned!</h3>
-                  <p>Thank you for watching</p>
+                  <h3>+1 Token Earned!</h3>
+                  <p>Thank you for supporting Mean AI</p>
                 </div>
               ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    className="ad-video"
-                    playsInline
-                    onLoadedMetadata={handleVideoMeta}
-                    onEnded={handleVideoEnd}
-                    onError={handleVideoError}
-                  />
-                  {/* Fallback countdown if VAST failed but we're still counting */}
-                  {!videoRef.current?.src && timeLeft > 0 && (
-                    <div className="ad-fallback-counter">
-                      <div className="ad-fallback-spinner" />
-                      <p>Loading sponsored content...</p>
-                      <p className="ad-fallback-time">{timeLeft}s remaining</p>
-                    </div>
-                  )}
-                </>
+                <iframe
+                  ref={iframeRef}
+                  className="ad-iframe"
+                  title="Advertisement"
+                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                />
               )}
             </div>
           </div>
