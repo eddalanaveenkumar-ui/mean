@@ -159,7 +159,6 @@ export default function TokenBank({ isOpen, onClose }) {
                   className="ad-iframe"
                   title="Advertisement"
                   src="/ad.html"
-                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-forms"
                 />
               )}
             </div>
