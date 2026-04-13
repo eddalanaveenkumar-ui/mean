@@ -72,7 +72,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
             <i className="fas fa-bars" />
           </button>
           <span className="header-brand">
-            <img src="/logo.svg" alt="" className="header-brand-icon" />
+            <img src="/logo.jpg" alt="" className="header-brand-icon" style={{ borderRadius: '50%' }} />
             <span className="hb-mean">Mean</span>
             <span className="hb-ai">AI</span>
           </span>
