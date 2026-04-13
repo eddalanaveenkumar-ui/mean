@@ -197,7 +197,12 @@ export default function Login() {
       <div className="login-card-ds">
         {isLoading ? (
           <div className="login-spinner-overlay">
-            <div className="spinner"></div>
+            <div className="atom-loader">
+              <div className="atom-nucleus"></div>
+              <div className="atom-orbit atom-orbit-1"><div className="atom-electron"></div></div>
+              <div className="atom-orbit atom-orbit-2"><div className="atom-electron"></div></div>
+              <div className="atom-orbit atom-orbit-3"><div className="atom-electron"></div></div>
+            </div>
             <div className="loading-text" style={{ textAlign: 'center', lineHeight: '1.4' }}>
               {isWakingUp ? (
                 <>Waking up secure server...<br/><span style={{fontSize: '12px', color: '#888'}}>This can take up to 50 seconds on cold start.</span></>

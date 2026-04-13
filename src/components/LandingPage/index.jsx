@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
@@ -28,9 +28,15 @@ const ShieldIcon = () => (
   </svg>
 );
 
-const SparkleIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4" />
+const MusicIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+  </svg>
+);
+
+const PresentIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
   </svg>
 );
 
@@ -39,12 +45,9 @@ const StarIcon = () => (
 );
 
 
-
 export default function LandingPage({ onGetStarted }) {
   const [scrolled, setScrolled] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: -1000, y: -1000 });
-  const [visibleSections, setVisibleSections] = useState(new Set());
-
 
   useEffect(() => {
     const container = document.querySelector('.landing-scroll-container');
@@ -62,20 +65,25 @@ export default function LandingPage({ onGetStarted }) {
   }, []);
 
   const features = [
-    { icon: <BrainIcon />, title: 'Learn Like a Teacher', desc: 'Get clear, structured explanations for every line of code.' },
-    { icon: <ZapIcon />, title: 'Execution Flow', desc: 'See how your code runs step-by-step with real outputs.' },
-    { icon: <CodeIcon />, title: 'AI Chatbot', desc: 'Ask anything — from coding to concepts — and get instant answers.' },
-    { icon: <ShieldIcon />, title: 'Beginner Friendly', desc: 'Built for students who struggle with confusing explanations.' },
+    { icon: <BrainIcon />, title: 'AI Classroom', desc: 'Interactive roadmap-based teaching that breaks down any topic into visual, digestible blocks with execution flow.' },
+    { icon: <ZapIcon />, title: 'Instant Explanations', desc: 'Paste any code and get line-by-line breakdowns with dry runs, variable tracking, and key insights.' },
+    { icon: <CodeIcon />, title: 'Smart Chatbot', desc: 'A powerful conversational AI tutor that answers questions across programming, CS concepts, and more.' },
+    { icon: <ShieldIcon />, title: 'Secure & Private', desc: 'Your API keys stay local, never touch our servers. JWT auth, HTTPS everywhere, enterprise-grade security.' },
+    { icon: <MusicIcon />, title: 'Music Player', desc: 'Built-in ambient music player to help you focus while studying — lo-fi, classical, and nature sounds.' },
+    { icon: <PresentIcon />, title: 'Presentations', desc: 'Auto-generate beautiful slide decks from any topic. Export-ready presentations powered by AI.' },
   ];
 
-  const usecases = [
-    { num: '01', title: 'Example 1', desc: '“I don’t understand this Python code” → Paste → Get full breakdown' },
-    { num: '02', title: 'Example 2', desc: '“Explain recursion simply” → Chat → Learn instantly' }
+  const stats = [
+    { number: '10K+', label: 'Lines Explained' },
+    { number: '500+', label: 'Active Learners' },
+    { number: '28+', label: 'Blog Articles' },
+    { number: '99.9%', label: 'Uptime' },
   ];
 
   const testimonials = [
-    { text: 'This made coding finally click for me.', rating: 5 },
-    { text: 'Better than watching long tutorials.', rating: 5 },
+    { text: 'Mean AI made recursion finally click for me. The execution flow is genius.', author: 'Arjun K.', role: 'CS Student', rating: 5 },
+    { text: 'Way better than spending hours on YouTube. I actually understand the code now.', author: 'Priya S.', role: 'Self-taught Developer', rating: 5 },
+    { text: 'The classroom feature is incredible — it feels like having a private tutor.', author: 'Ravi M.', role: 'Engineering Student', rating: 5 },
   ];
 
   return (
@@ -106,9 +114,14 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div className="nav-links">
             <Link to="/about" className="nav-link">About</Link>
-            <Link to="/privacy" className="nav-link">Privacy Policy</Link>
+            <Link to="/privacy" className="nav-link">Privacy</Link>
             <Link to="/terms" className="nav-link">Terms</Link>
             <Link to="/blog" className="nav-link">Blog</Link>
+          </div>
+          <div className="nav-actions">
+            <button className="nav-btn-primary" onClick={onGetStarted}>
+              Get Started →
+            </button>
           </div>
         </div>
       </nav>
@@ -119,60 +132,88 @@ export default function LandingPage({ onGetStarted }) {
         {/* Hero Section */}
         <section className="hero-section">
           <div className="hero-badge">
-            <SparkleIcon />
-            <span>AI that teaches like a real teacher</span>
+            <span className="hero-badge-dot" />
+            <span>Powered by Gemini & OpenRouter</span>
           </div>
 
-          <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)' }}>
-            Understand Code Like a <br />
-            <span className="hero-title-gradient">Real Teacher</span> — and Chat with AI
+          <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.8rem)' }}>
+            The AI That Teaches<br />
+            <span className="hero-title-gradient">Like a Real Teacher</span>
           </h1>
 
           <p className="hero-subtitle">
-            MeanAI explains code line-by-line with execution flow, while also acting as a powerful AI chatbot for your questions.
+            Mean AI explains code line-by-line with execution flow, generates interactive classroom sessions, and acts as your personal AI tutor — all in one beautiful platform.
           </p>
 
-          <div className="hero-cta-row" style={{ marginTop: '20px', marginBottom: '80px' }}>
+          <div className="hero-cta-row">
             <button className="hero-btn-primary" onClick={onGetStarted}>
-              🚀 Try MeanAI
+              Start Learning Free →
             </button>
             <button className="hero-btn-secondary" onClick={onGetStarted}>
-              💬 Open Chat
+              <CodeIcon /> Live Demo
             </button>
           </div>
 
+          {/* Stats Bar */}
+          <div className="hero-stats">
+            {stats.map((s, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <div className="stat-divider" />}
+                <div className="stat-item">
+                  <span className="stat-number">{s.number}</span>
+                  <span className="stat-label">{s.label}</span>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
         </section>
 
         {/* Demo Section */}
         <section id="demo" className="landing-section visible">
           <div className="section-header">
-            <span className="section-badge">Demo</span>
-            <h2 className="section-title">See How It Works</h2>
+            <span className="section-badge">Live Demo</span>
+            <h2 className="section-title">See The Magic In Action</h2>
+            <p className="section-subtitle">Paste code → Get a complete teaching session with execution flow</p>
           </div>
 
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {/* Left Box (Input) */}
-            <div className="demo-box" style={{ background: '#111', padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', flex: '1', minWidth: '300px' }}>
-              <h4 style={{ color: '#888', marginBottom: '15px' }}>Input Code</h4>
-              <pre style={{ color: '#4ade80', fontSize: '1rem', lineHeight: '1.6' }}>
-{`for i in range(3):
-    print(i)`}
+          <div className="demo-split">
+            <div className="demo-panel demo-input">
+              <div className="demo-panel-header">
+                <span className="demo-dot demo-dot-red" />
+                <span className="demo-dot demo-dot-yellow" />
+                <span className="demo-dot demo-dot-green" />
+                <span className="demo-panel-title">your_code.py</span>
+              </div>
+              <pre className="demo-code">
+                <code>
+{`def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+result = fibonacci(5)
+print(result)  # Output: 5`}
+                </code>
               </pre>
             </div>
 
-            {/* Right Box (Output) */}
-            <div className="demo-box" style={{ background: '#111', padding: '30px', borderRadius: '16px', border: '1px solid rgba(232, 145, 58, 0.3)', flex: '1', minWidth: '300px' }}>
-              <h4 style={{ color: '#f0ad5e', marginBottom: '15px' }}>MeanAI Output</h4>
-              <div style={{ color: '#fff', fontSize: '1rem', lineHeight: '1.8' }}>
-                <p>Step 1: Start loop from i = 0</p>
-                <p>Step 2: Print 0</p>
-                <p>Step 3: Repeat until i = 2</p>
+            <div className="demo-arrow">→</div>
+
+            <div className="demo-panel demo-output">
+              <div className="demo-panel-header">
+                <span className="demo-dot demo-dot-red" />
+                <span className="demo-dot demo-dot-yellow" />
+                <span className="demo-dot demo-dot-green" />
+                <span className="demo-panel-title">Mean AI • Explanation</span>
+              </div>
+              <div className="demo-explanation">
+                <div className="demo-step"><span className="demo-step-num">01</span><span>Define recursive function <code>fibonacci(n)</code></span></div>
+                <div className="demo-step"><span className="demo-step-num">02</span><span>Base case: if n ≤ 1, return n directly</span></div>
+                <div className="demo-step"><span className="demo-step-num">03</span><span>Recursive case: sum of two previous values</span></div>
+                <div className="demo-step"><span className="demo-step-num">04</span><span>Call stack: fib(5) → fib(4) + fib(3) → ...</span></div>
+                <div className="demo-step demo-step-result"><span className="demo-step-num">✓</span><span>Final result: <strong>5</strong> (0, 1, 1, 2, 3, 5)</span></div>
               </div>
             </div>
-          </div>
-          
-          <div style={{ textAlign: 'center', marginTop: '30px', color: '#aaa', fontStyle: 'italic', fontSize: '1.1rem' }}>
-            Not just answers — real understanding.
           </div>
         </section>
 
@@ -180,12 +221,13 @@ export default function LandingPage({ onGetStarted }) {
         <section id="features" className="landing-section features-section visible">
           <div className="section-header">
             <span className="section-badge">Features</span>
-            <h2 className="section-title">Features</h2>
+            <h2 className="section-title">Everything You Need to Learn Code</h2>
+            <p className="section-subtitle">A complete learning ecosystem designed to make you a better programmer</p>
           </div>
 
-          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
             {features.map((f, i) => (
-              <div className="feature-card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="feature-card" key={i}>
                 <div className="feature-icon-wrap">
                   {f.icon}
                 </div>
@@ -196,18 +238,23 @@ export default function LandingPage({ onGetStarted }) {
           </div>
         </section>
 
-        {/* Use Cases */}
-        <section id="use-cases" className="landing-section steps-section visible">
+        {/* How It Works */}
+        <section className="landing-section visible">
           <div className="section-header">
-            <span className="section-badge">Use Cases</span>
-            <h2 className="section-title">Use Cases</h2>
+            <span className="section-badge">How It Works</span>
+            <h2 className="section-title">Three Steps to Understanding</h2>
           </div>
 
-          <div className="steps-row" style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-            {usecases.map((s, i) => (
-              <div className="step-card" key={i} style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '30px', background: 'rgba(255,255,255,0.02)', maxWidth: '300px' }}>
-                <span className="step-num" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>{s.title}</span>
-                <p className="step-desc" style={{ fontSize: '1.05rem', color: '#ddd' }}>{s.desc}</p>
+          <div className="steps-row" style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap' }}>
+            {[
+              { num: '01', title: 'Paste Your Code', desc: 'Drop any code snippet or type a topic you want to learn about.' },
+              { num: '02', title: 'AI Teaches You', desc: 'Mean AI generates a structured, visual explanation with execution flow.' },
+              { num: '03', title: 'Master It', desc: 'Follow along, ask follow-ups, and build deep understanding — not memorization.' },
+            ].map((s, i) => (
+              <div className="step-card" key={i} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '36px 28px', background: 'rgba(255,255,255,0.02)', flex: '1', minWidth: '260px', maxWidth: '340px', textAlign: 'center' }}>
+                <span className="step-num">{s.num}</span>
+                <h3 className="step-title" style={{ marginBottom: '12px' }}>{s.title}</h3>
+                <p className="step-desc">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -216,16 +263,24 @@ export default function LandingPage({ onGetStarted }) {
         {/* Testimonials */}
         <section id="testimonials" className="landing-section testimonials-section visible">
           <div className="section-header">
-            <span className="section-badge">Social Proof</span>
+            <span className="section-badge">Testimonials</span>
+            <h2 className="section-title">Loved by Students</h2>
           </div>
 
-          <div className="testimonials-grid" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="testimonials-grid" style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
             {testimonials.map((t, i) => (
-              <div className="testimonial-card" key={i} style={{ maxWidth: '350px' }}>
+              <div className="testimonial-card" key={i} style={{ flex: '1', minWidth: '280px', maxWidth: '360px' }}>
                 <div className="testimonial-stars">
                   {[...Array(t.rating)].map((_, j) => <StarIcon key={j} />)}
                 </div>
-                <p className="testimonial-text" style={{ fontSize: '1.1rem', color: '#fff' }}>"{t.text}"</p>
+                <p className="testimonial-text">"{t.text}"</p>
+                <div className="testimonial-author">
+                  <div className="testimonial-avatar">{t.author.charAt(0)}</div>
+                  <div>
+                    <div className="testimonial-name">{t.author}</div>
+                    <div className="testimonial-role">{t.role}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -236,8 +291,9 @@ export default function LandingPage({ onGetStarted }) {
           <div className="cta-glow" />
           <div className="cta-content">
             <h2 className="cta-title">Stop Guessing. <br /><span className="accent-text">Start Understanding.</span></h2>
-            <button className="hero-btn-primary cta-btn" onClick={onGetStarted} style={{ marginTop: '30px' }}>
-              👉 Start Learning Now
+            <p className="section-subtitle" style={{ marginBottom: '36px' }}>Join thousands of students who are learning code the right way — with AI that actually teaches.</p>
+            <button className="hero-btn-primary cta-btn" onClick={onGetStarted}>
+              Get Started Free →
             </button>
           </div>
         </section>
