@@ -105,8 +105,9 @@ export default function LandingPage({ onGetStarted }) {
             <span className="nav-logo-text">Mean <span className="accent-text">AI</span></span>
           </div>
           <div className="nav-links">
-            <a href="#demo" className="nav-link">Demo</a>
-            <a href="#features" className="nav-link">Features</a>
+            <Link to="/about" className="nav-link">About</Link>
+            <Link to="/privacy" className="nav-link">Privacy Policy</Link>
+            <Link to="/terms" className="nav-link">Terms</Link>
             <Link to="/blog" className="nav-link">Blog</Link>
           </div>
         </div>
