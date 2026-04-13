@@ -41,8 +41,8 @@ export default function Login() {
     if (isLoading) {
       msgTimer = setTimeout(() => {
         setLoadingMsg('Waking up secure server... this may take a moment.');
-      }, 5000);
-      skipTimer = setTimeout(() => setShowSkip(true), 8000);
+      }, 10000);
+      skipTimer = setTimeout(() => setShowSkip(true), 10000);
     } else {
       setShowSkip(false);
       setLoadingMsg('Authenticating securely...');
