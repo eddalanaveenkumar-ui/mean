@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mean-beta.vercel.app/sitemap.xml
+Sitemap: https://meanai.site/sitemap.xml
