@@ -743,12 +743,18 @@ CRITICAL GRAPH FRACTURING RULES:
 1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children. 
 2. FRACTURE SUB-TREES: If a child node (e.g. "B") needs its own children, DO NOT build it inside the same tree. You MUST create a completely separate, disconnected tree where "B" is the new parent. 
 3. DUPLICATE WITH UNIQUE IDs: Because "B" appears as a child in Tree 1, and a parent in Tree 2, you MUST give them different 'address' IDs (e.g. "B_child" and "B_root") so the layout engine draws them as totally separate islands! Do not connect them!
-4. TEXTBLOCK PER TREE: You MUST include exactly one 'textblock' object for EVERY disconnected sub-tree you create to define that specific phase. The textblock MUST be connected to the root node of its tree using an Arrow!
+
+MANDATORY TEXTBLOCK RULE:
+- EVERY single block node MUST have AT LEAST ONE textblock connected to it.
+- The textblock acts as the detailed explanation/sub-category for that block.
+- Add the textblock's address to the block's "connect" array.
+- The textblock should provide useful, educational content explaining the concept of its parent block.
+- You can attach MULTIPLE textblocks to a single block if the topic needs it (e.g. "Definition", "Example", "Syntax").
 
 JSON STRUCTURE RULES:
-- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Detailed tooltip...", "connect": ["child_id1", ...]}
-- Textblock (MANDATORY): {"type": "textblock", "address": "unique_id", "title": "Matter Title", "content": "Detailed explanation text..."}
-- Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "explanation": "Why connect?", "first-connection": "parent_id", "next-connection": "child_id"}
+- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
+- Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
+- Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "first-connection": "parent_id", "next-connection": "child_id"}
 
 Dense and accurate.${fileContext}
 Return ONLY valid JSON array.`;
