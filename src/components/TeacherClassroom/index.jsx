@@ -1132,7 +1132,7 @@ Return ONLY valid JSON array.`;
 
       {/* Canvas iframe - Loaded via srcDoc to bypass Vercel domain redirect blocks */}
       {iframeSrcDoc && (
-        <iframe id="roadmapFrame" srcDoc={iframeSrcDoc}
+        <iframe id="roadmapFrame" srcDoc={iframeSrcDoc} ref={iframeRef}
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
           title="Canvas" onLoad={handleIframeLoad} />
       )}
