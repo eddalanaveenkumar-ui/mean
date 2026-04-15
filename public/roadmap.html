@@ -318,8 +318,7 @@ window.addEventListener('mouseup',()=>{
 });
 wrap.addEventListener('wheel',e=>{
   // Locked! No zooming allowed anymore. Only native vertical/horizontal trackpad panning works, or middle-click panning.
-});
-},{passive:false});
+},{passive:true});
 function screenToWorld(sx,sy){
   const r=wrap.getBoundingClientRect();
   return{x:(sx-r.left-tx)/scale, y:(sy-r.top-ty)/scale};
