@@ -618,24 +618,30 @@ function drawEdges(){
     if(!fn||!tn)return;
     
     const path=document.createElementNS(svgNS,'path');
-    let d;
+    let d, labelX, labelY;
     
     if (tn.type === 'textblock') {
       // HORIZONTAL connection: parent right edge → textblock left edge
-      const startX = fn.x + fn.w;
-      const startY = fn.y + fn.h / 2;
-      const endX = tn.x;
-      const endY = tn.y + tn.h / 2;
-      const midX = (startX + endX) / 2;
-      d = `M${startX},${startY} C${midX},${startY} ${midX},${endY} ${endX},${endY}`;
+      const sx = fn.x + fn.w;
+      const sy = fn.y + fn.h / 2;
+      const ex = tn.x;
+      const ey = tn.y + tn.h / 2;
+      const mx = (sx + ex) / 2;
+      d = `M${sx},${sy} L${mx},${sy} L${mx},${ey} L${ex},${ey}`;
+      path.setAttribute('stroke-dasharray', '6,4');
+      labelX = mx - 75;
+      labelY = Math.min(sy, ey) - 18;
     } else {
-      // VERTICAL connection: parent bottom center → child top center
-      const startX = fn.x + fn.w / 2;
-      const startY = fn.y + fn.h;
-      const endX = tn.x + tn.w / 2;
-      const endY = tn.y;
-      const midY = (startY + endY) / 2;
-      d = `M${startX},${startY} C${startX},${midY} ${endX},${midY} ${endX},${endY}`;
+      // VERTICAL hierarchical connection: parent bottom center → child top center
+      // Clean L-shaped trunk: go down, then horizontal, then down to child
+      const sx = fn.x + fn.w / 2;
+      const sy = fn.y + fn.h;
+      const ex = tn.x + tn.w / 2;
+      const ey = tn.y;
+      const midY = sy + (ey - sy) / 2;
+      d = `M${sx},${sy} L${sx},${midY} L${ex},${midY} L${ex},${ey}`;
+      labelX = (sx + ex) / 2 - 75;
+      labelY = midY - 18;
     }
     
     path.setAttribute('d', d);
@@ -644,14 +650,26 @@ function drawEdges(){
     path.setAttribute('stroke-width','1.6');
     path.setAttribute('marker-end','url(#ah)');
     edgeSvg.appendChild(path);
+    
+    // Connection dot at the start point
+    const dot = document.createElementNS(svgNS, 'circle');
+    const dotColor = fn.color ? fn.color.badge : '#4f7ef0';
+    if (tn.type === 'textblock') {
+      dot.setAttribute('cx', fn.x + fn.w);
+      dot.setAttribute('cy', fn.y + fn.h / 2);
+    } else {
+      dot.setAttribute('cx', fn.x + fn.w / 2);
+      dot.setAttribute('cy', fn.y + fn.h);
+    }
+    dot.setAttribute('r', '4');
+    dot.setAttribute('fill', dotColor);
+    edgeSvg.appendChild(dot);
+    
     if(e.label || e.explanation){
-      // Position label halfway along the horizontal branch
-      const lx = (startX + endX) / 2;
-      const ly = endY - 18;
       const lblText=e.label?`🔹 ${e.label}`:'➡️ arrow';
       const hasExp=!!e.explanation;
       const foreign=document.createElementNS(svgNS,'foreignObject');
-      foreign.setAttribute('x',lx-75); foreign.setAttribute('y',ly);
+      foreign.setAttribute('x', labelX); foreign.setAttribute('y', labelY);
       foreign.setAttribute('width','150'); foreign.setAttribute('height','28');
       foreign.setAttribute('overflow','visible');
       let innerHtml=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(9,10,14,.9);border-radius:30px;border:1px solid #2a3660;padding:3px 8px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">${esc(lblText)}`;
