@@ -29,7 +29,6 @@ export default function Login() {
   const [tempUser, setTempUser] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('Authenticating securely...');
-  const [showSkip, setShowSkip] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [checks, setChecks] = useState({ terms: false, privacy: false, data: false });
@@ -42,28 +41,12 @@ export default function Login() {
       msgTimer = setTimeout(() => {
         setLoadingMsg('Waking up secure server... this may take a moment.');
       }, 10000);
-      skipTimer = setTimeout(() => setShowSkip(true), 10000);
     } else {
-      setShowSkip(false);
       setLoadingMsg('Authenticating securely...');
     }
-    return () => { clearTimeout(skipTimer); clearTimeout(msgTimer); };
+    return () => { clearTimeout(msgTimer); };
   }, [isLoading]);
 
-  // Skip backend and go straight to API key entry
-  const handleSkipToApiKey = () => {
-    setIsLoading(false);
-    setShowSkip(false);
-    if (firebaseUser) {
-      setTempUser({
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        jwt: null,
-        photoURL: firebaseUser.photoURL
-      });
-    }
-    setStep(2);
-  };
 
   // Intercept openrouter and firebase auth redirect
   useEffect(() => {
@@ -276,11 +259,6 @@ export default function Login() {
             <div className="loading-text" style={{ textAlign: 'center', lineHeight: '1.6' }}>
               {loadingMsg}
             </div>
-            {showSkip && (
-              <button className="skip-btn" onClick={handleSkipToApiKey}>
-                Skip — Enter API Key Directly
-              </button>
-            )}
           </div>
         ) : step === 1 ? (
           <>
