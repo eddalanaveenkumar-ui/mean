@@ -218,6 +218,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .fc-btn:active{transform:scale(.93)}
 .fc-btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
 @keyframes nodeIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes nodePulse{from{box-shadow: 0 0 0 0 rgba(10,132,255,0.4); border-color:var(--accent);} to{box-shadow: 0 0 0 10px rgba(10,132,255,0); border-color:#fff;}}
 </style>
 </head>
 <body>
@@ -348,10 +349,17 @@ function fitView(){
   addrs.forEach(a=>{const n=nodeData[a];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+(n.w||170));maxY=Math.max(maxY,n.y+(n.h||90));});
   const r=wrap.getBoundingClientRect();
   const PAD=60;
-  const ns=Math.min((r.width-PAD*2)/(maxX-minX||1),(r.height-PAD*2)/(maxY-minY||1),1.2);
+  
+  // Fit width horizontally, but NEVER scale below 0.75 to prevent "going tiny"
+  const ns=Math.max(Math.min((r.width-PAD*2)/(maxX-minX||1), 1.0), 0.75);
   scale=ns;
-  tx=r.width/2-((minX+maxX)/2)*ns;
-  ty=r.height/2-((minY+maxY)/2)*ns;
+  
+  // Center horizontally relative to min/max X
+  tx=r.width/2 - ((minX+maxX)/2)*ns;
+  
+  // Anchor view to the TOP node, allowing the user to naturally scroll downwards
+  ty= 80 - minY*ns;
+  
   applyT();
 }
 
@@ -439,12 +447,19 @@ function renderTree(data, isPartial = false){
           const b = blockMap[addr];
           if(!b) return;
 
-          const blockW = (b.type==='textblock') ? 310 : 200;
-          const blockH = (b.type==='textblock') ? 110 : 120; 
+          const blockW = (b.type==='textblock') ? 310 : 220;
+          let blockH = 120;
+          if (b.type === 'textblock') {
+             blockH = 140; 
+          } else if (b.shape === 'circle') {
+             blockH = 220;
+          } else if (b.shape === 'star') {
+             blockH = 280;
+          }
 
           const x = currentX;
           const y = globalOffsetY;
-          globalOffsetY += blockH + 30; // 30px vertical gap
+          globalOffsetY += blockH + 70; // Generous top-to-bottom spacing
 
           const c = getpal(b.address);
           const initials = (b.address||'??').slice(0,2).toUpperCase();
@@ -522,8 +537,25 @@ function renderTree(data, isPartial = false){
 
       const visitedPlacement = new Set();
       compRoots.forEach(r => placeNode(r, 0));
-      globalOffsetY += 80; // Large vertical gap between completely independent disconnected graphs
+      globalOffsetY += 100; // Large vertical gap between completely independent disconnected graphs
   });
+
+  // Render a 'Generating' node at the very bottom if partial
+  let generatingEl = document.getElementById('gen-node');
+  if (isPartial) {
+      if(!generatingEl) {
+          generatingEl = document.createElement('div');
+          generatingEl.id = 'gen-node';
+          generatingEl.className = 'block-node';
+          generatingEl.style.cssText = `left:0px; width:220px; transition: top 0.3s ease; animation: nodePulse 1.5s infinite alternate; border-color: var(--accent); white-space: nowrap;`;
+          generatingEl.innerHTML = `<div class="node-body" style="padding:15px; color:var(--accent); font-weight:600;"><i class="fas fa-circle-notch fa-spin"></i> Generating Tree...</div>`;
+          world.appendChild(generatingEl);
+      }
+      generatingEl.style.top = `${globalOffsetY}px`;
+      globalOffsetY += 100;
+  } else if (generatingEl) {
+      generatingEl.remove();
+  }
 
   // Cleanup stale deleted elements
   existingEls.forEach(el => el.remove());
