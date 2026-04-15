@@ -333,22 +333,9 @@ function addZoom(d){
 }
 function resetView(){tx=60;ty=60;scale=1;applyT();}
 function fitView(){
-  const addrs=Object.keys(nodeData);
-  if(!addrs.length)return;
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  addrs.forEach(a=>{const n=nodeData[a];minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+(n.w||170));maxY=Math.max(maxY,n.y+(n.h||90));});
-  const r=wrap.getBoundingClientRect();
-  const PAD=60;
-  
-  // User requested locked scale 1.0!
-  scale=1.0;
-  
-  // Center horizontally relative to min/max X
-  tx=r.width/2 - ((minX+maxX)/2)*scale;
-  
-  // Anchor view to the TOP node, allowing the user to naturally scroll downwards
-  ty= 80 - minY*scale;
-  
+  // Node tree is now naturally plotted in the center at 1.0 scale!
+  // No teleportation or weird zoom squishing required.
+  scale = 1.0;
   applyT();
 }
 
@@ -537,7 +524,11 @@ function renderTree(data, isPartial = false){
       }
 
       const visitedPlacement = new Set();
-      compRoots.forEach(r => placeNode(r, 0));
+      
+      // Start horizontally centered so it naturally generates in the middle of the screen!
+      const startX = Math.max((wrap.clientWidth / 2) - 110, 60);
+      compRoots.forEach(r => placeNode(r, startX));
+      
       globalOffsetY += 100; // Large vertical gap between completely independent disconnected graphs
   });
 
