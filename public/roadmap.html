@@ -621,12 +621,13 @@ function drawEdges(){
     let d;
     
     if (tn.type === 'textblock') {
-      // HORIZONTAL connection: parent right edge → textblock left edge
+      // HORIZONTAL L-shaped connection: parent right edge → textblock left edge
       const sx = fn.x + fn.w;
       const sy = fn.y + fn.h / 2;
       const ex = tn.x;
       const ey = tn.y + tn.h / 2;
-      d = `M${sx},${sy} L${ex},${ey}`;
+      // L-shape: go right horizontally, then turn vertically to meet textblock
+      d = `M${sx},${sy} L${ex},${sy} L${ex},${ey}`;
       path.setAttribute('stroke-dasharray', '6,4');
     } else {
       // VERTICAL connection routed through LEFT SPINE so it never passes through blocks
