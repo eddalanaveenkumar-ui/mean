@@ -167,8 +167,9 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   }, [localKey, openRouterKey, activeEngine]);
 
   // Fetch roadmap.html dynamically to bypass Vercel/DNS iframe security redirect blocks
+  // Added Date.now() timestamp to force bypass the PWA Service Worker cache!
   useEffect(() => {
-    fetch('/roadmap.html')
+    fetch(`/roadmap.html?v=${Date.now()}`)
       .then(res => {
          if (!res.ok) throw new Error("Failed to load roadmap HTML");
          return res.text();
