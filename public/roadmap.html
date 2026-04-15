@@ -227,12 +227,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
   <div id="canvas-wrap">
     <div id="world"><svg id="edge-svg"></svg></div>
     <div id="minimap"><canvas id="mm-canvas"></canvas><div id="minimap-label">overview</div></div>
-    <div id="float-controls">
-      <button class="fc-btn" onclick="addZoom(.15)">+</button>
-      <button class="fc-btn" onclick="addZoom(-.15)">−</button>
-      <button class="fc-btn accent" onclick="fitView()">⊡</button>
-      <button class="fc-btn" onclick="resetView()">↺</button>
-    </div>
+    <div id="float-controls" style="display:none;"></div>
   </div>
 </div>
 </div>
@@ -322,13 +317,8 @@ window.addEventListener('mouseup',()=>{
   document.querySelectorAll('.block-node').forEach(n=>n.classList.remove('dragging'));
 });
 wrap.addEventListener('wheel',e=>{
-  e.preventDefault();
-  const rect=wrap.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-  const delta=e.deltaY<0?1.1:.9;
-  const ns=Math.min(Math.max(scale*delta,.12),3);
-  tx=mx-(mx-tx)*(ns/scale); ty=my-(my-ty)*(ns/scale);
-  scale=ns; applyT();
+  // Locked! No zooming allowed anymore. Only native vertical/horizontal trackpad panning works, or middle-click panning.
+});
 },{passive:false});
 function screenToWorld(sx,sy){
   const r=wrap.getBoundingClientRect();
@@ -350,15 +340,14 @@ function fitView(){
   const r=wrap.getBoundingClientRect();
   const PAD=60;
   
-  // Fit width horizontally, but NEVER scale below 0.75 to prevent "going tiny"
-  const ns=Math.max(Math.min((r.width-PAD*2)/(maxX-minX||1), 1.0), 0.75);
-  scale=ns;
+  // User requested locked scale 1.0!
+  scale=1.0;
   
   // Center horizontally relative to min/max X
-  tx=r.width/2 - ((minX+maxX)/2)*ns;
+  tx=r.width/2 - ((minX+maxX)/2)*scale;
   
   // Anchor view to the TOP node, allowing the user to naturally scroll downwards
-  ty= 80 - minY*ns;
+  ty= 80 - minY*scale;
   
   applyT();
 }
@@ -379,7 +368,7 @@ function renderTree(data, isPartial = false){
   edges=[];
   
   const existingEls = new Map();
-  world.querySelectorAll('.block-node').forEach(n => existingEls.set(n.dataset.addr, n));
+  world.querySelectorAll('.block-node:not(#gen-node)').forEach(n => existingEls.set(n.dataset.addr, n));
   
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
@@ -440,7 +429,7 @@ function renderTree(data, isPartial = false){
       if(compRoots.length === 0) compRoots = [compAddrs[0]];
 
       // DFS Placement
-      function placeNode(addr, currentX) {
+      function placeNode(addr, currentX, overrideY = null) {
           if (visitedPlacement.has(addr)) return;
           visitedPlacement.add(addr);
 
@@ -458,8 +447,14 @@ function renderTree(data, isPartial = false){
           }
 
           const x = currentX;
-          const y = globalOffsetY;
-          globalOffsetY += blockH + 70; // Generous top-to-bottom spacing
+          let y = globalOffsetY;
+          
+          if (b.type === 'textblock' && overrideY !== null) {
+             y = overrideY;
+             // DO NOT increment globalOffsetY, so it stays horizontal!
+          } else {
+             globalOffsetY += blockH + 70; // Generous top-to-bottom spacing
+          }
 
           const c = getpal(b.address);
           const initials = (b.address||'??').slice(0,2).toUpperCase();
@@ -530,7 +525,13 @@ function renderTree(data, isPartial = false){
           const children = dirAdj[addr] || [];
           if (children.length > 0) {
              children.forEach(childAddr => {
-                 placeNode(childAddr, currentX + 80); // indent 80px right
+                 const childNode = blockMap[childAddr];
+                 if (childNode && childNode.type === 'textblock') {
+                     // Place horizontally next to parent!
+                     placeNode(childAddr, currentX + blockW + 60, y);
+                 } else {
+                     placeNode(childAddr, currentX + 80); // indent 80px right
+                 }
              });
           }
       }
