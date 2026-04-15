@@ -665,27 +665,13 @@ function drawEdges(){
     dot.setAttribute('fill', dotColor);
     edgeSvg.appendChild(dot);
     
-    if(e.label || e.explanation){
-      const lblText=e.label?`🔹 ${e.label}`:'➡️ arrow';
-      const hasExp=!!e.explanation;
+    if(e.label){
+      // Small plain-text label on the line — NO explain button
       const foreign=document.createElementNS(svgNS,'foreignObject');
       foreign.setAttribute('x', labelX); foreign.setAttribute('y', labelY);
-      foreign.setAttribute('width','150'); foreign.setAttribute('height','28');
+      foreign.setAttribute('width','160'); foreign.setAttribute('height','22');
       foreign.setAttribute('overflow','visible');
-      let innerHtml=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(9,10,14,.9);border-radius:30px;border:1px solid #2a3660;padding:3px 8px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;">${esc(lblText)}`;
-      if(hasExp){
-        innerHtml+=`<span style="background:#1e2a3e;padding:2px 6px;border-radius:12px;color:#7c9cf0;" class="arrow-exp-badge" data-exp="${Math.random()}">📖 explain</span>`;
-      }
-      innerHtml+=`</div>`;
-      foreign.innerHTML=innerHtml;
-      
-      if (hasExp) {
-        foreign.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          showExplanation(`arrow: ${e.from} → ${e.to}`, e.explanation);
-        });
-      }
-      
+      foreign.innerHTML=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:#5a6a9a;white-space:nowrap;text-align:center;">${esc(e.label)}</div>`;
       edgeSvg.appendChild(foreign);
     }
   });
