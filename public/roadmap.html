@@ -409,7 +409,7 @@ function renderTree(data, isPartial = false){
      }
   });
 
-  let globalOffsetY = 0; // Stack components top-to-bottom
+  let globalOffsetY = 100; // Start at 100px to completely clear the overarching React App UI header!
 
   forest.forEach((compAddrs) => {
       let compRoots = compAddrs.filter(a => !hasParent.has(a));
