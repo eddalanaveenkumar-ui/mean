@@ -106,7 +106,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 }
 #edge-svg{
   position:absolute;top:0;left:0;
-  pointer-events:none;overflow:visible;z-index:3
+  pointer-events:none;overflow:visible;z-index:1
 }
 .block-node{
   position:absolute;
@@ -618,7 +618,7 @@ function drawEdges(){
     if(!fn||!tn)return;
     
     const path=document.createElementNS(svgNS,'path');
-    let d, labelX, labelY;
+    let d;
     
     if (tn.type === 'textblock') {
       // HORIZONTAL connection: parent right edge → textblock left edge
@@ -626,22 +626,15 @@ function drawEdges(){
       const sy = fn.y + fn.h / 2;
       const ex = tn.x;
       const ey = tn.y + tn.h / 2;
-      const mx = (sx + ex) / 2;
-      d = `M${sx},${sy} L${mx},${sy} L${mx},${ey} L${ex},${ey}`;
+      d = `M${sx},${sy} L${ex},${ey}`;
       path.setAttribute('stroke-dasharray', '6,4');
-      labelX = mx - 75;
-      labelY = Math.min(sy, ey) - 18;
     } else {
-      // VERTICAL hierarchical connection: parent bottom center → child top center
-      // Clean L-shaped trunk: go down, then horizontal, then down to child
-      const sx = fn.x + fn.w / 2;
-      const sy = fn.y + fn.h;
-      const ex = tn.x + tn.w / 2;
-      const ey = tn.y;
-      const midY = sy + (ey - sy) / 2;
-      d = `M${sx},${sy} L${sx},${midY} L${ex},${midY} L${ex},${ey}`;
-      labelX = (sx + ex) / 2 - 75;
-      labelY = midY - 18;
+      // VERTICAL connection routed through LEFT SPINE so it never passes through blocks
+      // Spine runs 30px to the left of the blocks
+      const spineX = Math.min(fn.x, tn.x) - 30;
+      const sy = fn.y + fn.h / 2;  // exit from parent mid-left
+      const ey = tn.y + tn.h / 2;  // enter into child mid-left
+      d = `M${fn.x},${sy} L${spineX},${sy} L${spineX},${ey} L${tn.x},${ey}`;
     }
     
     path.setAttribute('d', d);
@@ -658,22 +651,12 @@ function drawEdges(){
       dot.setAttribute('cx', fn.x + fn.w);
       dot.setAttribute('cy', fn.y + fn.h / 2);
     } else {
-      dot.setAttribute('cx', fn.x + fn.w / 2);
-      dot.setAttribute('cy', fn.y + fn.h);
+      dot.setAttribute('cx', fn.x);
+      dot.setAttribute('cy', fn.y + fn.h / 2);
     }
     dot.setAttribute('r', '4');
     dot.setAttribute('fill', dotColor);
     edgeSvg.appendChild(dot);
-    
-    if(e.label){
-      // Small plain-text label on the line — NO explain button
-      const foreign=document.createElementNS(svgNS,'foreignObject');
-      foreign.setAttribute('x', labelX); foreign.setAttribute('y', labelY);
-      foreign.setAttribute('width','160'); foreign.setAttribute('height','22');
-      foreign.setAttribute('overflow','visible');
-      foreign.innerHTML=`<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:#5a6a9a;white-space:nowrap;text-align:center;">${esc(e.label)}</div>`;
-      edgeSvg.appendChild(foreign);
-    }
   });
   const addrs=Object.keys(nodeData);
   if(addrs.length){
