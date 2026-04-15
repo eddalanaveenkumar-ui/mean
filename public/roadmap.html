@@ -317,7 +317,14 @@ window.addEventListener('mouseup',()=>{
   document.querySelectorAll('.block-node').forEach(n=>n.classList.remove('dragging'));
 });
 wrap.addEventListener('wheel',e=>{
-  // Locked! No zooming allowed anymore. Only native vertical/horizontal trackpad panning works, or middle-click panning.
+  // Scroll to pan the canvas naturally: vertical = up/down, horizontal/shift = left/right
+  if (e.shiftKey) {
+    tx -= e.deltaY;
+  } else {
+    tx -= e.deltaX;
+    ty -= e.deltaY;
+  }
+  applyT();
 },{passive:true});
 function screenToWorld(sx,sy){
   const r=wrap.getBoundingClientRect();
@@ -409,13 +416,14 @@ function renderTree(data, isPartial = false){
   });
 
   let globalOffsetY = 100; // Start at 100px to completely clear the overarching React App UI header!
+  const centerX = Math.max((wrap.clientWidth / 2) - 110, 60);
 
   forest.forEach((compAddrs) => {
       let compRoots = compAddrs.filter(a => !hasParent.has(a));
       if(compRoots.length === 0) compRoots = [compAddrs[0]];
 
       // DFS Placement
-      function placeNode(addr, currentX, overrideY = null) {
+      function placeNode(addr, currentX) {
           if (visitedPlacement.has(addr)) return;
           visitedPlacement.add(addr);
 
@@ -432,15 +440,10 @@ function renderTree(data, isPartial = false){
              blockH = 280;
           }
 
+          // ALL nodes get placed at globalOffsetY, then we advance it
           const x = currentX;
-          let y = globalOffsetY;
-          
-          if (b.type === 'textblock' && overrideY !== null) {
-             y = overrideY;
-             // DO NOT increment globalOffsetY, so it stays horizontal!
-          } else {
-             globalOffsetY += blockH + 70; // Generous top-to-bottom spacing
-          }
+          const y = globalOffsetY;
+          globalOffsetY += blockH + 50;
 
           const c = getpal(b.address);
           const initials = (b.address||'??').slice(0,2).toUpperCase();
@@ -505,45 +508,81 @@ function renderTree(data, isPartial = false){
             if(badgeDiv) badgeDiv.addEventListener('click',(ev)=>{ev.stopPropagation();showExplanation(`node: ${b.address}`, explanation);});
           }
           
-          nodeData[b.address] = {x, y, w:blockW, h:blockH, el, color:c, explanation:explanation};
+          nodeData[b.address] = {x, y, w:blockW, h:blockH, el, color:c, explanation:explanation, type: b.type};
           
-          // Layout children
+          // Separate children into textblocks (horizontal) and regular blocks (vertical)
           const children = dirAdj[addr] || [];
-          if (children.length > 0) {
-             children.forEach(childAddr => {
-                 const childNode = blockMap[childAddr];
-                 if (childNode && childNode.type === 'textblock') {
-                     // Place horizontally next to parent!
-                     placeNode(childAddr, currentX + blockW + 60, y);
-                 } else {
-                     placeNode(childAddr, currentX + 80); // indent 80px right
-                 }
-             });
-          }
+          const textChildren = children.filter(c => blockMap[c] && blockMap[c].type === 'textblock');
+          const blockChildren = children.filter(c => !blockMap[c] || blockMap[c].type !== 'textblock');
+          
+          // Place textblocks HORIZONTALLY to the right, stacked vertically among themselves
+          let tbOffsetY = y; // start at same Y as parent
+          textChildren.forEach(childAddr => {
+              if (visitedPlacement.has(childAddr)) return;
+              visitedPlacement.add(childAddr);
+              const cb = blockMap[childAddr];
+              if(!cb) return;
+              const tbW = 310;
+              const tbH = 140;
+              const tbX = x + blockW + 60; // to the right of parent
+              const tbY = tbOffsetY;
+              tbOffsetY += tbH + 20; // stack textblocks vertically among themselves
+              
+              const cc = getpal(cb.address);
+              let tbEl = existingEls.get(cb.address);
+              const tbIsNew = !tbEl;
+              if (tbIsNew) { tbEl = document.createElement('div'); world.appendChild(tbEl); }
+              else { existingEls.delete(cb.address); }
+              
+              tbEl.dataset.addr = cb.address;
+              tbEl.className = 'block-node shape-text-field';
+              tbEl.style.cssText = `left:${tbX}px;top:${tbY}px;width:${tbW}px; transition: left 0.3s ease, top 0.3s ease;`;
+              if (!isPartial && tbIsNew) tbEl.style.animation = 'nodeIn .35s cubic-bezier(.34,1.4,.64,1) both';
+              tbEl.innerHTML = `
+                <div class="node-head">
+                  <div class="node-addr">${esc(cb.title || cb.address || 'Definition')}</div>
+                  <button class="tf-speak-btn" onclick="speakNodeText('${esc(cb.content||'')}')">🔊</button>
+                </div>
+                <div class="node-body">
+                  <div class="node-content" style="text-align:left;">${esc(cb.content||'')}</div>
+                </div>`;
+              if (tbIsNew) {
+                tbEl.addEventListener('mousedown', ev => {
+                  ev.stopPropagation();
+                  const n = nodeData[cb.address]; if(!n) return;
+                  const wp = screenToWorld(ev.clientX, ev.clientY);
+                  nodeDragging = n; tbEl.classList.add('dragging');
+                  nodeDragOff = {x: wp.x - n.x, y: wp.y - n.y};
+                });
+              }
+              nodeData[cb.address] = {x: tbX, y: tbY, w: tbW, h: tbH, el: tbEl, color: cc, explanation: '', type: 'textblock'};
+              // Make sure globalOffsetY accounts for tall textblock stacks
+              if (tbOffsetY > globalOffsetY) globalOffsetY = tbOffsetY;
+          });
+
+          // Place regular block children vertically below
+          blockChildren.forEach(childAddr => {
+              placeNode(childAddr, centerX);
+          });
       }
 
       const visitedPlacement = new Set();
+      compRoots.forEach(r => placeNode(r, centerX));
       
-      // Start horizontally centered so it naturally generates in the middle of the screen!
-      const startX = Math.max((wrap.clientWidth / 2) - 110, 60);
-      compRoots.forEach(r => placeNode(r, startX));
-      
-      globalOffsetY += 100; // Large vertical gap between completely independent disconnected graphs
+      globalOffsetY += 80; // gap between disconnected graphs
   });
 
-  // Render a 'Generating' node at the very bottom if partial
+  // Render a 'Generating' node at the very bottom, centered
   let generatingEl = document.getElementById('gen-node');
   if (isPartial) {
       if(!generatingEl) {
           generatingEl = document.createElement('div');
           generatingEl.id = 'gen-node';
           generatingEl.className = 'block-node';
-          generatingEl.style.cssText = `left:0px; width:220px; transition: top 0.3s ease; animation: nodePulse 1.5s infinite alternate; border-color: var(--accent); white-space: nowrap;`;
-          generatingEl.innerHTML = `<div class="node-body" style="padding:15px; color:var(--accent); font-weight:600;"><i class="fas fa-circle-notch fa-spin"></i> Generating Tree...</div>`;
+          generatingEl.innerHTML = `<div class="node-body" style="padding:15px; color:var(--accent); font-weight:600;">⏳ Generating Tree...</div>`;
           world.appendChild(generatingEl);
       }
-      generatingEl.style.top = `${globalOffsetY}px`;
-      globalOffsetY += 100;
+      generatingEl.style.cssText = `left:${centerX}px;top:${globalOffsetY}px;width:220px; transition: top 0.3s ease; animation: nodePulse 1.5s infinite alternate; border-color: var(--accent); white-space: nowrap;`;
   } else if (generatingEl) {
       generatingEl.remove();
   }
@@ -578,17 +617,28 @@ function drawEdges(){
     const fn=nodeData[e.from], tn=nodeData[e.to];
     if(!fn||!tn)return;
     
-    // Parent trunk origin (bottom, left aligned)
-    const startX = fn.x + 30;
-    const startY = fn.y + fn.h;
-    
-    // Child attachment point (left side, middle height)
-    const endX = tn.x - 3; // slightly offset so marker doesn't overlap border heavily
-    const endY = tn.y + tn.h / 2;
-    
     const path=document.createElementNS(svgNS,'path');
-    // Vertical drop, then horizontal shoot to the right
-    path.setAttribute('d',`M${startX},${startY} L${startX},${endY} L${endX},${endY}`);
+    let d;
+    
+    if (tn.type === 'textblock') {
+      // HORIZONTAL connection: parent right edge → textblock left edge
+      const startX = fn.x + fn.w;
+      const startY = fn.y + fn.h / 2;
+      const endX = tn.x;
+      const endY = tn.y + tn.h / 2;
+      const midX = (startX + endX) / 2;
+      d = `M${startX},${startY} C${midX},${startY} ${midX},${endY} ${endX},${endY}`;
+    } else {
+      // VERTICAL connection: parent bottom center → child top center
+      const startX = fn.x + fn.w / 2;
+      const startY = fn.y + fn.h;
+      const endX = tn.x + tn.w / 2;
+      const endY = tn.y;
+      const midY = (startY + endY) / 2;
+      d = `M${startX},${startY} C${startX},${midY} ${endX},${midY} ${endX},${endY}`;
+    }
+    
+    path.setAttribute('d', d);
     path.setAttribute('fill','none');
     path.setAttribute('stroke','#3a4680');
     path.setAttribute('stroke-width','1.6');
