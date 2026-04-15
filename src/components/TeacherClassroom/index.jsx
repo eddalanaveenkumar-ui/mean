@@ -102,6 +102,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [mediaLoading, setMediaLoading] = useState(false);
   const [isAgentLogExpanded, setIsAgentLogExpanded] = useState(false);
   const [showClassList, setShowClassList] = useState(false);
+  const [iframeSrcDoc, setIframeSrcDoc] = useState('');
 
   // YouTube Data API v3 key from environment variables
   const APP_YT_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
@@ -164,6 +165,17 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       return '';
     }
   }, [localKey, openRouterKey, activeEngine]);
+
+  // Fetch roadmap.html dynamically to bypass Vercel/DNS iframe security redirect blocks
+  useEffect(() => {
+    fetch('/roadmap.html')
+      .then(res => {
+         if (!res.ok) throw new Error("Failed to load roadmap HTML");
+         return res.text();
+      })
+      .then(html => setIframeSrcDoc(html))
+      .catch(err => console.error(err));
+  }, []);
 
   // Wrap all visible text nodes inside the slide body with word spans for highlighting
   const wrapWordsInDOM = useCallback(() => {
@@ -1118,10 +1130,12 @@ Return ONLY valid JSON array.`;
         </div>
       )}
 
-      {/* Canvas iframe */}
-      <iframe id="roadmapFrame" src="/roadmap.html" 
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
-        title="Canvas" onLoad={handleIframeLoad} />
+      {/* Canvas iframe - Loaded via srcDoc to bypass Vercel domain redirect blocks */}
+      {iframeSrcDoc && (
+        <iframe id="roadmapFrame" srcDoc={iframeSrcDoc}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', zIndex: 1 }}
+          title="Canvas" onLoad={handleIframeLoad} />
+      )}
 
       {/* Agent Log — left panel (visible when generating or error) */}
       {(phase === 'loading' || phase === 'error') && (
