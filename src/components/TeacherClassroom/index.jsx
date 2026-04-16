@@ -788,6 +788,16 @@ MANDATORY TEXTBLOCK RULE:
 - The textblock should provide useful, educational content explaining the concept of its parent block.
 - You can attach MULTIPLE textblocks to a single block if the topic needs it (e.g. "Definition", "Example", "Syntax").
 
+MANDATORY CODE VISUALIZATION RULE:
+- If the topic involves ANY coding example or algorithm (Python, Java, C, C++, C#, JavaScript, HTML, etc.), you MUST include these three connected blocks:
+  1. Coder: {"type": "coder", "address": "coder_1", "group": "g1", "language": "python", "code": "full code here with newlines", "connect": ["viz_1"]}
+  2. Visualizer: {"type": "visualizer", "address": "viz_1", "group": "g1", "coder_ref": "coder_1", "steps": [{"line": 1, "description": "What happens at this line", "variables": {"var_name": "value"}, "output": ""}, ...], "connect": ["out_1"]}
+  3. Outputer: {"type": "outputer", "address": "out_1", "group": "g1", "visualizer_ref": "viz_1"}
+- The "group" field MUST be the SAME string across all 3 blocks to link them.
+- Each step in "steps" must have: "line" (1-indexed line number), "description" (what happens), "variables" (current state of all variables as key-value), "output" (what gets printed at this step, empty string if nothing).
+- Include enough steps to trace through the FULL execution of the code with realistic sample input.
+- Arrow connections between coder->visualizer->outputer are MANDATORY.
+
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
 - Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
