@@ -258,3 +258,10 @@
 @media (max-width: 480px) {
   .input-main-row { padding: 4px; }
 }
+
+/* Desktop: narrower input bar like ChatGPT */
+@media (min-width: 769px) {
+  .input-container {
+    max-width: 680px;
+  }
+}
