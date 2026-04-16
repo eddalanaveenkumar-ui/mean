@@ -728,9 +728,23 @@ Ensure you strictly follow the roadmap context.`;
     setSlides([]);
     setJsonStreamData('');
     setLoading(false);
+    
+    // Clear the roadmap iframe completely
     const frame = document.getElementById('roadmapFrame');
     if (frame?.contentWindow) {
+      // Send clear message
+      frame.contentWindow.postMessage({ type: 'CLEAR_ROADMAP' }, '*');
       frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: [], isPartial: false }, '*');
+      // Also directly clear the DOM inside the iframe as fallback
+      try {
+        const world = frame.contentDocument?.getElementById('world');
+        if (world) {
+          world.querySelectorAll('.block-node').forEach(n => n.remove());
+          // Clear SVG arrows too
+          const svg = frame.contentDocument?.querySelector('svg');
+          if (svg) svg.innerHTML = '';
+        }
+      } catch(_) {}
     }
   };
 

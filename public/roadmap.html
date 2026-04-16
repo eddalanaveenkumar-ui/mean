@@ -456,6 +456,24 @@ function fitView(){
 }
 
 window.addEventListener('message', (event) => {
+  if(event.data && event.data.type === 'CLEAR_ROADMAP') {
+    // Remove all block nodes from DOM
+    world.querySelectorAll('.block-node').forEach(n => n.remove());
+    // Clear SVG arrows
+    const svg = document.querySelector('svg');
+    if (svg) svg.innerHTML = '';
+    // Reset internal state
+    nodeData = {};
+    edges = [];
+    palIdx = 0;
+    palMap = {};
+    // Clear the arrow canvas
+    const canvas = document.getElementById('arrowCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
   if(event.data && event.data.type === 'LOAD_ROADMAP') {
     renderTree(event.data.payload, event.data.isPartial);
   }
