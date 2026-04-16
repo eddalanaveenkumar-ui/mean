@@ -445,30 +445,25 @@ function fitView(){
   const addrs = Object.keys(nodeData);
   if (!addrs.length) { scale = 1; applyT(); return; }
   
-  // Calculate bounding box of all nodes
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  // Find the first (topmost) block node to center on
+  let topNode = null;
+  let topY = Infinity;
   addrs.forEach(a => {
     const n = nodeData[a];
-    minX = Math.min(minX, n.x);
-    minY = Math.min(minY, n.y);
-    maxX = Math.max(maxX, n.x + n.w);
-    maxY = Math.max(maxY, n.y + n.h);
+    if (n.y < topY) { topY = n.y; topNode = n; }
   });
   
-  const contentW = maxX - minX;
-  const contentH = maxY - minY;
+  if (!topNode) { scale = 1; applyT(); return; }
+  
   const vw = wrap.clientWidth;
   const vh = wrap.clientHeight;
-  const padding = 80; // padding around the content
   
-  // Scale to fit with padding, capped between 0.3 and 1.2
-  const scaleX = (vw - padding * 2) / contentW;
-  const scaleY = (vh - padding * 2) / contentH;
-  scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1.2);
+  // Use a comfortable readable scale — not too zoomed in, not too small
+  scale = vw < 600 ? 0.75 : 0.85;
   
-  // Center the content
-  tx = (vw - contentW * scale) / 2 - minX * scale;
-  ty = (vh - contentH * scale) / 2 - minY * scale;
+  // Center the top node horizontally, place it near the top with some padding
+  tx = (vw / 2) - (topNode.x + topNode.w / 2) * scale;
+  ty = 40 - topNode.y * scale; // 40px from top
   applyT();
 }
 
