@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import './WelcomeScreen.css';
 
 export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { sendMessage, isStreaming, deepdiveActive, setDeepdiveActive, webSearchActive, setWebSearchActive } = useApp();
+  const { user, sendMessage, isStreaming, deepdiveActive, setDeepdiveActive, webSearchActive, setWebSearchActive } = useApp();
   const [text, setText] = useState('');
   const [showTools, setShowTools] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
@@ -33,13 +33,35 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
   };
 
   const hasInput = text.trim().length > 0 || attachedFile;
+  const firstName = user?.name?.split(' ')[0] || 'there';
 
   return (
     <div className="welcome-block">
-      {/* Heading */}
-      <h1 className="welcome-heading">Paste your code or ask a question.</h1>
+      {/* Centered greeting + actions */}
+      <div className="welcome-center">
+        <h1 className="welcome-greeting">
+          <span className="greeting-hi">Hi {firstName},</span>
+          <span className="greeting-sub">what's on your mind?</span>
+        </h1>
 
-      {/* Centered Input Bar */}
+        {/* Action rows — vertical list like ChatGPT */}
+        <div className="welcome-actions">
+          <button className="w-action-row" onClick={() => onTeacher?.()}>
+            <div className="w-action-icon"><i className="fas fa-chalkboard-teacher" /></div>
+            <span className="w-action-text">AI Classroom</span>
+          </button>
+          <button className="w-action-row" onClick={() => onPpt?.()}>
+            <div className="w-action-icon"><i className="fas fa-file-powerpoint" /></div>
+            <span className="w-action-text">Create presentation</span>
+          </button>
+          <button className="w-action-row" onClick={() => setWebSearchActive(!webSearchActive)}>
+            <div className="w-action-icon"><i className="fas fa-globe" /></div>
+            <span className="w-action-text">{webSearchActive ? 'Web search is ON ✓' : 'Look something up'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom-fixed input bar */}
       <div className="welcome-input-wrap">
         {attachedFile && (
           <div className="w-attach-bar">
@@ -105,22 +127,6 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
           </div>
         )}
         <input type="file" ref={fileRef} style={{ display: 'none' }} onChange={handleFileChange} />
-      </div>
-
-      {/* Action cards */}
-      <div className="welcome-pills" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { onTeacher?.(); }}>
-          <div style={{ fontWeight: 'bold', color: '#0A84FF', marginBottom: '8px', fontSize: '1rem' }}>📚 Teach a Topic</div>
-          <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Get a full classroom session on any topic.</div>
-        </button>
-        <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { onPpt?.(); }}>
-          <div style={{ fontWeight: 'bold', color: '#0A84FF', marginBottom: '8px', fontSize: '1rem' }}>📊 Create PPTs</div>
-          <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>Auto-generate presentations from any topic.</div>
-        </button>
-        <button className="w-pill" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px', height: 'auto', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', minWidth: '180px' }} onClick={() => { setWebSearchActive(!webSearchActive); }}>
-          <div style={{ fontWeight: 'bold', color: '#0A84FF', marginBottom: '8px', fontSize: '1rem' }}>🔍 Live Google Search</div>
-          <div style={{ color: '#aaa', fontSize: '0.85rem', textAlign: 'left', whiteSpace: 'normal', lineHeight: '1.4' }}>{webSearchActive ? 'Web search is ON ✓' : 'Search the web in real-time with AI.'}</div>
-        </button>
       </div>
     </div>
   );

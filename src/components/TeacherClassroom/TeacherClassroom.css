@@ -2,7 +2,11 @@
 
 .tc-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
   background: var(--bg-dark);
   z-index: 400;
   display: flex;

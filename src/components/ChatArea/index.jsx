@@ -71,15 +71,14 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
           <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <i className="fas fa-bars" />
           </button>
-          <span className="header-brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="header-brand">
             <span className="hb-mean">Mean</span>
             <span className="hb-ai">AI</span>
           </span>
         </div>
         <div className="chat-header-right">
-          <button className="header-new-btn" onClick={newChat} title="New Chat">
-            <i className="fas fa-plus" />
-            <span>New chat</span>
+          <button className="header-icon-btn" onClick={newChat} title="New Chat">
+            <i className="fas fa-pen-to-square" />
           </button>
         </div>
       </header>

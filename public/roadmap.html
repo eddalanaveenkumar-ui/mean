@@ -339,25 +339,13 @@ wrap.addEventListener('touchstart', e => {
   for (let i = 0; i < touches.length; i++) activeTouches[touches[i].identifier] = {x: touches[i].clientX, y: touches[i].clientY};
 
   if (touches.length === 1) {
-    // Check if touch is on a node (for dragging)
+    // On mobile: ALWAYS pan canvas (no node dragging — it's confusing on touch)
+    isTouchPanning = true;
     const t = touches[0];
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    const nodeEl = el?.closest('.block-node');
-    if (nodeEl && nodeData[nodeEl.dataset.addr]) {
-      const n = nodeData[nodeEl.dataset.addr];
-      const wp = screenToWorld(t.clientX, t.clientY);
-      nodeDragging = n;
-      nodeEl.classList.add('dragging');
-      nodeDragOff = {x: wp.x - n.x, y: wp.y - n.y};
-    } else {
-      // Pan canvas
-      isTouchPanning = true;
-      touchPanStart = {x: t.clientX - tx, y: t.clientY - ty};
-    }
+    touchPanStart = {x: t.clientX - tx, y: t.clientY - ty};
   } else if (touches.length === 2) {
     // Pinch-to-zoom start
     isTouchPanning = false;
-    nodeDragging = null;
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     lastTouchDist = Math.hypot(dx, dy);
