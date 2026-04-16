@@ -80,7 +80,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 /* canvas */
 #canvas-wrap{
   flex:1;position:relative;overflow:hidden;
-  background:var(--bg);cursor:grab
+  background:var(--bg);cursor:grab;
+  touch-action:none;-webkit-user-select:none;user-select:none
 }
 #canvas-wrap.grabbing{cursor:grabbing}
 #canvas-wrap::before{
@@ -326,6 +327,108 @@ wrap.addEventListener('wheel',e=>{
   }
   applyT();
 },{passive:true});
+
+// ===== TOUCH EVENTS FOR MOBILE =====
+let activeTouches = {};
+let lastTouchDist = 0;
+let isTouchPanning = false;
+let touchPanStart = {x:0, y:0};
+
+wrap.addEventListener('touchstart', e => {
+  const touches = e.touches;
+  for (let i = 0; i < touches.length; i++) activeTouches[touches[i].identifier] = {x: touches[i].clientX, y: touches[i].clientY};
+
+  if (touches.length === 1) {
+    // Check if touch is on a node (for dragging)
+    const t = touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const nodeEl = el?.closest('.block-node');
+    if (nodeEl && nodeData[nodeEl.dataset.addr]) {
+      const n = nodeData[nodeEl.dataset.addr];
+      const wp = screenToWorld(t.clientX, t.clientY);
+      nodeDragging = n;
+      nodeEl.classList.add('dragging');
+      nodeDragOff = {x: wp.x - n.x, y: wp.y - n.y};
+    } else {
+      // Pan canvas
+      isTouchPanning = true;
+      touchPanStart = {x: t.clientX - tx, y: t.clientY - ty};
+    }
+  } else if (touches.length === 2) {
+    // Pinch-to-zoom start
+    isTouchPanning = false;
+    nodeDragging = null;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    lastTouchDist = Math.hypot(dx, dy);
+  }
+}, {passive: false});
+
+wrap.addEventListener('touchmove', e => {
+  e.preventDefault(); // Prevent browser scroll/zoom
+  const touches = e.touches;
+
+  if (touches.length === 1 && nodeDragging) {
+    // Drag node
+    const t = touches[0];
+    const pos = screenToWorld(t.clientX, t.clientY);
+    const nx = pos.x - nodeDragOff.x, ny = pos.y - nodeDragOff.y;
+    nodeDragging.el.style.left = nx + 'px';
+    nodeDragging.el.style.top = ny + 'px';
+    nodeDragging.x = nx;
+    nodeDragging.y = ny;
+    drawEdges(); drawMinimap();
+  } else if (touches.length === 1 && isTouchPanning) {
+    // Pan canvas
+    const t = touches[0];
+    tx = t.clientX - touchPanStart.x;
+    ty = t.clientY - touchPanStart.y;
+    applyT();
+  } else if (touches.length === 2) {
+    // Pinch-to-zoom
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    if (lastTouchDist > 0) {
+      const midX = (touches[0].clientX + touches[1].clientX) / 2;
+      const midY = (touches[0].clientY + touches[1].clientY) / 2;
+      const r = wrap.getBoundingClientRect();
+      const localX = midX - r.left;
+      const localY = midY - r.top;
+      const zoomFactor = dist / lastTouchDist;
+      const ns = Math.min(Math.max(scale * zoomFactor, 0.12), 3);
+      tx = localX - (localX - tx) * (ns / scale);
+      ty = localY - (localY - ty) * (ns / scale);
+      scale = ns;
+      applyT();
+    }
+    lastTouchDist = dist;
+  }
+}, {passive: false});
+
+wrap.addEventListener('touchend', e => {
+  const touches = e.changedTouches;
+  for (let i = 0; i < touches.length; i++) delete activeTouches[touches[i].identifier];
+  if (e.touches.length === 0) {
+    isTouchPanning = false;
+    nodeDragging = null;
+    lastTouchDist = 0;
+    document.querySelectorAll('.block-node').forEach(n => n.classList.remove('dragging'));
+  } else if (e.touches.length === 1) {
+    // Went from 2 fingers to 1, restart as pan
+    lastTouchDist = 0;
+    isTouchPanning = true;
+    touchPanStart = {x: e.touches[0].clientX - tx, y: e.touches[0].clientY - ty};
+  }
+}, {passive: true});
+
+wrap.addEventListener('touchcancel', () => {
+  isTouchPanning = false;
+  nodeDragging = null;
+  lastTouchDist = 0;
+  activeTouches = {};
+  document.querySelectorAll('.block-node').forEach(n => n.classList.remove('dragging'));
+}, {passive: true});
 function screenToWorld(sx,sy){
   const r=wrap.getBoundingClientRect();
   return{x:(sx-r.left-tx)/scale, y:(sy-r.top-ty)/scale};

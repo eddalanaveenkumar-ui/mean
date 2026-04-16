@@ -1096,7 +1096,7 @@ Return ONLY valid JSON array.`;
               <i className="fas fa-times" />
             </button>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
             {classes.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '30px 10px', color: '#7d8590', fontSize: '13px' }}>
                 <i className="fas fa-folder-open" style={{ fontSize: '24px', opacity: 0.5, marginBottom: '10px', display: 'block' }}/>
@@ -1172,7 +1172,7 @@ Return ONLY valid JSON array.`;
             </div>
           </div>
           {isAgentLogExpanded && (
-            <div style={{ padding: '14px', color: 'var(--text-secondary)', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto' }}>
+            <div style={{ padding: '14px', color: 'var(--text-secondary)', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
               {jsonStreamData || 'Waiting for generation...'}
               {phase === 'loading' && <span className="cursor-blink" style={{ color: '#10b981', fontWeight: 'bold' }}>|</span>}
             </div>

@@ -9,6 +9,9 @@
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.25s ease;
+  overflow: hidden;
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tc-overlay.tc-presentation {
@@ -1304,4 +1307,33 @@
 .tc-board-left::-webkit-scrollbar-thumb:hover,
 .tc-board-right::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ===== MOBILE TOUCH SCROLLING FIXES ===== */
+@media (max-width: 900px) {
+  /* Ensure floating panels above the iframe are scrollable on touch devices */
+  .tc-overlay > [style*="position: absolute"] {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* The iframe needs pointer-events manipulation so floating UI above it works */
+  .tc-overlay > iframe {
+    touch-action: none;
+  }
+}
+
+@media (pointer: coarse) {
+  /* Touch device: ensure all scrollable containers have momentum scrolling */
+  .tc-board-left,
+  .tc-board-right {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
+  
+  /* Scrollable panels (Collection, Agent Log) */
+  .tc-overlay [style*="overflowY"],
+  .tc-overlay [style*="overflow-y"] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
