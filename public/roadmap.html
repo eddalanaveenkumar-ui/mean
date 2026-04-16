@@ -536,7 +536,9 @@ function renderTree(data, isPartial = false){
           const blockW = (b.type==='textblock') ? 310 : 220;
           let blockH = 120;
           if (b.type === 'textblock') {
-             blockH = 140; 
+             // Estimate height from content length for better initial layout
+             const contentLen = (b.content || '').length;
+             blockH = Math.max(160, Math.min(400, 80 + contentLen * 0.9));
           } else if (b.shape === 'circle') {
              blockH = 220;
           } else if (b.shape === 'star') {
@@ -546,7 +548,7 @@ function renderTree(data, isPartial = false){
           // ALL nodes get placed at globalOffsetY, then we advance it
           const x = currentX;
           const y = globalOffsetY;
-          globalOffsetY += blockH + 50;
+          globalOffsetY += blockH + 80;
 
           const c = getpal(b.address);
           const initials = (b.address||'??').slice(0,2).toUpperCase();
@@ -618,7 +620,7 @@ function renderTree(data, isPartial = false){
           const textChildren = children.filter(c => blockMap[c] && blockMap[c].type === 'textblock');
           const blockChildren = children.filter(c => !blockMap[c] || blockMap[c].type !== 'textblock');
           
-          // Place textblocks HORIZONTALLY to the right, stacked vertically among themselves
+          // Place textblocks HORIZONTALLY to the right, stacked vertically with generous spacing
           let tbOffsetY = y; // start at same Y as parent
           textChildren.forEach(childAddr => {
               if (visitedPlacement.has(childAddr)) return;
@@ -626,10 +628,12 @@ function renderTree(data, isPartial = false){
               const cb = blockMap[childAddr];
               if(!cb) return;
               const tbW = 310;
-              const tbH = 140;
-              const tbX = x + blockW + 60; // to the right of parent
+              // Estimate height from content length
+              const contentLen = (cb.content || '').length;
+              const tbH = Math.max(160, Math.min(400, 80 + contentLen * 0.9));
+              const tbX = x + blockW + 120; // generous horizontal gap
               const tbY = tbOffsetY;
-              tbOffsetY += tbH + 20; // stack textblocks vertically among themselves
+              tbOffsetY += tbH + 40; // generous vertical gap between textblocks
               
               const cc = getpal(cb.address);
               let tbEl = existingEls.get(cb.address);
@@ -658,7 +662,7 @@ function renderTree(data, isPartial = false){
                   nodeDragOff = {x: wp.x - n.x, y: wp.y - n.y};
                 });
               }
-              nodeData[cb.address] = {x: tbX, y: tbY, w: tbW, h: tbH, el: tbEl, color: cc, explanation: '', type: 'textblock'};
+              nodeData[cb.address] = {x: tbX, y: tbY, w: tbW, h: tbH, el: tbEl, color: cc, explanation: '', type: 'textblock', parentAddr: addr};
               // Make sure globalOffsetY accounts for tall textblock stacks
               if (tbOffsetY > globalOffsetY) globalOffsetY = tbOffsetY;
           });
@@ -700,9 +704,40 @@ function renderTree(data, isPartial = false){
     });
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    // Measure actual DOM heights
     blocks.forEach(b=>{const el=nodeData[b.address]?.el;if(el) nodeData[b.address].h=el.offsetHeight;});
+    
+    // POST-RENDER REPOSITIONING: Fix textblock overlap using real DOM heights
+    // Group textblocks by their parent, then re-space them vertically
+    const tbGroups = {}; // parentAddr -> [childAddr1, childAddr2, ...]
+    Object.keys(nodeData).forEach(addr => {
+      const nd = nodeData[addr];
+      if (nd.type === 'textblock' && nd.parentAddr) {
+        if (!tbGroups[nd.parentAddr]) tbGroups[nd.parentAddr] = [];
+        tbGroups[nd.parentAddr].push(addr);
+      }
+    });
+    
+    Object.keys(tbGroups).forEach(parentAddr => {
+      const parent = nodeData[parentAddr];
+      if (!parent) return;
+      const children = tbGroups[parentAddr];
+      // Sort by current Y to preserve original order
+      children.sort((a, b) => nodeData[a].y - nodeData[b].y);
+      
+      let curY = parent.y; // align first textblock with parent top
+      const gap = 40; // gap between textblocks
+      children.forEach(addr => {
+        const nd = nodeData[addr];
+        const realH = nd.h;
+        nd.y = curY;
+        nd.el.style.top = curY + 'px';
+        curY += realH + gap;
+      });
+    });
+    
     drawEdges();
-    if (!isPartial) { fitView(); } // only run fitView when fully loaded, keep manual scale while loading!
+    if (!isPartial) { fitView(); }
     drawMinimap();
   }));
 }
@@ -711,9 +746,12 @@ function drawEdges(){
   edgeSvg.innerHTML='';
   if(!edges.length)return;
   const defs=document.createElementNS(svgNS,'defs');
-  // Use orient="auto" so the arrow head points exactly forward along the last trajectory segment
-  defs.innerHTML=`<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-    <path d="M1.5 2L8.5 5L1.5 8" fill="none" stroke="#4f7ef0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  // Arrowhead marker — clean chevron style
+  defs.innerHTML=`<marker id="ah" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M2 2L10 6L2 10" fill="none" stroke="#5a7aef" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <marker id="ah-tb" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M2 2L10 6L2 10" fill="none" stroke="#4cc9a0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </marker>`;
   edgeSvg.appendChild(defs);
   edges.forEach(e=>{
@@ -724,43 +762,63 @@ function drawEdges(){
     let d;
     
     if (tn.type === 'textblock') {
-      // HORIZONTAL L-shaped connection: parent right edge → textblock left edge
-      const sx = fn.x + fn.w;
-      const sy = fn.y + fn.h / 2;
-      const ex = tn.x;
-      const ey = tn.y + tn.h / 2;
-      // L-shape: go right horizontally, then turn vertically to meet textblock
-      d = `M${sx},${sy} L${ex},${sy} L${ex},${ey}`;
-      path.setAttribute('stroke-dasharray', '6,4');
+      // SMOOTH BEZIER CURVE: parent right edge → textblock left edge
+      const sx = fn.x + fn.w;        // start at right edge of parent
+      const sy = fn.y + fn.h / 2;    // vertical center of parent
+      const ex = tn.x;                // end at left edge of textblock
+      const ey = tn.y + tn.h / 2;    // vertical center of textblock
+      const cpOffset = (ex - sx) * 0.5; // control point offset (half the horizontal distance)
+      // Smooth S-curve using cubic bezier
+      d = `M${sx},${sy} C${sx + cpOffset},${sy} ${ex - cpOffset},${ey} ${ex},${ey}`;
+      path.setAttribute('stroke', 'rgba(76, 201, 160, 0.5)');
+      path.setAttribute('stroke-width', '1.8');
+      path.setAttribute('stroke-dasharray', '8,5');
+      path.setAttribute('marker-end', 'url(#ah-tb)');
     } else {
-      // VERTICAL connection routed through LEFT SPINE so it never passes through blocks
-      // Spine runs 30px to the left of the blocks
-      const spineX = Math.min(fn.x, tn.x) - 30;
-      const sy = fn.y + fn.h / 2;  // exit from parent mid-left
-      const ey = tn.y + tn.h / 2;  // enter into child mid-left
-      d = `M${fn.x},${sy} L${spineX},${sy} L${spineX},${ey} L${tn.x},${ey}`;
+      // SMOOTH VERTICAL CURVE routed through left spine
+      const sx = fn.x + fn.w / 2;    // center-bottom of parent
+      const sy = fn.y + fn.h;         // bottom edge
+      const ex = tn.x + tn.w / 2;    // center-top of child
+      const ey = tn.y;                // top edge
+      const midY = (sy + ey) / 2;
+      // Smooth vertical S-curve
+      d = `M${sx},${sy} C${sx},${midY} ${ex},${midY} ${ex},${ey}`;
+      path.setAttribute('stroke', 'rgba(90, 122, 239, 0.55)');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('marker-end', 'url(#ah)');
     }
     
     path.setAttribute('d', d);
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke','#3a4680');
-    path.setAttribute('stroke-width','1.6');
-    path.setAttribute('marker-end','url(#ah)');
+    path.setAttribute('fill', 'none');
     edgeSvg.appendChild(path);
     
     // Connection dot at the start point
     const dot = document.createElementNS(svgNS, 'circle');
-    const dotColor = fn.color ? fn.color.badge : '#4f7ef0';
     if (tn.type === 'textblock') {
       dot.setAttribute('cx', fn.x + fn.w);
       dot.setAttribute('cy', fn.y + fn.h / 2);
+      dot.setAttribute('r', '5');
+      dot.setAttribute('fill', 'rgba(76, 201, 160, 0.7)');
     } else {
-      dot.setAttribute('cx', fn.x);
-      dot.setAttribute('cy', fn.y + fn.h / 2);
+      dot.setAttribute('cx', fn.x + fn.w / 2);
+      dot.setAttribute('cy', fn.y + fn.h);
+      dot.setAttribute('r', '5');
+      dot.setAttribute('fill', 'rgba(90, 122, 239, 0.7)');
     }
-    dot.setAttribute('r', '4');
-    dot.setAttribute('fill', dotColor);
     edgeSvg.appendChild(dot);
+    
+    // Small arrival dot at the end point
+    const dotEnd = document.createElementNS(svgNS, 'circle');
+    if (tn.type === 'textblock') {
+      dotEnd.setAttribute('cx', tn.x);
+      dotEnd.setAttribute('cy', tn.y + tn.h / 2);
+    } else {
+      dotEnd.setAttribute('cx', tn.x + tn.w / 2);
+      dotEnd.setAttribute('cy', tn.y);
+    }
+    dotEnd.setAttribute('r', '3');
+    dotEnd.setAttribute('fill', tn.type === 'textblock' ? 'rgba(76, 201, 160, 0.5)' : 'rgba(90, 122, 239, 0.5)');
+    edgeSvg.appendChild(dotEnd);
   });
   const addrs=Object.keys(nodeData);
   if(addrs.length){
