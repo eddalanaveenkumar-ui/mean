@@ -41,6 +41,11 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
 
     const onEnd = () => { 
       if (timerId) clearTimeout(timerId);
+      // CRITICAL: Reset closure variables so the next stream starts fresh
+      queuedText = '';
+      renderedText = '';
+      isTyping = false;
+      timerId = null;
       setStreamText(''); 
       setIsStreamActive(false); 
     };
