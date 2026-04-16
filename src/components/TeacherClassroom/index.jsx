@@ -55,6 +55,8 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const { user, webSearchActive, saveClass, classes, deleteClass, theme } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
+  const [sessionTitle, setSessionTitle] = useState('');
+  const [sessionTopic, setSessionTopic] = useState('');
   const [subject, setSubject] = useState('General');
   const [level] = useState('high');
   const lang = 'English';
@@ -717,6 +719,21 @@ Ensure you strictly follow the roadmap context.`;
   };
 
   // ===== START CLASS =====
+  const handleNewSession = () => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    setPhase('idle');
+    setTopic('');
+    setSessionTitle('');
+    setSessionTopic('');
+    setSlides([]);
+    setJsonStreamData('');
+    setLoading(false);
+    const frame = document.getElementById('roadmapFrame');
+    if (frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: [], isPartial: false }, '*');
+    }
+  };
+
   const startClass = async () => {
     if (!topic.trim()) return;
     const key = activeEngine === 'gemini' ? localKey.trim() : openRouterKey.trim();
@@ -727,6 +744,12 @@ Ensure you strictly follow the roadmap context.`;
     }
     abortControllerRef.current = new AbortController();
 
+    // Save the topic for the prompt, then clear the input field
+    const currentTopic = topic.trim();
+    setSessionTopic(currentTopic);
+    setTopic('');
+    setSessionTitle('');
+
     setPhase('loading');
     setJsonStreamData('');
     setSlides([]);
@@ -736,7 +759,7 @@ Ensure you strictly follow the roadmap context.`;
       ? `\n\nAttached document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\nUse this as primary source.`
       : '';
 
-    const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
+    const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${currentTopic}".
 Return ONLY a JSON array representing the flow. Current year: 2026.
 
 CRITICAL GRAPH FRACTURING RULES:
@@ -857,7 +880,19 @@ Return ONLY valid JSON array.`;
 
       setSlides(parsed);
       setPhase('done');
-      saveClass(topic, parsed); // Save automatically to DB
+      saveClass(currentTopic, parsed); // Save automatically to DB
+
+      // Generate a summarized title for the session header
+      try {
+        const titleText = await fetchAI([
+          { role: 'system', content: 'Generate a SHORT title (max 6 words) summarizing the topic. Return ONLY the title, no quotes or punctuation.' },
+          { role: 'user', content: currentTopic.slice(0, 300) }
+        ], 30);
+        const cleanTitle = (titleText || '').replace(/^["'`#*]+|["'`#*]+$/g, '').trim();
+        setSessionTitle(cleanTitle || currentTopic.slice(0, 40));
+      } catch (_) {
+        setSessionTitle(currentTopic.length > 40 ? currentTopic.slice(0, 37) + '...' : currentTopic);
+      }
       
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
@@ -1067,7 +1102,9 @@ Return ONLY valid JSON array.`;
           <button onClick={handleClose} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <i className="fas fa-arrow-left" />
           </button>
-          <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '15px' }}>Mean AI • Canvas</span>
+          <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '15px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {sessionTitle || 'Mean AI • Canvas'}
+          </span>
           <button 
             onClick={() => setShowClassList(!showClassList)} 
             style={{ marginLeft: '10px', background: showClassList ? 'var(--text-primary)' : 'var(--hover-bg)', color: showClassList ? 'var(--bg-dark)' : 'var(--text-primary)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -1075,9 +1112,18 @@ Return ONLY valid JSON array.`;
             <i className="fas fa-layer-group" /> Collection
           </button>
         </div>
-        <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
-          <i className="fas fa-cog" />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button 
+            onClick={handleNewSession}
+            style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+            title="New session"
+          >
+            <i className="fas fa-plus" /> New
+          </button>
+          <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
+            <i className="fas fa-cog" />
+          </button>
+        </div>
       </header>
 
       {/* Class Collection Side Panel */}
