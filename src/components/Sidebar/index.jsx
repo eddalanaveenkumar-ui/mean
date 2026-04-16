@@ -183,18 +183,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           </button>
         </div>
 
-        {/* CLASSES section from Database */}
-        {(classes && classes.length > 0) && (
-          <div className="sidebar-tools" style={{ marginTop: '15px' }}>
-            <div className="tools-label">Classes (Database)</div>
-            {classes.map(cls => (
-                <button key={cls.class_id || cls.name} className="tool-item" onClick={() => { onTeacher?.(); setSidebarOpen(false); }}>
-                  <i className="fas fa-book" />
-                  <span>{cls.name}</span>
-                </button>
-            ))}
-          </div>
-        )}
+        {/* Classes collection has been removed from main sidebar and is now only in AI Classroom */}
 
         <div className="chat-list" style={{ marginTop: '15px' }}>
           {groups.map(({ key, label }) => {
