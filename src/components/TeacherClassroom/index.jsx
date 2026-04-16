@@ -798,6 +798,15 @@ MANDATORY CODE VISUALIZATION RULE:
 - Include enough steps to trace through the FULL execution of the code with realistic sample input.
 - Arrow connections between coder->visualizer->outputer are MANDATORY.
 
+MANDATORY MATHBLOCK RULE:
+- If the topic involves ANY mathematical problem, equation, physics formula, calculus, algebra, geometry, statistics, or numerical computation, you MUST include a mathblock.
+- Mathblock: {"type": "mathblock", "address": "math_1", "title": "Solving [Problem Name]", "steps": [{"label": "Given", "content": "LaTeX expression"}, {"label": "Step 1", "content": "LaTeX expression"}, {"label": "Answer", "content": "LaTeX expression"}]}
+- EVERY step "content" MUST use LaTeX notation for math expressions (e.g. \\frac{a}{b}, \\sqrt{x}, x^2, \\int, \\sum, \\alpha, \\beta, \\pi, \\theta, \\geq, \\leq, \\cdot, \\times, \\div, \\pm, \\infty, \\rightarrow, \\vec{F}, \\hat{i}).
+- Use \\text{...} for plain text within LaTeX expressions.
+- Steps should be detailed like a teacher's handwritten notes: show every substitution, simplification, and intermediate result.
+- Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
+- For physics: include units, dimensional analysis, and diagrams where possible.
+
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
 - Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}

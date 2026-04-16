@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FlowDeck · AI Roadmap</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -306,6 +308,45 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 }
 .out-cursor { display: inline-block; width: 7px; height: 14px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: text-bottom; margin-left: 2px; }
 @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ===== MATHBLOCK ===== */
+.block-node.shape-mathblock {
+  min-width: 380px; max-width: 500px; border-radius: 12px;
+  background: #0d1117; border: 1px solid #30363d;
+}
+.math-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 2px solid var(--amber);
+  background: #161b22; border-radius: 12px 12px 0 0;
+}
+.math-title { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'Syne', sans-serif; }
+.math-icon { font-size: 11px; color: var(--amber); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.math-body { padding: 6px 0; }
+.math-step {
+  display: flex; align-items: flex-start; gap: 0; padding: 8px 16px;
+  border-bottom: 1px dashed #21262d; transition: background 0.15s;
+}
+.math-step:last-child { border-bottom: none; }
+.math-step:hover { background: rgba(240, 173, 94, 0.05); }
+.math-step-label {
+  min-width: 70px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--amber); font-family: 'JetBrains Mono', monospace;
+  padding-top: 4px; flex-shrink: 0;
+}
+.math-step-label.given { color: var(--accent); }
+.math-step-label.answer { color: var(--green); }
+.math-step-content {
+  flex: 1; font-size: 15px; color: var(--text); line-height: 1.8;
+  overflow-x: auto; padding: 2px 0;
+}
+.math-step-content .katex { font-size: 1.1em; }
+.math-step-content .math-text { font-family: 'Syne', sans-serif; font-size: 13px; color: var(--text2); }
+.math-footer {
+  padding: 8px 16px; border-top: 2px solid var(--amber);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #161b22; border-radius: 0 0 12px 12px;
+}
+.math-footer-text { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
 </style>
 </head>
 <body>
@@ -406,6 +447,20 @@ function stepCodeGroup(groupId, direction) {
       body.innerHTML = esc(output.trimEnd()) + '<span class="out-cursor"></span>';
     }
   }
+}
+
+// ===== KATEX MATH RENDERER =====
+function renderMathInEl(el) {
+  if (typeof katex === 'undefined') return;
+  el.querySelectorAll('.math-step-content').forEach(cell => {
+    const raw = cell.getAttribute('data-latex') || cell.textContent;
+    try {
+      // Render as display math
+      katex.render(raw, cell, { displayMode: true, throwOnError: false, trust: true });
+    } catch(_) {
+      cell.textContent = raw;
+    }
+  });
 }
 
 const wrap=document.getElementById('canvas-wrap');
@@ -643,7 +698,7 @@ function renderTree(data, isPartial = false){
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
 
-  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer'));
+  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock'));
   const arrowDefs=data.filter(n=>n&&n.type==='arrow');
   if(!blocks.length)return;
   const blockMap={};
@@ -722,6 +777,10 @@ function renderTree(data, isPartial = false){
           } else if (b.type === 'outputer') {
              blockW = 360;
              blockH = 200;
+          } else if (b.type === 'mathblock') {
+             blockW = 440;
+             const stepCount = (b.steps || []).length;
+             blockH = Math.max(200, 70 + stepCount * 55);
           } else if (b.shape === 'circle') {
              blockH = 220;
           } else if (b.shape === 'star') {
@@ -820,6 +879,29 @@ function renderTree(data, isPartial = false){
              if (!codeGroups[groupId]) codeGroups[groupId] = { currentStep: 0, steps: [] };
              codeGroups[groupId].outEl = el;
 
+          } else if (b.type === 'mathblock') {
+             // === MATHBLOCK ===
+             el.className = 'block-node shape-mathblock';
+             el.style.background = '';
+             const steps = b.steps || [];
+             let stepsHtml = '';
+             steps.forEach(s => {
+               const labelLower = (s.label || '').toLowerCase();
+               const labelClass = labelLower.includes('given') ? 'given' : (labelLower.includes('answer') || labelLower.includes('result') || labelLower.includes('final')) ? 'answer' : '';
+               stepsHtml += `<div class="math-step"><div class="math-step-label ${labelClass}">${esc(s.label || '')}</div><div class="math-step-content" data-latex="${esc(s.content || '')}">${esc(s.content || '')}</div></div>`;
+             });
+             const stepCount = steps.length;
+             innerHtml = `
+               <div class="math-header">
+                 <span class="math-title">${esc(b.title || 'Solution')}</span>
+                 <span class="math-icon">∑ Math</span>
+               </div>
+               <div class="math-body">${stepsHtml}</div>
+               <div class="math-footer">
+                 <span class="math-footer-text">${stepCount} steps</span>
+                 <button class="tf-speak-btn" onclick="speakNodeText('${esc(steps.map(s => s.label + ': ' + s.content).join('. '))}')">🔊</button>
+               </div>`;
+
           } else if (b.type === 'textblock') {
              el.className = `block-node shape-text-field`;
              el.style.background = '';
@@ -847,6 +929,11 @@ function renderTree(data, isPartial = false){
           }
           
           el.innerHTML = innerHtml;
+          
+          // Render KaTeX math for mathblocks
+          if (b.type === 'mathblock') {
+            setTimeout(() => renderMathInEl(el), 50);
+          }
           
           if (isNew) {
             el.addEventListener('mousedown',ev=>{
