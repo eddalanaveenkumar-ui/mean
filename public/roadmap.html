@@ -442,9 +442,33 @@ function addZoom(d){
 }
 function resetView(){tx=60;ty=60;scale=1;applyT();}
 function fitView(){
-  // Node tree is now naturally plotted in the center at 1.0 scale!
-  // No teleportation or weird zoom squishing required.
-  scale = 1.0;
+  const addrs = Object.keys(nodeData);
+  if (!addrs.length) { scale = 1; applyT(); return; }
+  
+  // Calculate bounding box of all nodes
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  addrs.forEach(a => {
+    const n = nodeData[a];
+    minX = Math.min(minX, n.x);
+    minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + n.w);
+    maxY = Math.max(maxY, n.y + n.h);
+  });
+  
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  const vw = wrap.clientWidth;
+  const vh = wrap.clientHeight;
+  const padding = 80; // padding around the content
+  
+  // Scale to fit with padding, capped between 0.3 and 1.2
+  const scaleX = (vw - padding * 2) / contentW;
+  const scaleY = (vh - padding * 2) / contentH;
+  scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.3), 1.2);
+  
+  // Center the content
+  tx = (vw - contentW * scale) / 2 - minX * scale;
+  ty = (vh - contentH * scale) / 2 - minY * scale;
   applyT();
 }
 
@@ -704,36 +728,56 @@ function renderTree(data, isPartial = false){
     });
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    // Measure actual DOM heights
+    // ===== FULL POST-RENDER RELAYOUT =====
+    // Step 1: Measure ALL actual DOM heights
     blocks.forEach(b=>{const el=nodeData[b.address]?.el;if(el) nodeData[b.address].h=el.offsetHeight;});
     
-    // POST-RENDER REPOSITIONING: Fix textblock overlap using real DOM heights
-    // Group textblocks by their parent, then re-space them vertically
-    const tbGroups = {}; // parentAddr -> [childAddr1, childAddr2, ...]
+    // Step 2: Collect block nodes (non-textblocks) and their textblock children
+    const tbGroups = {}; // parentAddr -> [childAddr, ...]
+    const blockNodes = []; // all non-textblock addresses
     Object.keys(nodeData).forEach(addr => {
       const nd = nodeData[addr];
       if (nd.type === 'textblock' && nd.parentAddr) {
         if (!tbGroups[nd.parentAddr]) tbGroups[nd.parentAddr] = [];
         tbGroups[nd.parentAddr].push(addr);
+      } else if (nd.type !== 'textblock') {
+        blockNodes.push(addr);
       }
     });
     
-    Object.keys(tbGroups).forEach(parentAddr => {
-      const parent = nodeData[parentAddr];
-      if (!parent) return;
-      const children = tbGroups[parentAddr];
-      // Sort by current Y to preserve original order
+    // Step 3: Sort block nodes by their current Y (preserves tree order)
+    blockNodes.sort((a, b) => nodeData[a].y - nodeData[b].y);
+    
+    // Step 4: Full top-to-bottom sweep — reposition EVERYTHING with real heights
+    const ROW_GAP = 60;  // gap between rows (block + its textblocks → next block)
+    const TB_GAP = 36;   // gap between stacked textblocks
+    let nextY = blockNodes.length > 0 ? nodeData[blockNodes[0]].y : 100; // preserve first Y
+    
+    blockNodes.forEach(blockAddr => {
+      const block = nodeData[blockAddr];
+      
+      // Position this block node
+      block.y = nextY;
+      block.el.style.top = nextY + 'px';
+      
+      // Position its textblocks to the right, stacked vertically
+      let tbStackHeight = 0;
+      const children = tbGroups[blockAddr] || [];
+      // Sort textblocks by original Y to preserve order
       children.sort((a, b) => nodeData[a].y - nodeData[b].y);
       
-      let curY = parent.y; // align first textblock with parent top
-      const gap = 40; // gap between textblocks
-      children.forEach(addr => {
-        const nd = nodeData[addr];
-        const realH = nd.h;
-        nd.y = curY;
-        nd.el.style.top = curY + 'px';
-        curY += realH + gap;
+      let tbY = nextY; // first textblock aligns with parent top
+      children.forEach(tbAddr => {
+        const tb = nodeData[tbAddr];
+        tb.y = tbY;
+        tb.el.style.top = tbY + 'px';
+        tbY += tb.h + TB_GAP;
       });
+      tbStackHeight = children.length > 0 ? (tbY - nextY - TB_GAP) : 0;
+      
+      // Row height = the taller of: block itself, or the textblock stack
+      const rowHeight = Math.max(block.h, tbStackHeight);
+      nextY += rowHeight + ROW_GAP;
     });
     
     drawEdges();
