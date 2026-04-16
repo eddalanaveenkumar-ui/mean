@@ -1,7 +1,7 @@
 /* ===== EXPANDED SIDEBAR ===== */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 200px;
+  min-width: 200px;
   background: var(--sidebar-bg);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
@@ -25,6 +25,11 @@
     -webkit-backdrop-filter: blur(40px);
   }
   .sidebar.open { transform: translateX(0); }
+
+  /* Light mode mobile sidebar */
+  body.light-theme .sidebar {
+    background: rgba(245, 245, 247, 0.97);
+  }
 }
 
 .sidebar-header {
