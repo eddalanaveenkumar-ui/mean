@@ -1084,7 +1084,8 @@ Return ONLY valid JSON array.`;
       {showClassList && (
         <div style={{
           position: 'absolute', top: '70px', left: '20px', width: '320px', bottom: '100px',
-          background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+          background: 'rgba(18, 18, 20, 0.97)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px', zIndex: 11, overflow: 'hidden',
           boxShadow: '0 8px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column'
         }}>

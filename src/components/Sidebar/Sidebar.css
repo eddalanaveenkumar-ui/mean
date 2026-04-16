@@ -19,7 +19,10 @@
     transform: translateX(-100%);
     width: 82%;
     max-width: 300px;
-    box-shadow: 4px 0 30px rgba(0,0,0,0.3);
+    box-shadow: 4px 0 30px rgba(0,0,0,0.5);
+    background: rgba(10, 10, 12, 0.97);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
   }
   .sidebar.open { transform: translateX(0); }
 }
