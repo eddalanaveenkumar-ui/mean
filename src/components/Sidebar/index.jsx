@@ -167,20 +167,6 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
             <i className="fas fa-microscope" style={{color: deepdiveActive ? 'var(--accent)' : ''}}/>
             <span style={{color: deepdiveActive ? 'var(--accent)' : '', fontWeight: deepdiveActive ? 'bold' : ''}}>Deepdive Gen {deepdiveActive && '✓'}</span>
           </button>
-          <div className="sidebar-divider" style={{ margin: '10px 0', borderBottom: '1px solid var(--border-color)' }}></div>
-          <button className="tool-item" onClick={() => { onTokenBank?.(); setSidebarOpen(false); }}>
-            <i className="fas fa-coins" style={{ color: '#F59E0B' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-              <span>Token Bank</span>
-              <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B', padding: '2px 6px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                {adTokens + premiumTokens} / 10
-              </span>
-            </div>
-          </button>
-          <button className="tool-item" onClick={() => { onPremiumPlans?.(); setSidebarOpen(false); }}>
-            <i className="fas fa-crown" style={{ color: '#ec4899' }} />
-            <span>Premium Plans</span>
-          </button>
         </div>
 
         {/* Classes collection has been removed from main sidebar and is now only in AI Classroom */}

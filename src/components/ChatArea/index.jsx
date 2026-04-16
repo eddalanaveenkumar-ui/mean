@@ -6,10 +6,27 @@ import InputArea from '../InputArea';
 import './ChatArea.css';
 
 export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme } = useApp();
+  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS } = useApp();
   const chatRef = useRef(null);
   const [streamText, setStreamText] = useState('');
   const [isStreamActive, setIsStreamActive] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+
+  const handleModelSelect = (model) => {
+    setSelectedModel(model);
+    localStorage.setItem('mean_selected_model', model.id);
+    setShowModelPicker(false);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!showModelPicker) return;
+    const close = (e) => {
+      if (!e.target.closest('.model-picker-wrap')) setShowModelPicker(false);
+    };
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [showModelPicker]);
 
   useEffect(() => {
     let queuedText = '';
@@ -20,11 +37,10 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
     const pumpQueue = () => {
       if (renderedText.length < queuedText.length) {
         const diff = queuedText.length - renderedText.length;
-        // If falling far behind (e.g. large network burst), accelerate typing smoothly
         const charsPop = diff > 60 ? 4 : diff > 30 ? 2 : 1;
         renderedText = queuedText.substring(0, renderedText.length + charsPop);
         setStreamText(renderedText);
-        timerId = setTimeout(pumpQueue, 15); // 15ms interval for ultra-smooth typing effect
+        timerId = setTimeout(pumpQueue, 15);
       } else {
         isTyping = false;
       }
@@ -72,14 +88,38 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
     <div className="chat-area">
       <header className="chat-header">
         <div className="chat-header-left">
-          {/* Mobile menu button */}
           <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <i className="fas fa-bars" />
           </button>
-          <span className="header-brand">
-            <span className="hb-mean">Mean</span>
-            <span className="hb-ai">AI</span>
-          </span>
+          <div className="model-picker-wrap">
+            <button className="model-picker-btn" onClick={(e) => { e.stopPropagation(); setShowModelPicker(!showModelPicker); }}>
+              <span className="hb-mean">Mean</span>
+              <span className="hb-ai">AI</span>
+              <span className="model-picker-current">{selectedModel.icon} {selectedModel.name}</span>
+              <i className={`fas fa-chevron-down model-picker-arrow ${showModelPicker ? 'open' : ''}`} />
+            </button>
+            {showModelPicker && (
+              <div className="model-picker-dropdown">
+                <div className="mpd-group-label">Free Models</div>
+                {FREE_MODELS.map(m => (
+                  <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                    <span className="mpd-icon">{m.icon}</span>
+                    <span className="mpd-name">{m.name}</span>
+                    {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
+                  </button>
+                ))}
+                <div className="mpd-group-label premium">Premium Models <i className="fas fa-crown" style={{ color: '#ec4899', fontSize: 10 }} /></div>
+                {PAID_MODELS.map(m => (
+                  <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                    <span className="mpd-icon">{m.icon}</span>
+                    <span className="mpd-name">{m.name}</span>
+                    <span className="mpd-badge">PRO</span>
+                    {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="chat-header-right">
           <button className="header-icon-btn" onClick={newChat} title="New Chat">

@@ -2,7 +2,22 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const AppContext = createContext(null);
 
-const MODEL = "arcee-ai/trinity-large-preview:free";
+const FREE_MODELS = [
+  { id: 'gemini', name: 'Gemini Flash', provider: 'google', icon: '✦' },
+  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity', provider: 'openrouter', icon: '△' },
+  { id: 'deepseek/deepseek-r1-0528:free', name: 'DeepSeek R1', provider: 'openrouter', icon: '◈' },
+  { id: 'qwen/qwen3-235b-a22b:free', name: 'Qwen 3 235B', provider: 'openrouter', icon: '◉' },
+  { id: 'meta-llama/llama-4-maverick:free', name: 'Llama 4 Maverick', provider: 'openrouter', icon: '🦙' },
+];
+
+const PAID_MODELS = [
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'openrouter', icon: '◆', badge: 'PRO' },
+  { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'openrouter', icon: '◇', badge: 'PRO' },
+  { id: 'google/gemini-2.5-flash-preview', name: 'Gemini 2.5 Flash', provider: 'openrouter', icon: '✦', badge: 'PRO' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1 (Paid)', provider: 'openrouter', icon: '◈', badge: 'PRO' },
+];
+
+const DEFAULT_MODEL = FREE_MODELS[0];
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -16,6 +31,15 @@ export function AppProvider({ children }) {
   const [showProfile, setShowProfile] = useState(false);
   const [deepdiveActive, setDeepdiveActive] = useState(false);
   const [webSearchActive, setWebSearchActive] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(() => {
+    const stored = localStorage.getItem('mean_selected_model');
+    if (stored) {
+      const all = [...FREE_MODELS, ...PAID_MODELS];
+      const found = all.find(m => m.id === stored);
+      if (found) return found;
+    }
+    return DEFAULT_MODEL;
+  });
   const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'system');
   const streamAbortRef = useRef(null);
 
@@ -387,7 +411,8 @@ export function AppProvider({ children }) {
     
     let url, headers, body;
 
-    if (isGeminiKey) {
+    const useGeminiDirect = selectedModel.id === 'gemini' && isGeminiKey;
+    if (useGeminiDirect) {
        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
        headers = { 'Content-Type': 'application/json' };
        let contents = [];
@@ -407,7 +432,8 @@ export function AppProvider({ children }) {
     } else {
        url = 'https://openrouter.ai/api/v1/chat/completions';
        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
-       body = JSON.stringify({ model: MODEL, messages: apiMessages, stream: true });
+       const modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
+       body = JSON.stringify({ model: modelId, messages: apiMessages, stream: true });
     }
 
     let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";
@@ -516,6 +542,7 @@ export function AppProvider({ children }) {
     theme, setTheme,
     persistChats, setChats, setApiKey,
     adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
+    selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
