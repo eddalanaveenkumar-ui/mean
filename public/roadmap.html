@@ -1073,7 +1073,7 @@ function renderTree(data, isPartial = false){
           }
           
           el.dataset.addr=b.address;
-          el.style.cssText=`left:${x}px;top:${y}px;width:${blockW}px; transition: left 0.3s ease, top 0.3s ease;`;
+          el.style.cssText=`left:${x}px;top:${y}px;width:max-content;min-width:${blockW}px;max-width:900px; transition: left 0.3s ease, top 0.3s ease;`;
           if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) both`;
           
           let innerHtml = '';
@@ -1353,13 +1353,19 @@ function renderTree(data, isPartial = false){
     });
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    // ===== FULL POST-RENDER RELAYOUT =====
-    // Step 1: Measure ALL actual DOM heights
-    blocks.forEach(b=>{const el=nodeData[b.address]?.el;if(el) nodeData[b.address].h=el.offsetHeight;});
+    // ===== FULL POST-RENDER RELAYOUT (Force-Directed + Collision) =====
+    // Step 1: Measure ALL actual DOM sizes
+    blocks.forEach(b=>{
+      const el=nodeData[b.address]?.el;
+      if(el) { 
+        nodeData[b.address].h = el.offsetHeight; 
+        nodeData[b.address].w = el.offsetWidth;
+      }
+    });
     
-    // Step 2: Collect block nodes (non-textblocks) and their textblock children
-    const tbGroups = {}; // parentAddr -> [childAddr, ...]
-    const blockNodes = []; // all non-textblock addresses
+    // Step 2: Separate textblocks from main nodes
+    const tbGroups = {}; 
+    const blockNodes = []; 
     Object.keys(nodeData).forEach(addr => {
       const nd = nodeData[addr];
       if (nd.type === 'textblock' && nd.parentAddr) {
@@ -1369,40 +1375,103 @@ function renderTree(data, isPartial = false){
         blockNodes.push(addr);
       }
     });
+
+    // Initial naive tree leveling for Y to prevent massive tangles
+    const layerMap = {};
+    const getLayer = (addr) => {
+        if (layerMap[addr] !== undefined) return layerMap[addr];
+        const pEdge = edges.find(e => e.to === addr);
+        if (!pEdge || pEdge.from === addr) return (layerMap[addr] = 0);
+        return (layerMap[addr] = getLayer(pEdge.from) + 1);
+    };
+    blockNodes.forEach(addr => {
+        const l = getLayer(addr);
+        nodeData[addr].y = 100 + l * 200;
+        // spread initially
+        nodeData[addr].x = centerX - 200 + Math.random() * 400;
+    });
     
-    // Step 3: Sort block nodes by their current Y (preserves tree order)
-    blockNodes.sort((a, b) => nodeData[a].y - nodeData[b].y);
+    // Step 3: Run Force-Directed Simulation (Collision Repulsion + Edge Springs)
+    const nodesArr = Object.values(nodeData);
+    const repulsionBase = 40; // gap buffer
     
-    // Step 4: Full top-to-bottom sweep — reposition EVERYTHING with real heights
-    const ROW_GAP = 60;  // gap between rows (block + its textblocks → next block)
-    const TB_GAP = 36;   // gap between stacked textblocks
-    let nextY = blockNodes.length > 0 ? nodeData[blockNodes[0]].y : 100; // preserve first Y
-    
-    blockNodes.forEach(blockAddr => {
-      const block = nodeData[blockAddr];
-      
-      // Position this block node
-      block.y = nextY;
-      block.el.style.top = nextY + 'px';
-      
-      // Position its textblocks to the right, stacked vertically
-      let tbStackHeight = 0;
-      const children = tbGroups[blockAddr] || [];
-      // Sort textblocks by original Y to preserve order
-      children.sort((a, b) => nodeData[a].y - nodeData[b].y);
-      
-      let tbY = nextY; // first textblock aligns with parent top
-      children.forEach(tbAddr => {
-        const tb = nodeData[tbAddr];
-        tb.y = tbY;
-        tb.el.style.top = tbY + 'px';
-        tbY += tb.h + TB_GAP;
-      });
-      tbStackHeight = children.length > 0 ? (tbY - nextY - TB_GAP) : 0;
-      
-      // Row height = the taller of: block itself, or the textblock stack
-      const rowHeight = Math.max(block.h, tbStackHeight);
-      nextY += rowHeight + ROW_GAP;
+    for (let iter = 0; iter < 150; iter++) {
+        const cooling = 1 - iter/150;
+        
+        // 1. Textblock constraints (pull rigidly to parent's right)
+        blockNodes.forEach(parentAddr => {
+            const p = nodeData[parentAddr];
+            const children = tbGroups[parentAddr] || [];
+            let tbY = p.y;
+            children.forEach(tbAddr => {
+                const tb = nodeData[tbAddr];
+                const targetX = p.x + p.w + 60;
+                tb.x += (targetX - tb.x) * 0.5;
+                tb.y += (tbY - tb.y) * 0.5;
+                tbY += tb.h + 20; 
+            });
+        });
+
+        // 2. Edge springs (pull connected nodes together)
+        edges.forEach(e => {
+            const n1 = nodeData[e.from];
+            const n2 = nodeData[e.to];
+            if (!n1 || !n2 || n2.type === 'textblock') return;
+            const dx = (n2.x + n2.w/2) - (n1.x + n1.w/2);
+            const dy = (n2.y + n2.h/2) - (n1.y + n1.h/2);
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            const force = (dist - 250) * 0.05 * cooling; // Target spring len 250
+            
+            n1.x += (dx/dist) * force;
+            n1.y += (dy/dist) * force;
+            n2.x -= (dx/dist) * force;
+            n2.y -= (dy/dist) * force;
+            
+            // Tree enforcement: children must be below parents
+            if (n2.y < n1.y + n1.h + 60) {
+                n2.y += 15 * cooling;
+                n1.y -= 5 * cooling;
+            }
+        });
+
+        // 3. Collision / Overlap Repulsion (Axis-Aligned Bounding Box Repulsion)
+        for (let i = 0; i < nodesArr.length; i++) {
+            for (let j = i + 1; j < nodesArr.length; j++) {
+                const n1 = nodesArr[i];
+                const n2 = nodesArr[j];
+                if (n1.type === 'textblock' && n2.type === 'textblock' && n1.parentAddr === n2.parentAddr) continue;
+
+                const c1x = n1.x + n1.w/2, c1y = n1.y + n1.h/2;
+                const c2x = n2.x + n2.w/2, c2y = n2.y + n2.h/2;
+                let dx = c1x - c2x, dy = c1y - c2y;
+                
+                const minDistX = (n1.w + n2.w)/2 + repulsionBase;
+                const minDistY = (n1.h + n2.h)/2 + repulsionBase + 20;
+                
+                if (Math.abs(dx) < minDistX && Math.abs(dy) < minDistY) {
+                    const overlapX = minDistX - Math.abs(dx);
+                    const overlapY = minDistY - Math.abs(dy);
+                    if (overlapX < overlapY) {
+                        const push = (dx > 0 ? 1 : -1) * overlapX * 0.5 * cooling;
+                        n1.x += push; n2.x -= push;
+                    } else {
+                        const push = (dy > 0 ? 1 : -1) * overlapY * 0.5 * cooling;
+                        n1.y += push; n2.y -= push;
+                    }
+                }
+            }
+        }
+        
+        // 4. Global centering (weak)
+        nodesArr.forEach(n => {
+            if (n.type !== 'textblock') n.x += (centerX - (n.x + n.w/2)) * 0.01 * cooling;
+        });
+    }
+
+    // Apply finalized coordinates to DOM
+    nodesArr.forEach(n => {
+        n.el.style.left = n.x + 'px';
+        n.el.style.top = n.y + 'px';
     });
     
     drawEdges();
@@ -1429,29 +1498,48 @@ function drawEdges(){
     
     const path=document.createElementNS(svgNS,'path');
     let d;
+    let startX = 0, startY = 0, endX = 0, endY = 0;
     
     if (tn.type === 'textblock') {
-      // SMOOTH BEZIER CURVE: parent right edge → textblock left edge
-      const sx = fn.x + fn.w;        // start at right edge of parent
-      const sy = fn.y + fn.h / 2;    // vertical center of parent
-      const ex = tn.x;                // end at left edge of textblock
-      const ey = tn.y + tn.h / 2;    // vertical center of textblock
-      const cpOffset = (ex - sx) * 0.5; // control point offset (half the horizontal distance)
-      // Smooth S-curve using cubic bezier
-      d = `M${sx},${sy} C${sx + cpOffset},${sy} ${ex - cpOffset},${ey} ${ex},${ey}`;
+      startX = fn.x + fn.w;
+      startY = fn.y + fn.h / 2;
+      endX = tn.x;
+      endY = tn.y + tn.h / 2;
+      const cpOffset = (endX - startX) * 0.5;
+      d = `M${startX},${startY} C${startX + cpOffset},${startY} ${endX - cpOffset},${endY} ${endX},${endY}`;
       path.setAttribute('stroke', 'rgba(76, 201, 160, 0.5)');
       path.setAttribute('stroke-width', '1.8');
       path.setAttribute('stroke-dasharray', '8,5');
       path.setAttribute('marker-end', 'url(#ah-tb)');
     } else {
-      // SMOOTH VERTICAL CURVE routed through left spine
-      const sx = fn.x + fn.w / 2;    // center-bottom of parent
-      const sy = fn.y + fn.h;         // bottom edge
-      const ex = tn.x + tn.w / 2;    // center-top of child
-      const ey = tn.y;                // top edge
-      const midY = (sy + ey) / 2;
-      // Smooth vertical S-curve
-      d = `M${sx},${sy} C${sx},${midY} ${ex},${midY} ${ex},${ey}`;
+      const c1x = fn.x + fn.w/2, c1y = fn.y + fn.h/2;
+      const c2x = tn.x + tn.w/2, c2y = tn.y + tn.h/2;
+      const dx = c2x - c1x, dy = c2y - c1y;
+      
+      let cpx1, cpy1, cpx2, cpy2;
+      if (Math.abs(dx) > Math.abs(dy) * 1.5) { 
+          if (dx > 0) { 
+              startX = fn.x + fn.w; startY = c1y;
+              endX = tn.x; endY = c2y;
+          } else { 
+              startX = fn.x; startY = c1y;
+              endX = tn.x + tn.w; endY = c2y;
+          }
+          cpx1 = startX + dx * 0.4; cpy1 = startY;
+          cpx2 = endX - dx * 0.4; cpy2 = endY;
+      } else { 
+          if (dy > 0) { 
+              startX = c1x; startY = fn.y + fn.h;
+              endX = c2x; endY = tn.y;
+          } else { 
+              startX = c1x; startY = fn.y;
+              endX = c2x; endY = tn.y + tn.h;
+          }
+          cpx1 = startX; cpy1 = startY + dy * 0.4;
+          cpx2 = endX; cpy2 = endY - dy * 0.4;
+      }
+      
+      d = `M${startX},${startY} C${cpx1},${cpy1} ${cpx2},${cpy2} ${endX},${endY}`;
       path.setAttribute('stroke', 'rgba(90, 122, 239, 0.55)');
       path.setAttribute('stroke-width', '2');
       path.setAttribute('marker-end', 'url(#ah)');
@@ -1463,28 +1551,16 @@ function drawEdges(){
     
     // Connection dot at the start point
     const dot = document.createElementNS(svgNS, 'circle');
-    if (tn.type === 'textblock') {
-      dot.setAttribute('cx', fn.x + fn.w);
-      dot.setAttribute('cy', fn.y + fn.h / 2);
-      dot.setAttribute('r', '5');
-      dot.setAttribute('fill', 'rgba(76, 201, 160, 0.7)');
-    } else {
-      dot.setAttribute('cx', fn.x + fn.w / 2);
-      dot.setAttribute('cy', fn.y + fn.h);
-      dot.setAttribute('r', '5');
-      dot.setAttribute('fill', 'rgba(90, 122, 239, 0.7)');
-    }
+    dot.setAttribute('cx', startX);
+    dot.setAttribute('cy', startY);
+    dot.setAttribute('r', '5');
+    dot.setAttribute('fill', tn.type === 'textblock' ? 'rgba(76, 201, 160, 0.7)' : 'rgba(90, 122, 239, 0.7)');
     edgeSvg.appendChild(dot);
     
     // Small arrival dot at the end point
     const dotEnd = document.createElementNS(svgNS, 'circle');
-    if (tn.type === 'textblock') {
-      dotEnd.setAttribute('cx', tn.x);
-      dotEnd.setAttribute('cy', tn.y + tn.h / 2);
-    } else {
-      dotEnd.setAttribute('cx', tn.x + tn.w / 2);
-      dotEnd.setAttribute('cy', tn.y);
-    }
+    dotEnd.setAttribute('cx', endX);
+    dotEnd.setAttribute('cy', endY);
     dotEnd.setAttribute('r', '3');
     dotEnd.setAttribute('fill', tn.type === 'textblock' ? 'rgba(76, 201, 160, 0.5)' : 'rgba(90, 122, 239, 0.5)');
     edgeSvg.appendChild(dotEnd);
