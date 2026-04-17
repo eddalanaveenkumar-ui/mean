@@ -1376,102 +1376,101 @@ function renderTree(data, isPartial = false){
       }
     });
 
-    // Initial naive tree leveling for Y to prevent massive tangles
-    const layerMap = {};
-    const getLayer = (addr) => {
-        if (layerMap[addr] !== undefined) return layerMap[addr];
-        const pEdge = edges.find(e => e.to === addr);
-        if (!pEdge || pEdge.from === addr) return (layerMap[addr] = 0);
-        return (layerMap[addr] = getLayer(pEdge.from) + 1);
-    };
-    blockNodes.forEach(addr => {
-        const l = getLayer(addr);
-        nodeData[addr].y = 100 + l * 200;
-        // spread initially
-        nodeData[addr].x = centerX - 200 + Math.random() * 400;
+    // ===== LAYER-BASED DAG LAYOUT (Stable, Non-collapsing) =====
+    // Compute Layers (Longest path from roots)
+    const inDegree = {};
+    const childMap = {};
+    blockNodes.forEach(addr => { inDegree[addr] = 0; childMap[addr] = []; });
+    edges.forEach(e => {
+        if (inDegree[e.to] !== undefined && childMap[e.from]) {
+            inDegree[e.to]++;
+            childMap[e.from].push(e.to);
+        }
     });
-    
-    // Step 3: Run Force-Directed Simulation (Collision Repulsion + Edge Springs)
-    const nodesArr = Object.values(nodeData);
-    const repulsionBase = 40; // gap buffer
-    
-    for (let iter = 0; iter < 150; iter++) {
-        const cooling = 1 - iter/150;
-        
-        // 1. Textblock constraints (pull rigidly to parent's right)
-        blockNodes.forEach(parentAddr => {
-            const p = nodeData[parentAddr];
-            const children = tbGroups[parentAddr] || [];
-            let tbY = p.y;
-            children.forEach(tbAddr => {
-                const tb = nodeData[tbAddr];
-                const targetX = p.x + p.w + 60;
-                tb.x += (targetX - tb.x) * 0.5;
-                tb.y += (tbY - tb.y) * 0.5;
-                tbY += tb.h + 20; 
+
+    let currentLayerNodes = blockNodes.filter(addr => inDegree[addr] === 0);
+    if (!currentLayerNodes.length && blockNodes.length) currentLayerNodes = [blockNodes[0]]; // fallback for cycles
+
+    const layers = [];
+    const visited = new Set(currentLayerNodes);
+
+    while (currentLayerNodes.length > 0) {
+        layers.push(currentLayerNodes);
+        const nextLayer = [];
+        currentLayerNodes.forEach(addr => {
+            childMap[addr].forEach(child => {
+                inDegree[child]--;
+                if (inDegree[child] <= 0 && !visited.has(child)) {
+                    visited.add(child);
+                    nextLayer.push(child);
+                }
             });
         });
-
-        // 2. Edge springs (pull connected nodes together)
-        edges.forEach(e => {
-            const n1 = nodeData[e.from];
-            const n2 = nodeData[e.to];
-            if (!n1 || !n2 || n2.type === 'textblock') return;
-            const dx = (n2.x + n2.w/2) - (n1.x + n1.w/2);
-            const dy = (n2.y + n2.h/2) - (n1.y + n1.h/2);
-            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-            const force = (dist - 250) * 0.05 * cooling; // Target spring len 250
-            
-            n1.x += (dx/dist) * force;
-            n1.y += (dy/dist) * force;
-            n2.x -= (dx/dist) * force;
-            n2.y -= (dy/dist) * force;
-            
-            // Tree enforcement: children must be below parents
-            if (n2.y < n1.y + n1.h + 60) {
-                n2.y += 15 * cooling;
-                n1.y -= 5 * cooling;
-            }
-        });
-
-        // 3. Collision / Overlap Repulsion (Axis-Aligned Bounding Box Repulsion)
-        for (let i = 0; i < nodesArr.length; i++) {
-            for (let j = i + 1; j < nodesArr.length; j++) {
-                const n1 = nodesArr[i];
-                const n2 = nodesArr[j];
-                if (n1.type === 'textblock' && n2.type === 'textblock' && n1.parentAddr === n2.parentAddr) continue;
-
-                const c1x = n1.x + n1.w/2, c1y = n1.y + n1.h/2;
-                const c2x = n2.x + n2.w/2, c2y = n2.y + n2.h/2;
-                let dx = c1x - c2x, dy = c1y - c2y;
-                
-                const minDistX = (n1.w + n2.w)/2 + repulsionBase;
-                const minDistY = (n1.h + n2.h)/2 + repulsionBase + 20;
-                
-                if (Math.abs(dx) < minDistX && Math.abs(dy) < minDistY) {
-                    const overlapX = minDistX - Math.abs(dx);
-                    const overlapY = minDistY - Math.abs(dy);
-                    if (overlapX < overlapY) {
-                        const push = (dx > 0 ? 1 : -1) * overlapX * 0.5 * cooling;
-                        n1.x += push; n2.x -= push;
-                    } else {
-                        const push = (dy > 0 ? 1 : -1) * overlapY * 0.5 * cooling;
-                        n1.y += push; n2.y -= push;
-                    }
-                }
-            }
-        }
-        
-        // 4. Global centering (weak)
-        nodesArr.forEach(n => {
-            if (n.type !== 'textblock') n.x += (centerX - (n.x + n.w/2)) * 0.01 * cooling;
-        });
+        currentLayerNodes = nextLayer;
     }
 
-    // Apply finalized coordinates to DOM
-    nodesArr.forEach(n => {
-        n.el.style.left = n.x + 'px';
-        n.el.style.top = n.y + 'px';
+    // Catch disconnected islands
+    blockNodes.forEach(addr => {
+        if (!visited.has(addr)) {
+            layers.push([addr]);
+            visited.add(addr);
+        }
+    });
+
+    // Position nodes layer by layer safely
+    let currentY = 100;
+    const ROW_GAP = 90;
+    const NODE_GAP_X = 60;
+    const TB_GAP_X = 40;
+    const TB_GAP_Y = 20;
+
+    layers.forEach(layer => {
+        // Determine total width of this layer to center it perfectly
+        const nodeWidthsWithTbs = layer.map(addr => {
+            const nd = nodeData[addr];
+            const tbs = tbGroups[addr] || [];
+            let tbMaxWidth = 0;
+            tbs.forEach(tbAddr => { tbMaxWidth = Math.max(tbMaxWidth, nodeData[tbAddr].w); });
+            // Total width unit: [Node]---tbGapX---[Textblock Max Width]
+            let totalUnitW = nd.w;
+            if (tbs.length > 0) totalUnitW += TB_GAP_X + tbMaxWidth;
+            return { addr, unitW: totalUnitW, tbs, nodeW: nd.w, nodeH: nd.h };
+        });
+
+        const totalLayerW = nodeWidthsWithTbs.reduce((sum, item) => sum + item.unitW, 0) + (layer.length - 1) * NODE_GAP_X;
+        let startX = centerX - totalLayerW / 2;
+        let maxLayerH = 0;
+
+        nodeWidthsWithTbs.forEach(item => {
+            const nd = nodeData[item.addr];
+            
+            // Set Block X, Y
+            nd.x = startX;
+            nd.y = currentY;
+            nd.el.style.left = nd.x + 'px';
+            nd.el.style.top = nd.y + 'px';
+            
+            // Layout Textblocks strictly to the right, tightly packed
+            let tbY = currentY;
+            let tbMaxH = 0;
+            
+            item.tbs.forEach(tbAddr => {
+                const tb = nodeData[tbAddr];
+                tb.x = startX + item.nodeW + TB_GAP_X;
+                tb.y = tbY;
+                tb.el.style.left = tb.x + 'px';
+                tb.el.style.top = tb.y + 'px';
+                tbY += tb.h + TB_GAP_Y;
+            });
+            
+            tbMaxH = item.tbs.length > 0 ? (tbY - currentY - TB_GAP_Y) : 0;
+            maxLayerH = Math.max(maxLayerH, item.nodeH, tbMaxH);
+            
+            // advance X for next node in layer
+            startX += item.unitW + NODE_GAP_X;
+        });
+
+        currentY += maxLayerH + ROW_GAP;
     });
     
     drawEdges();
