@@ -1483,7 +1483,6 @@ function renderTree(data, isPartial = false){
               // Make sure globalOffsetY accounts for tall textblock stacks
               if (tbOffsetY > globalOffsetY) globalOffsetY = tbOffsetY;
           });
-          });
 
           // Place regular block children
           let codeSeqX = (b.type === 'coder') ? 60 + blockW + 60 : x + blockW + 60;
