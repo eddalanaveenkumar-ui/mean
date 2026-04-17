@@ -807,15 +807,16 @@ MANDATORY MATHBLOCK RULE:
 - Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
+MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION) - CRITICAL:
+- If the topic requires statistical charts, dataset comparisons, performance analysis, mathematical plots, time/space complexity trends (e.g., comparing O(1), O(n), O(n²), plotting equations like quadratic curves), line graphs, bar charts, scatter plots, or plotting numeric trends, YOU MUST USE A GRAPHBLOCK INSTEAD OF A DIABLOCK.
+- DO NOT use a diablock node-graph for mathematical equations or complexity bounds plots.
+- Graphblock: {"type": "graphblock", "address": "graph_1", "title": "Time Complexity Growth", "chartType": "line", "labels": ["1", "2", "3", "4", "5"], "datasets": [{"label": "O(n^2)", "data": [1, 4, 9, 16, 25]}, {"label": "O(n)", "data": [1, 2, 3, 4, 5]}]}
+
 MANDATORY DIABLOCK RULE (CRITICAL - DO NOT SKIP):
-- If the topic mentions or relates to ANY of these keywords: array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
+- If the topic mentions or relates to ANY of these keywords (and is NOT a statistical chart): array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
 - Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "layout": "grid|horizontal|vertical|tree", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond|compound|pencil|polygon", "label": "optional", "points": "10,20 30,40 (for pencil/polygon)"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens", "highlightNodes": ["n1"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
 - LAYOUTS: Use "horizontal" for Linked Lists/Queues. Use "vertical" for Stacks. Use "tree" for Trees/Graphs.
 - SHAPES: Use "compound" for Linked List nodes (shows data|next). Use "box" for arrays. Use "circle" for tree nodes. Use "diamond" for HEAD/decision points. Use "pencil", "path", or "polygon" for drawing raw coordinate geometry sketches (requires "points" array of "X,Y" strings).
-
-MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION):
-- If the topic requires statistical charts, dataset comparisons, performance analysis, time/space complexity trends (e.g., comparing O(1), O(n), O(n²)), line graphs, bar charts, scatter plots, or plotting numeric trends, you MUST generate a graphblock.
-- Graphblock: {"type": "graphblock", "address": "graph_1", "title": "Chart Title", "chartType": "line|bar|scatter|pie", "labels": ["X1", "X2", "X3"], "datasets": [{"label": "Dataset 1", "data": [10, 20, 30]}]}
 
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
