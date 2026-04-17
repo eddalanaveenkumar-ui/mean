@@ -109,10 +109,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 }
 #edge-svg{
   position:absolute;top:0;left:0;
-  pointer-events:none;overflow:visible;z-index:1
+  pointer-events:none;overflow:visible;z-index:0;
 }
 .block-node{
-  position:absolute;
+  position:absolute; z-index:2;
   background:var(--surface);
   border:1px solid var(--border2);
   border-radius:14px;
@@ -1427,13 +1427,15 @@ function renderTree(data, isPartial = false){
         currentY += rowHeight + ROW_GAP;
     });
     
-    drawEdges();
+    window.lastFlatOrder = flatOrder;
+    drawEdges(flatOrder);
     if (!isPartial) { fitView(); }
     drawMinimap();
   }));
 }
 
-function drawEdges(){
+function drawEdges(flatOrder){
+  flatOrder = flatOrder || window.lastFlatOrder;
   edgeSvg.innerHTML='';
   if(!edges.length)return;
   const defs=document.createElementNS(svgNS,'defs');
@@ -1490,13 +1492,6 @@ function drawEdges(){
           }
           cpx1 = startX; cpy1 = startY + dy * 0.4;
           cpx2 = endX; cpy2 = endY - dy * 0.4;
-          
-          // Smart Obstacle Avoidance: If vertically skipping over intermediate blocks, bow arrow leftwards
-          if (Math.abs(dy) > 250 && Math.abs(dx) < 100) {
-              const bow = Math.min(400, Math.abs(dy) * 0.45);
-              cpx1 -= bow;
-              cpx2 -= bow;
-          }
       }
       
       d = `M${startX},${startY} C${cpx1},${cpy1} ${cpx2},${cpy2} ${endX},${endY}`;
