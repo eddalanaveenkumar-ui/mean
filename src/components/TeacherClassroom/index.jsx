@@ -814,9 +814,10 @@ MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION / PLOTTING) - CRITICAL:
 - For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
 
 MANDATORY DRAWING & SKETCHING RULE (GEOMETRY & PENCIL GRAPHICS):
-- If the user explicitly asks to "draw" or "sketch" a raw geometric shape (circle, square, triangle, vector diagram), you MUST use a Diablock but specifically construct it via raw Coordinate Geometry using "shape": "pencil" or "polygon".
-- Draw natively by calculating the pure numerical X,Y coordinate geometry path points yourself!
-- Example drawing a large triangle: {"type": "diablock", "address": "dia_1", "title": "Triangle Sketch", "layout": "grid", "nodes": [{"id": "n1", "shape": "polygon", "points": "100,10 40,100 160,100"}], "edges": [], "steps": []}
+- If the user asks to "draw" or "sketch" a raw geometric shape natively (like points on a plane, triangles, vectors) without statistical axes, use a Diablock with "layout": "coordinate".
+- For explicitly labeled coordinate points connected by sharp straight edges, use "shape": "point", and place their X,Y values in the "value" field like "(2,3)". Connect them linearly with edges.
+- For pure vector outlines, use "shape": "polygon" or "pencil" with a "points": "100,20 50,50" array.
+- Example Coordinate Map: {"type": "diablock", "address": "dia_1", "title": "Coordinate Sketch", "layout": "coordinate", "nodes": [{"id": "A", "value": "(2,3)", "shape": "point", "label": "Point A"}, {"id": "B", "value": "(8,3)", "shape": "point"}], "edges": [{"from": "A", "to": "B"}], "steps": []}
 
 MANDATORY DIABLOCK RULE (STRICTLY DATA STRUCTURES & ALGORITHMS):
 - If the topic relates to data structures (linked list, tree, graph, stack, queue, trie) or algorithmic tracing (sorting, BFS, DFS, search, pointer), generate a standard Diablock flowchart.

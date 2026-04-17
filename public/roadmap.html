@@ -613,6 +613,18 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
         sizeMap[id] = { w: nw, h: nh };
       });
     });
+  } else if (layout === 'coordinate') {
+    nodes.forEach(n => {
+       let x = 0, y = 0;
+       const m = (n.value||'').match(/\(?(-?\d+),\s*(-?\d+)\)?/);
+       if (n.x !== undefined && n.y !== undefined) {
+           x = Number(n.x) * 40; y = Number(n.y) * 40;
+       } else if (m) {
+           x = Number(m[1]) * 40; y = Number(m[2]) * 40;
+       }
+       posMap[n.id] = { x: Math.max(0, x) + padX, y: Math.max(0, y) + padY };
+       sizeMap[n.id] = { w: 10, h: 10 };
+    });
   } else {
     // Grid (default)
     const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
@@ -635,8 +647,9 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     const key = e.from + '->' + e.to;
     const isHl = hlEdge.has(key);
     const cls = isHl ? 'dia-edge highlight-edge' : 'dia-edge';
+    const isPointToPoint = (nodes.find(n=>n.id===e.from)?.shape === 'point' && nodes.find(n=>n.id===e.to)?.shape === 'point');
     const markerRef = isHl ? 'dia-ah-hl' : 'dia-ah';
-    const marker = (e.type !== 'line') ? ` marker-end="url(#${markerRef})"` : '';
+    const marker = (e.type !== 'line' && !isPointToPoint) ? ` marker-end="url(#${markerRef})"` : '';
     const dash = (e.type === 'dashed') ? ' stroke-dasharray="5,3"' : '';
     
     // Calculate edge start/end at node boundaries
@@ -689,6 +702,10 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
         }
       }
       sizeMap[n.id] = { w: 0, h: 0 };
+    } else if (shape === 'point') {
+      svg += `<circle class="dia-node-point${extra}" cx="${p.x}" cy="${p.y}" r="4" fill="var(--accent)"/>`;
+      svg += `<text class="dia-node-text" x="${p.x+10}" y="${p.y-10}" style="font-size:14px; text-anchor: start;">${esc(String(val))}</text>`;
+      sizeMap[n.id] = { w: 8, h: 8 };
     } else if (shape === 'compound') {
       // Linked list node: [data | next→] 
       const cw = 130, ch = nh;
