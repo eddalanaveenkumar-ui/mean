@@ -1045,7 +1045,7 @@ function renderTree(data, isPartial = false){
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
 
-  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock' || n.type==='diablock'));
+  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock' || n.type==='diablock' || n.type === 'graphblock'));
   const arrowDefs=data.filter(n=>n&&n.type==='arrow');
   if(!blocks.length)return;
   const blockMap={};
