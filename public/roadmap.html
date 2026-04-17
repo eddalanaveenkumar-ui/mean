@@ -350,7 +350,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 
 /* ===== DIABLOCK (Diagram Block) ===== */
 .block-node.shape-diablock {
-  min-width: 420px; max-width: 520px; border-radius: 12px;
+  min-width: 460px; max-width: 800px; border-radius: 12px;
   background: #0d1117; border: 1px solid #30363d;
 }
 .dia-header {
@@ -534,9 +534,9 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
   // ===== LAYOUT ALGORITHMS =====
   if (layout === 'horizontal') {
     // Linked list / Queue: left → right in a row
-    const gapX = 110;
+    const gapX = 160;
     nodes.forEach((n, i) => {
-      const w = (n.shape === 'compound') ? 90 : nw;
+      const w = (n.shape === 'compound') ? 130 : nw;
       posMap[n.id] = { x: padX + i * gapX + w/2, y: padY + 50 };
       sizeMap[n.id] = { w, h: nh };
     });
@@ -642,26 +642,26 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
 
     if (shape === 'compound') {
       // Linked list node: [data | next→] 
-      const cw = 90, ch = nh;
-      const splitX = p.x + 15; // split point within the compound box
+      const cw = 130, ch = nh;
+      const splitX = p.x + 20; // split point within the compound box
       svg += `<rect class="dia-node-box${extra}" x="${p.x - cw/2}" y="${p.y - ch/2}" width="${cw}" height="${ch}" rx="4"/>`;
       svg += `<line class="dia-edge" x1="${splitX}" y1="${p.y - ch/2}" x2="${splitX}" y2="${p.y + ch/2}" style="stroke-width:1"/>`;
-      svg += `<text class="dia-node-text" x="${p.x - 15}" y="${p.y}">${esc(String(val))}</text>`;
-      svg += `<text class="dia-node-label" x="${splitX + 16}" y="${p.y}" style="font-size:8px;fill:#94a3b8;dominant-baseline:central">●→</text>`;
+      svg += `<text class="dia-node-text" x="${p.x - 22}" y="${p.y}" style="font-size:14px">${esc(String(val))}</text>`;
+      svg += `<text class="dia-node-label" x="${splitX + 22}" y="${p.y}" style="font-size:10px;fill:#94a3b8;dominant-baseline:central">●→</text>`;
       sizeMap[n.id] = { w: cw, h: ch };
     } else if (shape === 'circle') {
-      const r = nh/2 + 4;
+      const r = nh/2 + 6;
       svg += `<circle class="dia-node-circle${extra}" cx="${p.x}" cy="${p.y}" r="${r}"/>`;
-      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}" style="font-size:14px">${esc(String(val))}</text>`;
       sizeMap[n.id] = { w: r*2, h: r*2 };
     } else if (shape === 'diamond') {
-      const dx = nw/2 + 6, dy = nh/2 + 6;
+      const dx = nw/2 + 10, dy = nh/2 + 10;
       svg += `<polygon class="dia-node-diamond${extra}" points="${p.x},${p.y-dy} ${p.x+dx},${p.y} ${p.x},${p.y+dy} ${p.x-dx},${p.y}"/>`;
-      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}" style="font-size:14px">${esc(String(val))}</text>`;
       sizeMap[n.id] = { w: dx*2, h: dy*2 };
     } else {
       svg += `<rect class="dia-node-box${extra}" x="${p.x - nw/2}" y="${p.y - nh/2}" width="${nw}" height="${nh}" rx="6"/>`;
-      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}" style="font-size:14px">${esc(String(val))}</text>`;
       sizeMap[n.id] = { w: nw, h: nh };
     }
     if (n.label) {
@@ -1490,6 +1490,13 @@ function drawEdges(){
           }
           cpx1 = startX; cpy1 = startY + dy * 0.4;
           cpx2 = endX; cpy2 = endY - dy * 0.4;
+          
+          // Smart Obstacle Avoidance: If vertically skipping over intermediate blocks, bow arrow leftwards
+          if (Math.abs(dy) > 250 && Math.abs(dx) < 100) {
+              const bow = Math.min(400, Math.abs(dy) * 0.45);
+              cpx1 -= bow;
+              cpx2 -= bow;
+          }
       }
       
       d = `M${startX},${startY} C${cpx1},${cpy1} ${cpx2},${cpy2} ${endX},${endY}`;
