@@ -510,11 +510,28 @@ function renderMathInEl(el) {
   if (typeof katex === 'undefined') return;
   el.querySelectorAll('.math-step-content').forEach(cell => {
     const raw = cell.getAttribute('data-latex') || cell.textContent;
-    try {
-      katex.render(raw, cell, { displayMode: true, throwOnError: false, trust: true });
-    } catch(_) {
-      cell.textContent = raw;
-    }
+    
+    // The AI often outputs literal '\n' which crashes KaTeX. Split into lines.
+    const lines = raw.split(/\\n|\n/);
+    cell.innerHTML = '';
+    
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      
+      const lineDiv = document.createElement('div');
+      lineDiv.style.marginBottom = '8px';
+      
+      // Preserve spaces between English words in math mode by inserting explicit LaTeX spaces
+      let latexLine = line.replace(/([a-zA-Z,.:\]\)]+) (?=[a-zA-Z,.:\[\(]+)/g, '$1\\ ');
+      
+      try {
+        katex.render(latexLine, lineDiv, { displayMode: true, throwOnError: false, trust: true });
+      } catch(_) {
+        lineDiv.textContent = line;
+      }
+      cell.appendChild(lineDiv);
+    });
   });
 }
 
