@@ -592,10 +592,7 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     });
   }
 
-  // Calculate SVG bounds
-  let maxX = 0, maxY = 0;
-  Object.values(posMap).forEach(p => { maxX = Math.max(maxX, p.x + 60); maxY = Math.max(maxY, p.y + 50); });
-  svgEl.setAttribute('viewBox', `0 0 ${maxX + padX} ${maxY + padY}`);
+  // Bounds will be calculated after node loop to ensure precise dynamic scaling
 
   let svg = '<defs><marker id="dia-ah" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow"/></marker><marker id="dia-ah-hl" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow highlight-edge-arrow"/></marker></defs>';
 
@@ -668,6 +665,29 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
       svg += `<text class="dia-node-label" x="${p.x}" y="${p.y + (sizeMap[n.id]?.h || nh)/2 + 14}">${esc(n.label)}</text>`;
     }
   });
+
+  // Calculate actual bounding box to dynamically size the block wrapper
+  let maxX = 0, maxY = 0;
+  Object.keys(posMap).forEach(id => {
+      const p = posMap[id];
+      const s = sizeMap[id] || {w: nw, h: nh};
+      maxX = Math.max(maxX, p.x + s.w/2 + 30);
+      maxY = Math.max(maxY, p.y + s.h/2 + 40);
+  });
+  
+  const finalW = Math.max(380, maxX);
+  const finalH = Math.max(160, maxY);
+  
+  // Directly size the SVG to 1:1 scale to prevent tiny text shrinking
+  svgEl.removeAttribute('viewBox');
+  svgEl.setAttribute('width', finalW);
+  svgEl.setAttribute('height', finalH);
+  
+  // Force the HTML wrapper to stretch, which cascades to shape-diablock width
+  if (svgEl.parentElement) {
+      svgEl.parentElement.style.width = finalW + 'px';
+      svgEl.parentElement.style.height = finalH + 'px';
+  }
 
   svgEl.innerHTML = svg;
 }
