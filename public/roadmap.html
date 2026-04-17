@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -289,6 +290,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .viz-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 .viz-btn:disabled { opacity: 0.3; cursor: default; }
 .viz-btn:disabled:hover { background: #161b22; border-color: #30363d; color: var(--text); }
+
+/* ===== GRAPHBLOCK ===== */
+.block-node.shape-graphblock {
+  min-width: 400px; max-width: 700px; border-radius: 12px;
+  background: #0d1117; border: 1px solid #30363d;
+}
+.graph-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 2px solid var(--accent);
+  background: #161b22; border-radius: 12px 12px 0 0;
+}
+.graph-title { font-size: 13px; color: var(--text); font-weight: 700; font-family: 'Syne', sans-serif; }
+.graph-icon { font-size: 11px; color: var(--accent); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.graph-body { padding: 14px; height: 320px; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
 
 /* ===== OUTPUTER BLOCK ===== */
 .block-node.shape-outputer {
@@ -654,7 +669,27 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     if (mod?.action === 'remove') extra += ' removed-node';
     if (mod?.action === 'modify') extra += ' modified-node';
 
-    if (shape === 'compound') {
+    if (shape === 'pencil' || shape === 'path') {
+      const ptStr = Array.isArray(n.points) ? n.points.map(pt=>`${pt.x},${pt.y}`).join(' ') : String(n.points || '');
+      svg += `<polyline points="${ptStr}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${extra}"/>`;
+      if (val) {
+        const match = ptStr.match(/(\d+)\s*,\s*(\d+)/);
+        if (match) {
+           svg += `<text class="dia-node-text" x="${parseInt(match[1])}" y="${parseInt(match[2])-14}" style="font-size:12px; fill:var(--text2)">${esc(String(val))}</text>`;
+        }
+      }
+      sizeMap[n.id] = { w: 0, h: 0 };
+    } else if (shape === 'polygon') {
+      const ptStr = Array.isArray(n.points) ? n.points.map(pt=>`${pt.x},${pt.y}`).join(' ') : String(n.points || '');
+      svg += `<polygon points="${ptStr}" fill="rgba(10,132,255,0.15)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" class="${extra}"/>`;
+      if (val) {
+        const match = ptStr.match(/(\d+)\s*,\s*(\d+)/);
+        if (match) {
+           svg += `<text class="dia-node-text" x="${parseInt(match[1])}" y="${parseInt(match[2])-14}" style="font-size:12px; fill:var(--text2)">${esc(String(val))}</text>`;
+        }
+      }
+      sizeMap[n.id] = { w: 0, h: 0 };
+    } else if (shape === 'compound') {
       // Linked list node: [data | next→] 
       const cw = 130, ch = nh;
       const splitX = p.x + 20; // split point within the compound box
@@ -685,11 +720,25 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
 
   // Calculate actual bounding box to dynamically size the block wrapper
   let maxX = 0, maxY = 0;
+  
+  // 1. Check standard auto-layout node positions
   Object.keys(posMap).forEach(id => {
       const p = posMap[id];
       const s = sizeMap[id] || {w: nw, h: nh};
       maxX = Math.max(maxX, p.x + s.w/2 + 30);
       maxY = Math.max(maxY, p.y + s.h/2 + 40);
+  });
+  
+  // 2. Check explicitly drawn extreme coordinate geometry bounds
+  nodes.forEach(n => {
+      if ((n.shape === 'pencil' || n.shape === 'path' || n.shape === 'polygon') && n.points) {
+          const ptStr = Array.isArray(n.points) ? n.points.map(pt=>`${pt.x},${pt.y}`).join(' ') : String(n.points);
+          const coords = ptStr.split(/[\s,]+/).map(Number).filter(v => !isNaN(v));
+          for (let i = 0; i < coords.length; i += 2) {
+              if (coords[i] !== undefined) maxX = Math.max(maxX, coords[i] + 40);
+              if (coords[i+1] !== undefined) maxY = Math.max(maxY, coords[i+1] + 40);
+          }
+      }
   });
   
   const finalW = Math.max(380, maxX);
@@ -1079,6 +1128,9 @@ function renderTree(data, isPartial = false){
              blockW = 440;
              const stepCount = (b.steps || []).length;
              blockH = Math.max(200, 70 + stepCount * 55);
+          } else if (b.type === 'graphblock') {
+             blockW = 500;
+             blockH = 400;
           } else if (b.type === 'diablock') {
              blockW = 460;
              const nodeCount = (b.nodes || []).length;
@@ -1182,6 +1234,20 @@ function renderTree(data, isPartial = false){
              if (!codeGroups[groupId]) codeGroups[groupId] = { currentStep: 0, steps: [] };
              codeGroups[groupId].outEl = el;
 
+          } else if (b.type === 'graphblock') {
+             // === GRAPHBLOCK ===
+             el.className = 'block-node shape-graphblock';
+             el.style.background = '';
+             const cid = 'chart-' + b.address;
+             innerHtml = `
+               <div class="graph-header">
+                 <span class="graph-title">${esc(b.title || 'Data Visualization')}</span>
+                 <span class="graph-icon"><i class="fas fa-chart-line"></i> Chart</span>
+               </div>
+               <div class="graph-body">
+                 <canvas id="${cid}"></canvas>
+               </div>`;
+               
           } else if (b.type === 'mathblock') {
              // === MATHBLOCK ===
              el.className = 'block-node shape-mathblock';
@@ -1269,6 +1335,43 @@ function renderTree(data, isPartial = false){
           // Render KaTeX math for mathblocks
           if (b.type === 'mathblock') {
             setTimeout(() => renderMathInEl(el), 50);
+          }
+          
+          // Initialize Graphblock Chart
+          if (b.type === 'graphblock') {
+             setTimeout(() => {
+                const ctx = document.getElementById('chart-' + b.address);
+                if (ctx && typeof Chart !== 'undefined') {
+                    Chart.defaults.color = '#7a85a8';
+                    Chart.defaults.font.family = "'JetBrains Mono', monospace";
+                    
+                    const chartConfig = b.chartData || {
+                        type: b.chartType || 'bar',
+                        data: {
+                            labels: b.labels || [],
+                            datasets: (b.datasets || []).map(ds => ({
+                                ...ds,
+                                backgroundColor: ds.backgroundColor || 'rgba(10, 132, 255, 0.5)',
+                                borderColor: ds.borderColor || 'rgba(10, 132, 255, 1)',
+                                borderWidth: 1
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, labels: { color: '#d8ddef', font: { size: 10 } } }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: '#2a304a' }, ticks: { color: '#7a85a8' } },
+                                x: { grid: { color: '#2a304a' }, ticks: { color: '#7a85a8' } }
+                            }
+                        }
+                    };
+                    if (b.options) chartConfig.options = { ...chartConfig.options, ...b.options };
+                    new Chart(ctx, chartConfig);
+                }
+             }, 80);
           }
           
           // Initialize diablock SVG
