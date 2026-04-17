@@ -1349,12 +1349,20 @@ function renderTree(data, isPartial = false){
                         type: b.chartType || 'bar',
                         data: {
                             labels: b.labels || [],
-                            datasets: (b.datasets || []).map(ds => ({
-                                ...ds,
-                                backgroundColor: ds.backgroundColor || 'rgba(10, 132, 255, 0.5)',
-                                borderColor: ds.borderColor || 'rgba(10, 132, 255, 1)',
-                                borderWidth: 1
-                            }))
+                            datasets: (b.datasets || []).map((ds, i) => {
+                                const isLine = (b.chartType === 'line' || ds.type === 'line' || b.chartData?.type === 'line');
+                                const colors = ['#0a84ff', '#3ecb8e', '#f0ad5e', '#f05858', '#5e5ce6'];
+                                const c = colors[i % colors.length];
+                                return {
+                                    tension: isLine ? 0.4 : 0,
+                                    fill: ds.fill || false,
+                                    ...ds,
+                                    backgroundColor: ds.backgroundColor || (isLine ? 'transparent' : c + '80'),
+                                    borderColor: ds.borderColor || c,
+                                    borderWidth: ds.borderWidth || 2,
+                                    pointBackgroundColor: ds.pointBackgroundColor || c
+                                };
+                            })
                         },
                         options: {
                             responsive: true,
