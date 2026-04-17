@@ -807,17 +807,21 @@ MANDATORY MATHBLOCK RULE:
 - Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
-MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION) - CRITICAL:
-- If the topic requires statistical charts, dataset comparisons, performance analysis, mathematical plots, parametric coordinate geometry (e.g. plotting a circle or complex shape using coordinates on an axis), time/space complexity trends, line graphs, bar charts, scatter plots, or plotting numeric trends, YOU MUST USE A GRAPHBLOCK INSTEAD OF A DIABLOCK.
-- DO NOT use a diablock node-graph for mathematical equations or complexity bounds plots.
-- For Coordinate Geometry (like plotting a circle): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
-- Graphblock: {"type": "graphblock", "address": "graph_1", "title": "Time Complexity Growth", "chartType": "line", "labels": ["1", "2", "3", "4", "5"], "datasets": [{"label": "O(n^2)", "data": [1, 4, 9, 16, 25]}, {"label": "Circle Geo", "type": "scatter", "showLine": true, "data": [{"x":0,"y":1}, {"x":1,"y":0}]}]}
+MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION / PLOTTING) - CRITICAL:
+- If the user explicitly asks to "graph" an equation, plot statistics, compare complexities (O(n)), or explicitly plot coordinate geometry WITH X/Y AXES, YOU MUST USE A GRAPHBLOCK.
+- DO NOT use a diablock node-graph for mathematical equations or complexity bounds plots!
+- Graphblock: {"type": "graphblock", "address": "g_1", "title": "Time Complexity", "chartType": "line", "labels": ["1", "3", "5"], "datasets": [{"label": "O(n²)", "data": [1, 9, 25]}]}
+- For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
 
-MANDATORY DIABLOCK RULE (CRITICAL - DO NOT SKIP):
-- If the topic mentions or relates to ANY of these keywords (and is NOT a statistical chart): array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
-- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "layout": "grid|horizontal|vertical|tree", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond|compound|pencil|polygon", "label": "optional", "points": "10,20 30,40 (for pencil/polygon)"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens", "highlightNodes": ["n1"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
+MANDATORY DRAWING & SKETCHING RULE (GEOMETRY & PENCIL GRAPHICS):
+- If the user explicitly asks to "draw" or "sketch" a raw geometric shape (circle, square, triangle, vector diagram), you MUST use a Diablock but specifically construct it via raw Coordinate Geometry using "shape": "pencil" or "polygon".
+- Draw natively by calculating the pure numerical X,Y coordinate geometry path points yourself!
+- Example drawing a large triangle: {"type": "diablock", "address": "dia_1", "title": "Triangle Sketch", "layout": "grid", "nodes": [{"id": "n1", "shape": "polygon", "points": "100,10 40,100 160,100"}], "edges": [], "steps": []}
+
+MANDATORY DIABLOCK RULE (STRICTLY DATA STRUCTURES & ALGORITHMS):
+- If the topic relates to data structures (linked list, tree, graph, stack, queue, trie) or algorithmic tracing (sorting, BFS, DFS, search, pointer), generate a standard Diablock flowchart.
+- Diablock: {"type": "diablock", "address": "dia_1", "layout": "grid|horizontal|vertical|tree", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond|compound", "label": "optional"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow"}], "steps": [{"description": "Action", "highlightNodes": ["n1"]}]}
 - LAYOUTS: Use "horizontal" for Linked Lists/Queues. Use "vertical" for Stacks. Use "tree" for Trees/Graphs.
-- SHAPES: Use "compound" for Linked List nodes (shows data|next). Use "box" for arrays. Use "circle" for tree nodes. Use "diamond" for HEAD/decision points. Use "pencil", "path", or "polygon" for drawing raw coordinate geometry sketches (requires "points" array of "X,Y" strings).
 
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
