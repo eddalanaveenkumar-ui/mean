@@ -1376,8 +1376,8 @@ function renderTree(data, isPartial = false){
       }
     });
 
-    // ===== LAYER-BASED DAG LAYOUT (Stable, Non-collapsing) =====
-    // Compute Layers (Longest path from roots)
+    // ===== STRICT TOP-TO-BOTTOM DAG LAYOUT =====
+    // Compute Topological Layers
     const inDegree = {};
     const childMap = {};
     blockNodes.forEach(addr => { inDegree[addr] = 0; childMap[addr] = []; });
@@ -1391,13 +1391,14 @@ function renderTree(data, isPartial = false){
     let currentLayerNodes = blockNodes.filter(addr => inDegree[addr] === 0);
     if (!currentLayerNodes.length && blockNodes.length) currentLayerNodes = [blockNodes[0]]; // fallback for cycles
 
-    const layers = [];
+    const flatOrder = [];
     const visited = new Set(currentLayerNodes);
 
     while (currentLayerNodes.length > 0) {
-        layers.push(currentLayerNodes);
+        currentLayerNodes.sort(); // Deterministic sorting
         const nextLayer = [];
         currentLayerNodes.forEach(addr => {
+            flatOrder.push(addr);
             childMap[addr].forEach(child => {
                 inDegree[child]--;
                 if (inDegree[child] <= 0 && !visited.has(child)) {
@@ -1412,65 +1413,54 @@ function renderTree(data, isPartial = false){
     // Catch disconnected islands
     blockNodes.forEach(addr => {
         if (!visited.has(addr)) {
-            layers.push([addr]);
+            flatOrder.push(addr);
             visited.add(addr);
         }
     });
 
-    // Position nodes layer by layer safely
+    // Position nodes exclusively top-to-bottom sequentially
     let currentY = 100;
     const ROW_GAP = 90;
-    const NODE_GAP_X = 60;
-    const TB_GAP_X = 40;
-    const TB_GAP_Y = 20;
+    const TB_GAP_X = 60;
+    const TB_GAP_Y = 24;
 
-    layers.forEach(layer => {
-        // Determine total width of this layer to center it perfectly
-        const nodeWidthsWithTbs = layer.map(addr => {
-            const nd = nodeData[addr];
-            const tbs = tbGroups[addr] || [];
-            let tbMaxWidth = 0;
-            tbs.forEach(tbAddr => { tbMaxWidth = Math.max(tbMaxWidth, nodeData[tbAddr].w); });
-            // Total width unit: [Node]---tbGapX---[Textblock Max Width]
-            let totalUnitW = nd.w;
-            if (tbs.length > 0) totalUnitW += TB_GAP_X + tbMaxWidth;
-            return { addr, unitW: totalUnitW, tbs, nodeW: nd.w, nodeH: nd.h };
+    flatOrder.forEach(addr => {
+        const nd = nodeData[addr];
+        const tbs = tbGroups[addr] || [];
+        
+        let tbMaxWidth = 0;
+        tbs.forEach(tbAddr => { tbMaxWidth = Math.max(tbMaxWidth, nodeData[tbAddr].w); });
+        
+        // Center the whole unit (node + textblocks) horizontally for a clean column
+        let totalRowW = nd.w;
+        if (tbs.length > 0) totalRowW += TB_GAP_X + tbMaxWidth;
+        const startX = centerX - totalRowW / 2;
+        
+        // 1. Place the main block node
+        nd.x = startX;
+        nd.y = currentY;
+        nd.el.style.left = nd.x + 'px';
+        nd.el.style.top = nd.y + 'px';
+        
+        // 2. Place its textblocks to the right
+        let tbY = currentY;
+        let tbMaxH = 0;
+        const rightEdge = nd.x + nd.w;
+        
+        tbs.forEach(tbAddr => {
+            const tb = nodeData[tbAddr];
+            tb.x = rightEdge + TB_GAP_X;
+            tb.y = tbY;
+            tb.el.style.left = tb.x + 'px';
+            tb.el.style.top = tb.y + 'px';
+            tbY += tb.h + TB_GAP_Y;
         });
-
-        const totalLayerW = nodeWidthsWithTbs.reduce((sum, item) => sum + item.unitW, 0) + (layer.length - 1) * NODE_GAP_X;
-        let startX = centerX - totalLayerW / 2;
-        let maxLayerH = 0;
-
-        nodeWidthsWithTbs.forEach(item => {
-            const nd = nodeData[item.addr];
-            
-            // Set Block X, Y
-            nd.x = startX;
-            nd.y = currentY;
-            nd.el.style.left = nd.x + 'px';
-            nd.el.style.top = nd.y + 'px';
-            
-            // Layout Textblocks strictly to the right, tightly packed
-            let tbY = currentY;
-            let tbMaxH = 0;
-            
-            item.tbs.forEach(tbAddr => {
-                const tb = nodeData[tbAddr];
-                tb.x = startX + item.nodeW + TB_GAP_X;
-                tb.y = tbY;
-                tb.el.style.left = tb.x + 'px';
-                tb.el.style.top = tb.y + 'px';
-                tbY += tb.h + TB_GAP_Y;
-            });
-            
-            tbMaxH = item.tbs.length > 0 ? (tbY - currentY - TB_GAP_Y) : 0;
-            maxLayerH = Math.max(maxLayerH, item.nodeH, tbMaxH);
-            
-            // advance X for next node in layer
-            startX += item.unitW + NODE_GAP_X;
-        });
-
-        currentY += maxLayerH + ROW_GAP;
+        
+        tbMaxH = tbs.length > 0 ? (tbY - currentY - TB_GAP_Y) : 0;
+        const rowHeight = Math.max(nd.h, tbMaxH);
+        
+        // Move fully down for the next block (NO SIDE BY SIDE)
+        currentY += rowHeight + ROW_GAP;
     });
     
     drawEdges();
