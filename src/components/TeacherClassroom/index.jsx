@@ -809,9 +809,10 @@ MANDATORY MATHBLOCK RULE:
 
 MANDATORY DIABLOCK RULE (CRITICAL - DO NOT SKIP):
 - If the topic mentions or relates to ANY of these keywords: array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
-- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond", "label": "optional"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens", "highlightNodes": ["n1"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
-- EXAMPLE for "linked list": nodes=[{id:"h",value:"HEAD",shape:"diamond"},{id:"n1",value:"10",shape:"box"},{id:"n2",value:"20",shape:"box"},{id:"n3",value:"30",shape:"box"},{id:"t",value:"NULL",shape:"circle"}], edges=[{from:"h",to:"n1",type:"arrow"},{from:"n1",to:"n2",type:"arrow",label:"next"},{from:"n2",to:"n3",type:"arrow",label:"next"},{from:"n3",to:"t",type:"arrow",label:"next"}], steps showing traversal highlighting each node.
-- Use "box" for array/list nodes, "circle" for tree/graph nodes, "diamond" for HEAD/decision points.
+- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "layout": "grid|horizontal|vertical|tree", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond|compound", "label": "optional"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens", "highlightNodes": ["n1"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
+- LAYOUTS: Use "horizontal" for Linked Lists/Queues. Use "vertical" for Stacks. Use "tree" for Trees/Graphs.
+- SHAPES: Use "compound" for Linked List nodes (shows data|next). Use "box" for arrays. Use "circle" for tree nodes. Use "diamond" for HEAD/root/decision points.
+- EXAMPLE for "linked list": layout="horizontal", nodes=[{id:"h",value:"HEAD",shape:"diamond"},{id:"n1",value:"10",shape:"compound"},{id:"n2",value:"20",shape:"compound"},{id:"n3",value:"30",shape:"compound"},{id:"t",value:"NULL",shape:"circle"}], edges: arrow from h->n1, n1->n2, n2->n3, n3->t.
 - Include at least 4-8 animation steps showing the full operation.
 
 JSON STRUCTURE RULES:

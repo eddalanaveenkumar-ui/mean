@@ -521,40 +521,108 @@ function renderMathInEl(el) {
 // ===== DIABLOCK RENDERER =====
 const diaGroups = {};
 
-function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modifiedNodes) {
+function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modifiedNodes, layout) {
   const hl = new Set(highlightNodes || []);
   const hlEdge = new Set((highlightEdges || []).map(e => e.from + '->' + e.to));
   const modMap = {};
   (modifiedNodes || []).forEach(m => { modMap[m.id] = m; });
 
-  // Auto-layout: grid placement
-  const nw = 60, nh = 36, gapX = 90, gapY = 70, padX = 30, padY = 30;
-  const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
+  const nw = 70, nh = 36, padX = 40, padY = 40;
   const posMap = {};
-  nodes.forEach((n, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    posMap[n.id] = { x: padX + col * gapX + nw/2, y: padY + row * gapY + nh/2 };
-  });
+  const sizeMap = {}; // track node width for compound boxes
 
-  const svgW = padX * 2 + cols * gapX;
-  const rows = Math.ceil(nodes.length / cols);
-  const svgH = padY * 2 + rows * gapY;
-  svgEl.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  // ===== LAYOUT ALGORITHMS =====
+  if (layout === 'horizontal') {
+    // Linked list / Queue: left → right in a row
+    const gapX = 110;
+    nodes.forEach((n, i) => {
+      const w = (n.shape === 'compound') ? 90 : nw;
+      posMap[n.id] = { x: padX + i * gapX + w/2, y: padY + 50 };
+      sizeMap[n.id] = { w, h: nh };
+    });
+  } else if (layout === 'vertical') {
+    // Stack: top → bottom
+    const gapY = 56;
+    nodes.forEach((n, i) => {
+      posMap[n.id] = { x: padX + 100, y: padY + i * gapY + nh/2 };
+      sizeMap[n.id] = { w: nw, h: nh };
+    });
+  } else if (layout === 'tree') {
+    // Tree: BFS level placement
+    const childMap = {};
+    const parentSet = new Set();
+    edges.forEach(e => {
+      if (!childMap[e.from]) childMap[e.from] = [];
+      childMap[e.from].push(e.to);
+      parentSet.add(e.to);
+    });
+    const roots = nodes.filter(n => !parentSet.has(n.id));
+    const root = roots[0] || nodes[0];
+    const levels = [];
+    const visited = new Set();
+    let queue = [root.id];
+    while (queue.length) {
+      levels.push([...queue]);
+      queue.forEach(id => visited.add(id));
+      const next = [];
+      queue.forEach(id => {
+        (childMap[id] || []).forEach(c => { if (!visited.has(c)) next.push(c); });
+      });
+      queue = next;
+    }
+    // Place remaining unvisited nodes
+    nodes.forEach(n => { if (!visited.has(n.id)) { levels.push([n.id]); visited.add(n.id); } });
+    const gapY = 70;
+    levels.forEach((level, ly) => {
+      const totalW = level.length * 80;
+      const startX = Math.max(padX, 200 - totalW / 2);
+      level.forEach((id, lx) => {
+        posMap[id] = { x: startX + lx * 80 + 30, y: padY + ly * gapY + 20 };
+        sizeMap[id] = { w: nw, h: nh };
+      });
+    });
+  } else {
+    // Grid (default)
+    const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
+    const gapX = 100, gapY = 70;
+    nodes.forEach((n, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      posMap[n.id] = { x: padX + col * gapX + nw/2, y: padY + row * gapY + nh/2 };
+      sizeMap[n.id] = { w: nw, h: nh };
+    });
+  }
 
-  let svg = '<defs><marker id="dia-ah" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow"/></marker></defs>';
+  // Calculate SVG bounds
+  let maxX = 0, maxY = 0;
+  Object.values(posMap).forEach(p => { maxX = Math.max(maxX, p.x + 60); maxY = Math.max(maxY, p.y + 50); });
+  svgEl.setAttribute('viewBox', `0 0 ${maxX + padX} ${maxY + padY}`);
 
-  // Draw edges first (behind nodes)
+  let svg = '<defs><marker id="dia-ah" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow"/></marker><marker id="dia-ah-hl" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow highlight-edge-arrow"/></marker></defs>';
+
+  // Draw edges
   edges.forEach(e => {
     const from = posMap[e.from], to = posMap[e.to];
     if (!from || !to) return;
     const key = e.from + '->' + e.to;
     const isHl = hlEdge.has(key);
     const cls = isHl ? 'dia-edge highlight-edge' : 'dia-edge';
-    const marker = (e.type !== 'line') ? ' marker-end="url(#dia-ah)"' : '';
+    const markerRef = isHl ? 'dia-ah-hl' : 'dia-ah';
+    const marker = (e.type !== 'line') ? ` marker-end="url(#${markerRef})"` : '';
     const dash = (e.type === 'dashed') ? ' stroke-dasharray="5,3"' : '';
-    svg += `<line class="${cls}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"${marker}${dash}/>`;
+    
+    // Calculate edge start/end at node boundaries
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const fromS = sizeMap[e.from] || {w: nw, h: nh};
+    const toS = sizeMap[e.to] || {w: nw, h: nh};
+    const x1 = from.x + (dx/dist) * (fromS.w/2 + 2);
+    const y1 = from.y + (dy/dist) * (fromS.h/2 + 2);
+    const x2 = to.x - (dx/dist) * (toS.w/2 + 6);
+    const y2 = to.y - (dy/dist) * (toS.h/2 + 6);
+    
+    svg += `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${marker}${dash}/>`;
     if (e.label) {
-      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2 - 6;
+      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2 - 8;
       svg += `<text class="dia-edge-label" x="${mx}" y="${my}">${esc(e.label)}</text>`;
     }
   });
@@ -572,17 +640,32 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     if (mod?.action === 'remove') extra += ' removed-node';
     if (mod?.action === 'modify') extra += ' modified-node';
 
-    if (shape === 'circle') {
-      svg += `<circle class="dia-node-circle${extra}" cx="${p.x}" cy="${p.y}" r="${nh/2 + 2}"/>`;
+    if (shape === 'compound') {
+      // Linked list node: [data | next→] 
+      const cw = 90, ch = nh;
+      const splitX = p.x + 15; // split point within the compound box
+      svg += `<rect class="dia-node-box${extra}" x="${p.x - cw/2}" y="${p.y - ch/2}" width="${cw}" height="${ch}" rx="4"/>`;
+      svg += `<line class="dia-edge" x1="${splitX}" y1="${p.y - ch/2}" x2="${splitX}" y2="${p.y + ch/2}" style="stroke-width:1"/>`;
+      svg += `<text class="dia-node-text" x="${p.x - 15}" y="${p.y}">${esc(String(val))}</text>`;
+      svg += `<text class="dia-node-label" x="${splitX + 16}" y="${p.y}" style="font-size:8px;fill:#94a3b8;dominant-baseline:central">●→</text>`;
+      sizeMap[n.id] = { w: cw, h: ch };
+    } else if (shape === 'circle') {
+      const r = nh/2 + 4;
+      svg += `<circle class="dia-node-circle${extra}" cx="${p.x}" cy="${p.y}" r="${r}"/>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      sizeMap[n.id] = { w: r*2, h: r*2 };
     } else if (shape === 'diamond') {
-      const dx = nw/2, dy = nh/2 + 4;
+      const dx = nw/2 + 6, dy = nh/2 + 6;
       svg += `<polygon class="dia-node-diamond${extra}" points="${p.x},${p.y-dy} ${p.x+dx},${p.y} ${p.x},${p.y+dy} ${p.x-dx},${p.y}"/>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      sizeMap[n.id] = { w: dx*2, h: dy*2 };
     } else {
       svg += `<rect class="dia-node-box${extra}" x="${p.x - nw/2}" y="${p.y - nh/2}" width="${nw}" height="${nh}" rx="6"/>`;
+      svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+      sizeMap[n.id] = { w: nw, h: nh };
     }
-    svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
     if (n.label) {
-      svg += `<text class="dia-node-label" x="${p.x}" y="${p.y + nh/2 + 12}">${esc(n.label)}</text>`;
+      svg += `<text class="dia-node-label" x="${p.x}" y="${p.y + (sizeMap[n.id]?.h || nh)/2 + 14}">${esc(n.label)}</text>`;
     }
   });
 
@@ -600,7 +683,7 @@ function stepDiaBlock(groupId, direction) {
   // Use step-specific nodes/edges if provided, else use base
   const nodes = step.nodes || g.baseNodes;
   const edges = step.edges || g.baseEdges;
-  renderDiagram(g.svgEl, nodes, edges, step.highlightNodes || [], step.highlightEdges || [], step.modifyNodes || []);
+  renderDiagram(g.svgEl, nodes, edges, step.highlightNodes || [], step.highlightEdges || [], step.modifyNodes || [], g.layout);
 
   // Update info
   if (g.infoEl) {
@@ -1115,7 +1198,8 @@ function renderTree(data, isPartial = false){
                  <span class="dia-badge">◈ Diagram</span>
                </div>`;
              // Register group (will init SVG after innerHTML set)
-             diaGroups[gid] = { currentStep: -1, steps, baseNodes: nodes, baseEdges: edgesDia, el, svgEl: null, infoEl: null, playTimer: null };
+             const diaLayout = b.layout || 'grid';
+             diaGroups[gid] = { currentStep: -1, steps, baseNodes: nodes, baseEdges: edgesDia, el, svgEl: null, infoEl: null, playTimer: null, layout: diaLayout };
 
           } else if (b.type === 'textblock') {
              el.className = `block-node shape-text-field`;
@@ -1157,7 +1241,7 @@ function renderTree(data, isPartial = false){
               if (g) {
                 g.svgEl = el.querySelector('.dia-canvas svg');
                 g.infoEl = el.querySelector('.dia-info');
-                if (g.svgEl) renderDiagram(g.svgEl, g.baseNodes, g.baseEdges, [], [], []);
+                if (g.svgEl) renderDiagram(g.svgEl, g.baseNodes, g.baseEdges, [], [], [], g.layout);
               }
             }, 60);
           }
