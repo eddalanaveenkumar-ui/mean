@@ -807,18 +807,19 @@ MANDATORY MATHBLOCK RULE:
 - Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
-MANDATORY DIABLOCK RULE:
-- If the topic involves ANY data structure (array, linked list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie) or algorithm visualization (sorting, searching, traversal, insertion, deletion, BFS, DFS, Dijkstra, etc.), you MUST include a diablock.
-- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond", "label": "optional label"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens in this step", "highlightNodes": ["n1", "n2"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
-- Use "box" shape for array elements and general nodes, "circle" for tree/graph nodes, "diamond" for decision points.
-- Each step should highlight the relevant nodes/edges being processed and describe the operation clearly.
-- Include enough steps to show the COMPLETE algorithm execution with realistic data.
-- For sorting: show each swap/comparison. For trees: show each insertion/traversal step. For graphs: show each vertex visit.
+MANDATORY DIABLOCK RULE (CRITICAL - DO NOT SKIP):
+- If the topic mentions or relates to ANY of these keywords: array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
+- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond", "label": "optional"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens", "highlightNodes": ["n1"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
+- EXAMPLE for "linked list": nodes=[{id:"h",value:"HEAD",shape:"diamond"},{id:"n1",value:"10",shape:"box"},{id:"n2",value:"20",shape:"box"},{id:"n3",value:"30",shape:"box"},{id:"t",value:"NULL",shape:"circle"}], edges=[{from:"h",to:"n1",type:"arrow"},{from:"n1",to:"n2",type:"arrow",label:"next"},{from:"n2",to:"n3",type:"arrow",label:"next"},{from:"n3",to:"t",type:"arrow",label:"next"}], steps showing traversal highlighting each node.
+- Use "box" for array/list nodes, "circle" for tree/graph nodes, "diamond" for HEAD/decision points.
+- Include at least 4-8 animation steps showing the full operation.
 
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
 - Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "first-connection": "parent_id", "next-connection": "child_id"}
+
+CRITICAL REMINDER: If the topic is about data structures or algorithms, the JSON response MUST contain at least one diablock. If the topic has code, include coder+visualizer+outputer. If the topic has math, include mathblock.
 
 Dense and accurate.${fileContext}
 Return ONLY valid JSON array.`;
