@@ -1376,47 +1376,11 @@ function renderTree(data, isPartial = false){
       }
     });
 
-    // ===== STRICT TOP-TO-BOTTOM DAG LAYOUT =====
-    // Compute Topological Layers
-    const inDegree = {};
-    const childMap = {};
-    blockNodes.forEach(addr => { inDegree[addr] = 0; childMap[addr] = []; });
-    edges.forEach(e => {
-        if (inDegree[e.to] !== undefined && childMap[e.from]) {
-            inDegree[e.to]++;
-            childMap[e.from].push(e.to);
-        }
-    });
-
-    let currentLayerNodes = blockNodes.filter(addr => inDegree[addr] === 0);
-    if (!currentLayerNodes.length && blockNodes.length) currentLayerNodes = [blockNodes[0]]; // fallback for cycles
-
-    const flatOrder = [];
-    const visited = new Set(currentLayerNodes);
-
-    while (currentLayerNodes.length > 0) {
-        currentLayerNodes.sort(); // Deterministic sorting
-        const nextLayer = [];
-        currentLayerNodes.forEach(addr => {
-            flatOrder.push(addr);
-            childMap[addr].forEach(child => {
-                inDegree[child]--;
-                if (inDegree[child] <= 0 && !visited.has(child)) {
-                    visited.add(child);
-                    nextLayer.push(child);
-                }
-            });
-        });
-        currentLayerNodes = nextLayer;
-    }
-
-    // Catch disconnected islands
-    blockNodes.forEach(addr => {
-        if (!visited.has(addr)) {
-            flatOrder.push(addr);
-            visited.add(addr);
-        }
-    });
+    // ===== STRICT TOP-TO-BOTTOM SEQUENTIAL LAYOUT =====
+    // Sort block nodes natively by their initial stream generation Y position
+    // This perfectly preserves the organic AI generation order (Definition -> Diagram -> Code)
+    const flatOrder = [...blockNodes];
+    flatOrder.sort((a, b) => nodeData[a].y - nodeData[b].y);
 
     // Position nodes exclusively top-to-bottom sequentially
     let currentY = 100;
