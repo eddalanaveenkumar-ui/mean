@@ -807,14 +807,14 @@ MANDATORY MATHBLOCK RULE:
 - Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
-MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION / PLOTTING) - CRITICAL:
-- If the user explicitly asks to "graph" an equation, plot statistics, compare complexities (O(n)), or explicitly plot coordinate geometry WITH X/Y AXES, YOU MUST USE A GRAPHBLOCK.
-- DO NOT use a diablock node-graph for mathematical equations or complexity bounds plots!
-- Graphblock: {"type": "graphblock", "address": "g_1", "title": "Time Complexity", "chartType": "line", "labels": ["1", "3", "5"], "datasets": [{"label": "O(n²)", "data": [1, 9, 25]}]}
+MANDATORY GRAPHBLOCK RULE (IF USER ASKS TO "GRAPH"):
+- If the user specifically asks to "graph" an equation, plot statistics, explicitly build a "chart", or use axes, YOU MUST ONLY USE A GRAPHBLOCK.
+- DO NOT use a diablock node-graph if they ask for a chart or mathematical graph!
+- Graphblock: {"type": "graphblock", "address": "g_1", "title": "Chart", "chartType": "line", "labels": ["1", "2"], "datasets": [{"label": "Data", "data": [10, 20]}]}
 - For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
 
-MANDATORY DRAWING & SKETCHING RULE (GEOMETRY & PENCIL GRAPHICS):
-- If the user asks to "draw" or "sketch" a raw geometric shape natively (like points on a plane, triangles, vectors) without statistical axes, use a Diablock with "layout": "coordinate".
+MANDATORY DRAWING RULE (IF USER ASKS TO "DRAW"):
+- If the user specifically asks to "draw" or "sketch" a shape, points on a plane, or any non-axis geometry, YOU MUST ONLY USE A DIABLOCK with "layout": "coordinate".
 - For explicitly labeled coordinate points connected by sharp straight edges, use "shape": "point", and place their X,Y values in the "value" field like "(2,3)". Connect them linearly with edges.
 - For pure vector outlines, use "shape": "polygon" or "pencil" with a "points": "100,20 50,50" array.
 - Example Coordinate Map: {"type": "diablock", "address": "dia_1", "title": "Coordinate Sketch", "layout": "coordinate", "nodes": [{"id": "A", "value": "(2,3)", "shape": "point", "label": "Point A"}, {"id": "B", "value": "(8,3)", "shape": "point"}], "edges": [{"from": "A", "to": "B"}], "steps": []}
