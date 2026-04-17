@@ -574,7 +574,7 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     });
   } else if (layout === 'vertical') {
     // Stack: top → bottom
-    const gapY = 56;
+    const gapY = 90;
     nodes.forEach((n, i) => {
       posMap[n.id] = { x: padX + 100, y: padY + i * gapY + nh/2 };
       sizeMap[n.id] = { w: nw, h: nh };
@@ -604,7 +604,7 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
     }
     // Place remaining unvisited nodes
     nodes.forEach(n => { if (!visited.has(n.id)) { levels.push([n.id]); visited.add(n.id); } });
-    const gapY = 70;
+    const gapY = 95;
     levels.forEach((level, ly) => {
       const totalW = level.length * 80;
       const startX = Math.max(padX, 200 - totalW / 2);
@@ -616,7 +616,7 @@ function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modi
   } else {
     // Grid (default)
     const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
-    const gapX = 100, gapY = 70;
+    const gapX = 110, gapY = 95;
     nodes.forEach((n, i) => {
       const col = i % cols, row = Math.floor(i / cols);
       posMap[n.id] = { x: padX + col * gapX + nw/2, y: padY + row * gapY + nh/2 };
