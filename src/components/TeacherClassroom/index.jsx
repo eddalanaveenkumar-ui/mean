@@ -808,9 +808,10 @@ MANDATORY MATHBLOCK RULE:
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
 MANDATORY GRAPHBLOCK RULE (DATA VISUALIZATION) - CRITICAL:
-- If the topic requires statistical charts, dataset comparisons, performance analysis, mathematical plots, time/space complexity trends (e.g., comparing O(1), O(n), O(n²), plotting equations like quadratic curves), line graphs, bar charts, scatter plots, or plotting numeric trends, YOU MUST USE A GRAPHBLOCK INSTEAD OF A DIABLOCK.
+- If the topic requires statistical charts, dataset comparisons, performance analysis, mathematical plots, parametric coordinate geometry (e.g. plotting a circle or complex shape using coordinates on an axis), time/space complexity trends, line graphs, bar charts, scatter plots, or plotting numeric trends, YOU MUST USE A GRAPHBLOCK INSTEAD OF A DIABLOCK.
 - DO NOT use a diablock node-graph for mathematical equations or complexity bounds plots.
-- Graphblock: {"type": "graphblock", "address": "graph_1", "title": "Time Complexity Growth", "chartType": "line", "labels": ["1", "2", "3", "4", "5"], "datasets": [{"label": "O(n^2)", "data": [1, 4, 9, 16, 25]}, {"label": "O(n)", "data": [1, 2, 3, 4, 5]}]}
+- For Coordinate Geometry (like plotting a circle): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
+- Graphblock: {"type": "graphblock", "address": "graph_1", "title": "Time Complexity Growth", "chartType": "line", "labels": ["1", "2", "3", "4", "5"], "datasets": [{"label": "O(n^2)", "data": [1, 4, 9, 16, 25]}, {"label": "Circle Geo", "type": "scatter", "showLine": true, "data": [{"x":0,"y":1}, {"x":1,"y":0}]}]}
 
 MANDATORY DIABLOCK RULE (CRITICAL - DO NOT SKIP):
 - If the topic mentions or relates to ANY of these keywords (and is NOT a statistical chart): array, linked list, list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie, sorting, bubble sort, merge sort, quick sort, insertion sort, searching, binary search, BFS, DFS, traversal, insertion, deletion, Dijkstra, pointer, node, data structure, algorithm — you MUST generate a diablock. FAILURE TO DO SO IS AN ERROR.
