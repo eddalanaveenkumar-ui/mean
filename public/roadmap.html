@@ -347,6 +347,62 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
   background: #161b22; border-radius: 0 0 12px 12px;
 }
 .math-footer-text { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* ===== DIABLOCK (Diagram Block) ===== */
+.block-node.shape-diablock {
+  min-width: 420px; max-width: 520px; border-radius: 12px;
+  background: #0d1117; border: 1px solid #30363d;
+}
+.dia-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; border-bottom: 1px solid #30363d;
+  background: #161b22; border-radius: 12px 12px 0 0;
+}
+.dia-title { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'Syne', sans-serif; }
+.dia-badge { font-size: 10px; color: #a78bfa; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.dia-controls {
+  display: flex; align-items: center; gap: 6px;
+}
+.dia-play-btn, .dia-step-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid #30363d;
+  background: #161b22; color: var(--text); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.dia-play-btn:hover, .dia-step-btn:hover { background: #a78bfa; border-color: #a78bfa; color: #fff; }
+.dia-play-btn.playing { background: var(--red); border-color: var(--red); color: #fff; }
+.dia-play-btn:disabled, .dia-step-btn:disabled { opacity: 0.3; cursor: default; }
+.dia-canvas {
+  width: 100%; min-height: 200px; position: relative; overflow: hidden;
+  background: #0a0e14;
+}
+.dia-canvas svg { width: 100%; height: 100%; display: block; }
+.dia-canvas svg .dia-node-box { fill: #1e293b; stroke: #475569; stroke-width: 1.5; rx: 6; transition: all 0.3s; }
+.dia-canvas svg .dia-node-circle { fill: #1e293b; stroke: #475569; stroke-width: 1.5; transition: all 0.3s; }
+.dia-canvas svg .dia-node-diamond { fill: #1e293b; stroke: #475569; stroke-width: 1.5; transition: all 0.3s; }
+.dia-canvas svg .dia-node-text { fill: #e2e8f0; font-size: 13px; font-family: 'JetBrains Mono', monospace; text-anchor: middle; dominant-baseline: central; }
+.dia-canvas svg .dia-node-label { fill: #94a3b8; font-size: 9px; font-family: 'JetBrains Mono', monospace; text-anchor: middle; }
+.dia-canvas svg .dia-edge { stroke: #475569; stroke-width: 1.5; fill: none; transition: stroke 0.3s; }
+.dia-canvas svg .dia-edge-arrow { fill: #475569; transition: fill 0.3s; }
+.dia-canvas svg .dia-edge-label { fill: #64748b; font-size: 9px; font-family: 'JetBrains Mono', monospace; text-anchor: middle; }
+.dia-canvas svg .highlight-node { stroke: #a78bfa; stroke-width: 2.5; filter: drop-shadow(0 0 6px rgba(167,139,250,0.5)); }
+.dia-canvas svg .highlight-edge { stroke: #a78bfa; stroke-width: 2.5; }
+.dia-canvas svg .highlight-edge-arrow { fill: #a78bfa; }
+.dia-canvas svg .added-node { fill: #065f46; stroke: var(--green); stroke-width: 2.5; }
+.dia-canvas svg .removed-node { fill: #7f1d1d; stroke: var(--red); stroke-width: 2.5; opacity: 0.6; }
+.dia-canvas svg .modified-node { fill: #1e3a5f; stroke: var(--accent); stroke-width: 2.5; }
+.dia-info {
+  padding: 10px 14px; border-top: 1px solid #30363d;
+  min-height: 36px; display: flex; align-items: center; gap: 8px;
+}
+.dia-step-label { font-size: 10px; color: #a78bfa; font-family: 'JetBrains Mono', monospace; font-weight: 600; min-width: 55px; }
+.dia-step-desc { font-size: 12px; color: var(--text2); font-family: 'Syne', sans-serif; line-height: 1.4; }
+.dia-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 14px; border-top: 1px solid #21262d;
+  background: #161b22; border-radius: 0 0 12px 12px;
+}
+.dia-footer-text { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+@keyframes diaNodePop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -455,12 +511,134 @@ function renderMathInEl(el) {
   el.querySelectorAll('.math-step-content').forEach(cell => {
     const raw = cell.getAttribute('data-latex') || cell.textContent;
     try {
-      // Render as display math
       katex.render(raw, cell, { displayMode: true, throwOnError: false, trust: true });
     } catch(_) {
       cell.textContent = raw;
     }
   });
+}
+
+// ===== DIABLOCK RENDERER =====
+const diaGroups = {};
+
+function renderDiagram(svgEl, nodes, edges, highlightNodes, highlightEdges, modifiedNodes) {
+  const hl = new Set(highlightNodes || []);
+  const hlEdge = new Set((highlightEdges || []).map(e => e.from + '->' + e.to));
+  const modMap = {};
+  (modifiedNodes || []).forEach(m => { modMap[m.id] = m; });
+
+  // Auto-layout: grid placement
+  const nw = 60, nh = 36, gapX = 90, gapY = 70, padX = 30, padY = 30;
+  const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
+  const posMap = {};
+  nodes.forEach((n, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    posMap[n.id] = { x: padX + col * gapX + nw/2, y: padY + row * gapY + nh/2 };
+  });
+
+  const svgW = padX * 2 + cols * gapX;
+  const rows = Math.ceil(nodes.length / cols);
+  const svgH = padY * 2 + rows * gapY;
+  svgEl.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+
+  let svg = '<defs><marker id="dia-ah" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="8" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 Z" class="dia-edge-arrow"/></marker></defs>';
+
+  // Draw edges first (behind nodes)
+  edges.forEach(e => {
+    const from = posMap[e.from], to = posMap[e.to];
+    if (!from || !to) return;
+    const key = e.from + '->' + e.to;
+    const isHl = hlEdge.has(key);
+    const cls = isHl ? 'dia-edge highlight-edge' : 'dia-edge';
+    const marker = (e.type !== 'line') ? ' marker-end="url(#dia-ah)"' : '';
+    const dash = (e.type === 'dashed') ? ' stroke-dasharray="5,3"' : '';
+    svg += `<line class="${cls}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"${marker}${dash}/>`;
+    if (e.label) {
+      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2 - 6;
+      svg += `<text class="dia-edge-label" x="${mx}" y="${my}">${esc(e.label)}</text>`;
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const p = posMap[n.id];
+    if (!p) return;
+    const isHl = hl.has(n.id);
+    const mod = modMap[n.id];
+    const val = mod?.newValue !== undefined ? mod.newValue : n.value;
+    const shape = n.shape || 'box';
+    let extra = isHl ? ' highlight-node' : '';
+    if (mod?.action === 'add') extra += ' added-node';
+    if (mod?.action === 'remove') extra += ' removed-node';
+    if (mod?.action === 'modify') extra += ' modified-node';
+
+    if (shape === 'circle') {
+      svg += `<circle class="dia-node-circle${extra}" cx="${p.x}" cy="${p.y}" r="${nh/2 + 2}"/>`;
+    } else if (shape === 'diamond') {
+      const dx = nw/2, dy = nh/2 + 4;
+      svg += `<polygon class="dia-node-diamond${extra}" points="${p.x},${p.y-dy} ${p.x+dx},${p.y} ${p.x},${p.y+dy} ${p.x-dx},${p.y}"/>`;
+    } else {
+      svg += `<rect class="dia-node-box${extra}" x="${p.x - nw/2}" y="${p.y - nh/2}" width="${nw}" height="${nh}" rx="6"/>`;
+    }
+    svg += `<text class="dia-node-text" x="${p.x}" y="${p.y}">${esc(String(val))}</text>`;
+    if (n.label) {
+      svg += `<text class="dia-node-label" x="${p.x}" y="${p.y + nh/2 + 12}">${esc(n.label)}</text>`;
+    }
+  });
+
+  svgEl.innerHTML = svg;
+}
+
+function stepDiaBlock(groupId, direction) {
+  const g = diaGroups[groupId];
+  if (!g) return;
+  const newStep = g.currentStep + direction;
+  if (newStep < 0 || newStep >= g.steps.length) return;
+  g.currentStep = newStep;
+  const step = g.steps[newStep];
+
+  // Use step-specific nodes/edges if provided, else use base
+  const nodes = step.nodes || g.baseNodes;
+  const edges = step.edges || g.baseEdges;
+  renderDiagram(g.svgEl, nodes, edges, step.highlightNodes || [], step.highlightEdges || [], step.modifyNodes || []);
+
+  // Update info
+  if (g.infoEl) {
+    g.infoEl.querySelector('.dia-step-label').textContent = `Step ${newStep + 1}/${g.steps.length}`;
+    g.infoEl.querySelector('.dia-step-desc').textContent = step.description || '';
+  }
+
+  // Update button states
+  const prevBtn = g.el.querySelector('.dia-prev');
+  const nextBtn = g.el.querySelector('.dia-next');
+  if (prevBtn) prevBtn.disabled = newStep === 0;
+  if (nextBtn) nextBtn.disabled = newStep >= g.steps.length - 1;
+}
+
+function playDiaBlock(groupId) {
+  const g = diaGroups[groupId];
+  if (!g) return;
+  const playBtn = g.el.querySelector('.dia-play-btn');
+
+  if (g.playTimer) {
+    clearInterval(g.playTimer);
+    g.playTimer = null;
+    if (playBtn) { playBtn.classList.remove('playing'); playBtn.innerHTML = '▶'; }
+    return;
+  }
+
+  g.currentStep = -1;
+  if (playBtn) { playBtn.classList.add('playing'); playBtn.innerHTML = '⏸'; }
+
+  g.playTimer = setInterval(() => {
+    if (g.currentStep >= g.steps.length - 1) {
+      clearInterval(g.playTimer);
+      g.playTimer = null;
+      if (playBtn) { playBtn.classList.remove('playing'); playBtn.innerHTML = '▶'; }
+      return;
+    }
+    stepDiaBlock(groupId, 1);
+  }, 1200);
 }
 
 const wrap=document.getElementById('canvas-wrap');
@@ -698,7 +876,7 @@ function renderTree(data, isPartial = false){
   edgeSvg.innerHTML='';
   explainPanel.style.display='none';
 
-  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock'));
+  const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock' || n.type==='diablock'));
   const arrowDefs=data.filter(n=>n&&n.type==='arrow');
   if(!blocks.length)return;
   const blockMap={};
@@ -781,6 +959,11 @@ function renderTree(data, isPartial = false){
              blockW = 440;
              const stepCount = (b.steps || []).length;
              blockH = Math.max(200, 70 + stepCount * 55);
+          } else if (b.type === 'diablock') {
+             blockW = 460;
+             const nodeCount = (b.nodes || []).length;
+             const rows = Math.ceil(nodeCount / Math.max(2, Math.ceil(Math.sqrt(nodeCount))));
+             blockH = Math.max(280, 90 + rows * 70 + 80);
           } else if (b.shape === 'circle') {
              blockH = 220;
           } else if (b.shape === 'star') {
@@ -902,6 +1085,38 @@ function renderTree(data, isPartial = false){
                  <button class="tf-speak-btn" onclick="speakNodeText('${esc(steps.map(s => s.label + ': ' + s.content).join('. '))}')">🔊</button>
                </div>`;
 
+          } else if (b.type === 'diablock') {
+             // === DIABLOCK (Diagram) ===
+             el.className = 'block-node shape-diablock';
+             el.style.background = '';
+             const gid = b.address;
+             const nodes = b.nodes || [];
+             const edgesDia = b.edges || [];
+             const steps = b.steps || [];
+             const cols = Math.max(2, Math.ceil(Math.sqrt(nodes.length)));
+             const diaRows = Math.ceil(nodes.length / cols);
+             const svgH = 60 + diaRows * 70 + 30;
+             innerHtml = `
+               <div class="dia-header">
+                 <div><span class="dia-title">${esc(b.title || 'Data Structure')}</span></div>
+                 <div class="dia-controls">
+                   <button class="dia-step-btn dia-prev" disabled onclick="stepDiaBlock('${gid}', -1)">◀</button>
+                   <button class="dia-play-btn" onclick="playDiaBlock('${gid}')">▶</button>
+                   <button class="dia-step-btn dia-next" onclick="stepDiaBlock('${gid}', 1)" ${steps.length === 0 ? 'disabled' : ''}>▶▶</button>
+                 </div>
+               </div>
+               <div class="dia-canvas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${svgH}"></svg></div>
+               <div class="dia-info">
+                 <span class="dia-step-label">Ready</span>
+                 <span class="dia-step-desc">${steps.length ? esc(steps[0]?.description || 'Press ▶ to animate') : 'Static diagram'}</span>
+               </div>
+               <div class="dia-footer">
+                 <span class="dia-footer-text">${nodes.length} nodes · ${edgesDia.length} edges · ${steps.length} steps</span>
+                 <span class="dia-badge">◈ Diagram</span>
+               </div>`;
+             // Register group (will init SVG after innerHTML set)
+             diaGroups[gid] = { currentStep: -1, steps, baseNodes: nodes, baseEdges: edgesDia, el, svgEl: null, infoEl: null, playTimer: null };
+
           } else if (b.type === 'textblock') {
              el.className = `block-node shape-text-field`;
              el.style.background = '';
@@ -933,6 +1148,18 @@ function renderTree(data, isPartial = false){
           // Render KaTeX math for mathblocks
           if (b.type === 'mathblock') {
             setTimeout(() => renderMathInEl(el), 50);
+          }
+          
+          // Initialize diablock SVG
+          if (b.type === 'diablock') {
+            setTimeout(() => {
+              const g = diaGroups[b.address];
+              if (g) {
+                g.svgEl = el.querySelector('.dia-canvas svg');
+                g.infoEl = el.querySelector('.dia-info');
+                if (g.svgEl) renderDiagram(g.svgEl, g.baseNodes, g.baseEdges, [], [], []);
+              }
+            }, 60);
           }
           
           if (isNew) {

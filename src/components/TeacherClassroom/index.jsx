@@ -807,6 +807,14 @@ MANDATORY MATHBLOCK RULE:
 - Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
 - For physics: include units, dimensional analysis, and diagrams where possible.
 
+MANDATORY DIABLOCK RULE:
+- If the topic involves ANY data structure (array, linked list, tree, binary tree, BST, graph, stack, queue, heap, hash table, trie) or algorithm visualization (sorting, searching, traversal, insertion, deletion, BFS, DFS, Dijkstra, etc.), you MUST include a diablock.
+- Diablock: {"type": "diablock", "address": "dia_1", "title": "Algorithm/DS Name", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond", "label": "optional label"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow|line|dashed", "label": "optional"}], "steps": [{"description": "What happens in this step", "highlightNodes": ["n1", "n2"], "highlightEdges": [{"from": "n1", "to": "n2"}], "modifyNodes": [{"id": "n1", "newValue": "20", "action": "modify|add|remove"}]}]}
+- Use "box" shape for array elements and general nodes, "circle" for tree/graph nodes, "diamond" for decision points.
+- Each step should highlight the relevant nodes/edges being processed and describe the operation clearly.
+- Include enough steps to show the COMPLETE algorithm execution with realistic data.
+- For sorting: show each swap/comparison. For trees: show each insertion/traversal step. For graphs: show each vertex visit.
+
 JSON STRUCTURE RULES:
 - Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
 - Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
