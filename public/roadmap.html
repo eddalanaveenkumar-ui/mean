@@ -1120,7 +1120,7 @@ function renderTree(data, isPartial = false){
       if(compRoots.length === 0) compRoots = [compAddrs[0]];
 
       // DFS Placement
-      function placeNode(addr, currentX) {
+      function placeNode(addr, currentX, fixedY = null) {
           if (visitedPlacement.has(addr)) return;
           visitedPlacement.add(addr);
 
@@ -1160,10 +1160,12 @@ function renderTree(data, isPartial = false){
              blockH = 280;
           }
 
-          // ALL nodes get placed at globalOffsetY, then we advance it
-          const x = currentX;
-          const y = globalOffsetY;
-          globalOffsetY += blockH + 80;
+          // All nodes respect horizontal overrides while expanding the vertical page bounds
+          const x = (b.type === 'coder') ? 60 : currentX;
+          const y = (fixedY !== null) ? fixedY : globalOffsetY;
+          if (y + blockH + 80 > globalOffsetY) {
+              globalOffsetY = y + blockH + 80;
+          }
 
           const c = getpal(b.address);
           const initials = (b.address||'??').slice(0,2).toUpperCase();
@@ -1481,10 +1483,18 @@ function renderTree(data, isPartial = false){
               // Make sure globalOffsetY accounts for tall textblock stacks
               if (tbOffsetY > globalOffsetY) globalOffsetY = tbOffsetY;
           });
+          });
 
-          // Place regular block children vertically below
+          // Place regular block children
+          let codeSeqX = (b.type === 'coder') ? 60 + blockW + 60 : x + blockW + 60;
+          
           blockChildren.forEach(childAddr => {
-              placeNode(childAddr, centerX);
+              const cb = blockMap[childAddr];
+              if (cb && (cb.type === 'visualizer' || cb.type === 'outputer')) {
+                  placeNode(childAddr, codeSeqX, y);
+              } else {
+                  placeNode(childAddr, centerX);
+              }
           });
       }
 
