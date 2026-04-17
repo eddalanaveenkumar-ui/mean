@@ -1183,7 +1183,7 @@ function renderTree(data, isPartial = false){
           
           el.dataset.addr=b.address;
           el.style.cssText=`left:${x}px;top:${y}px;width:max-content;min-width:${blockW}px;max-width:900px; transition: left 0.3s ease, top 0.3s ease;`;
-          if (!isPartial && isNew) el.style.animation=`nodeIn .35s cubic-bezier(.34,1.4,.64,1) both`;
+          if (isNew) el.style.animation=`nodeIn .45s cubic-bezier(.34,1.4,.64,1) both`;
           
           let innerHtml = '';
           if (b.type === 'coder') {
@@ -1461,7 +1461,7 @@ function renderTree(data, isPartial = false){
               tbEl.dataset.addr = cb.address;
               tbEl.className = 'block-node shape-text-field';
               tbEl.style.cssText = `left:${tbX}px;top:${tbY}px;width:${tbW}px; transition: left 0.3s ease, top 0.3s ease;`;
-              if (!isPartial && tbIsNew) tbEl.style.animation = 'nodeIn .35s cubic-bezier(.34,1.4,.64,1) both';
+              if (tbIsNew) tbEl.style.animation = 'nodeIn .45s cubic-bezier(.34,1.4,.64,1) both';
               tbEl.innerHTML = `
                 <div class="node-head">
                   <div class="node-addr">${esc(cb.title || cb.address || 'Definition')}</div>

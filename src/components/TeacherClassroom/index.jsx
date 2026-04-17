@@ -811,7 +811,7 @@ MANDATORY GRAPHBLOCK RULE (IF USER ASKS TO "GRAPH"):
 - If the user specifically asks to "graph" an equation, plot statistics, explicitly build a "chart", or use axes, YOU MUST ONLY USE A GRAPHBLOCK.
 - DO NOT use a diablock node-graph if they ask for a chart or mathematical graph!
 - Graphblock: {"type": "graphblock", "address": "g_1", "title": "Chart", "chartType": "line", "labels": ["1", "2"], "datasets": [{"label": "Data", "data": [10, 20]}]}
-- For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw `{x, y}` objects in "data" with "showLine": true in the dataset.
+- For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw '{x, y}' objects in "data" with "showLine": true in the dataset.
 
 MANDATORY DRAWING RULE (IF USER ASKS TO "DRAW"):
 - If the user specifically asks to "draw" or "sketch" a shape, points on a plane, or any non-axis geometry, YOU MUST ONLY USE A DIABLOCK with "layout": "coordinate".
