@@ -16,14 +16,6 @@ const initLibs = async () => {
   } catch (e) {
     console.warn('[Classroom] pdfjs-dist not available:', e.message);
   }
-  try {
-    if (!mammoth) {
-       const m = await import('mammoth/mammoth.browser.min.js');
-       mammoth = m.default || window.mammoth || m;
-    }
-  } catch (e) {
-    console.warn('[Classroom] mammoth not available:', e.message);
-  }
 };
 // Fire initializer without blocking the module JS export chain
 initLibs();
@@ -491,8 +483,9 @@ export default function TeacherClassroom({ isOpen, onClose }) {
 
   // Extract text from DOCX using mammoth
   const extractDocxText = async (arrayBuffer) => {
+    if (!window.mammoth) return '[Mammoth library not loaded]';
     setExtractStatus('📝 Extracting DOCX content...');
-    const result = await mammoth.extractRawText({ arrayBuffer });
+    const result = await window.mammoth.extractRawText({ arrayBuffer });
     return result.value.trim();
   };
 

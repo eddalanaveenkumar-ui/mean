@@ -1,7 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-import * as mammothBrowser from 'mammoth/mammoth.browser.min.js';
-const mammoth = mammothBrowser.default || window.mammoth || mammothBrowser;
 
 export const extractPdfText = async (file, onProgress) => {
   if (onProgress) onProgress('📄 Loading PDF...');
@@ -61,9 +59,10 @@ export const extractPdfText = async (file, onProgress) => {
 };
 
 export const extractDocxText = async (file, onProgress) => {
+  if (!window.mammoth) return '[Mammoth library not loaded]';
   if (onProgress) onProgress('📝 Extracting DOCX content...');
   const arrayBuffer = await file.arrayBuffer();
-  const result = await mammoth.extractRawText({ arrayBuffer });
+  const result = await window.mammoth.extractRawText({ arrayBuffer });
   return result.value.trim();
 };
 
