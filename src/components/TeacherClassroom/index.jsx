@@ -1067,6 +1067,8 @@ Return ONLY valid JSON array.`;
      const frame = document.getElementById('roadmapFrame');
      if (!frame?.contentWindow) return;
      
+     activeRef.current = true; // Enable the explanation loop flag
+     
      // 1. Brief Intro
      await playAudioWithAPI(`Welcome to today's lesson. Today, we are going to cover ${sessionTopic || 'this topic'}. Let's begin!`);
 
