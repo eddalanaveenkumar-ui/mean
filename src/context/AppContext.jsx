@@ -341,6 +341,7 @@ export function AppProvider({ children }) {
 
     let userContent = text;
     let displayContent = text;
+    const isBase64Image = fileContent && fileContent.startsWith('data:image/');
 
     if (fileName && fileContent) {
       if (imageUrl) {
@@ -348,7 +349,12 @@ export function AppProvider({ children }) {
       } else {
          displayContent = `📎 ${fileName}\n\n${text || 'Please analyze this document.'}`;
       }
-      userContent = `[ATTACHED FILE: "${fileName}"]\n\n=== FILE CONTENT ===\n${fileContent}\n=== END ===\n\nUser: ${text || 'Analyze this document.'}`;
+      
+      if (isBase64Image) {
+        userContent = text || 'Analyze this image.';
+      } else {
+        userContent = `[ATTACHED FILE: "${fileName}"]\n\n=== FILE CONTENT ===\n${fileContent}\n=== END ===\n\nUser: ${text || 'Analyze this document.'}`;
+      }
     }
 
     // Add user message
@@ -409,8 +415,7 @@ export function AppProvider({ children }) {
 
     const apiMessages = [
       { role: 'system', content: systemPrompt },
-      ...allMsgs.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: finalUserContent }
+      ...allMsgs.map(m => ({ role: m.role, content: m.content }))
     ];
     
     let url, headers, body;
@@ -423,6 +428,15 @@ export function AppProvider({ children }) {
        apiMessages.forEach(m => {
           if (m.role !== 'system') contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
        });
+       
+       let currentParts = [{ text: finalUserContent }];
+       if (isBase64Image) {
+           const mimeType = fileContent.substring(fileContent.indexOf(':') + 1, fileContent.indexOf(';'));
+           const base64Data = fileContent.substring(fileContent.indexOf(',') + 1);
+           currentParts.unshift({ inlineData: { mimeType, data: base64Data } });
+       }
+       contents.push({ role: 'user', parts: currentParts });
+
        const geminiPayload = {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents
@@ -437,7 +451,18 @@ export function AppProvider({ children }) {
        url = 'https://openrouter.ai/api/v1/chat/completions';
        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
        const modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
-       body = JSON.stringify({ model: modelId, messages: apiMessages, stream: true });
+       
+       let finalOrMessage = { role: 'user', content: finalUserContent };
+       if (isBase64Image) {
+          finalOrMessage.content = [
+             { type: "text", text: finalUserContent },
+             { type: "image_url", image_url: { url: fileContent } }
+          ];
+       } else {
+          finalOrMessage.content = finalUserContent;
+       }
+
+       body = JSON.stringify({ model: modelId, messages: [...apiMessages, finalOrMessage], stream: true });
     }
 
     let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";

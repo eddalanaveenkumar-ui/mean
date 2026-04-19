@@ -1471,6 +1471,26 @@ Return ONLY valid JSON array.`;
         padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '10px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)'
       }}>
+        {/* Attachment Preview & Status */}
+        {(extractStatus || uploadedFile) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '-4px' }}>
+            {uploadedFile?.type?.startsWith('image/') && (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={URL.createObjectURL(uploadedFile)} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', display: 'block' }} alt="preview" />
+                <button onClick={() => { setUploadedFile(null); setFileContent(''); setFileName(''); setExtractStatus(''); }} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', background: '#374151', color: 'white', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', padding: 0 }}>
+                  <i className="fas fa-times" />
+                </button>
+              </div>
+            )}
+            
+            {extractStatus && (
+               <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {extracting && <span className="tc-loading-spinner" style={{ width: '12px', height: '12px', margin: 0 }}></span>}
+                  {extractStatus}
+               </div>
+            )}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <input
             style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '15px', outline: 'none', fontWeight: 500 }}
@@ -1499,7 +1519,7 @@ Return ONLY valid JSON array.`;
               <i className="fas fa-plus" />
             </button>
             <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 500, transition: 'color 0.2s' }} onMouseOver={e=>e.currentTarget.style.color='var(--text-primary)'} onMouseOut={e=>e.currentTarget.style.color='var(--text-secondary)'}>
-              <i className="fas fa-paperclip" /> {uploadedFile ? fileName : ''}
+              <i className="fas fa-paperclip" /> {uploadedFile && !uploadedFile?.type?.startsWith('image/') ? fileName : ''}
               <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.doc,.docx,image/*" hidden disabled={phase==='loading'}/>
             </label>
           </div>

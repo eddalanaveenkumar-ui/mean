@@ -67,29 +67,18 @@ export const extractDocxText = async (file, onProgress) => {
 };
 
 export const extractImageText = async (file, onProgress) => {
-  if (!window.Tesseract) {
-    if (onProgress) onProgress('⚠️ OCR not available');
-    return '[OCR library not loaded]';
-  }
-
-  if (onProgress) onProgress('🖼️ Running OCR on image...');
-
-  try {
-    const result = await window.Tesseract.recognize(file, 'eng', {
-      logger: (m) => {
-        if (m.status === 'recognizing text' && onProgress) {
-          onProgress(`🖼️ OCR: ${Math.round(m.progress * 100)}%`);
-        } else if (m.status === 'loading tesseract core' && onProgress) {
-          onProgress('🖼️ Loading OCR engine...');
-        } else if (m.status === 'loading language traineddata' && onProgress) {
-          onProgress(`🖼️ Downloading language model: ${Math.round((m.progress||0) * 100)}%`);
-        }
-      }
-    });
-    return result.data.text.trim();
-  } catch (err) {
-    return '[Image OCR failed]';
-  }
+  if (onProgress) onProgress('🖼️ Preparing image for Vision AI...');
+  
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result); // Returns data:image/png;base64,...
+    };
+    reader.onerror = () => {
+      reject('[Failed to prepare image]');
+    };
+    reader.readAsDataURL(file);
+  });
 };
 
 export const extractFileContent = async (file, onProgress) => {

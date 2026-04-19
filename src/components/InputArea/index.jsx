@@ -64,16 +64,23 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
       <div className="input-container">
         {/* Attachment preview */}
         {attachedFile && (
-          <div className="attach-preview" style={attachedFile.type?.startsWith('image/') ? { padding: '4px', paddingRight: '12px', background: 'var(--card-bg)' } : {}}>
+          <div className="attach-preview" style={attachedFile.type?.startsWith('image/') ? { padding: '12px', background: 'transparent', border: 'none' } : {}}>
             {attachedFile.type?.startsWith('image/') ? (
-              <img src={URL.createObjectURL(attachedFile)} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} alt="preview" />
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={URL.createObjectURL(attachedFile)} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', display: 'block' }} alt="preview" />
+                <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', background: '#374151', color: 'white', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', padding: 0 }}>
+                  <i className="fas fa-times" />
+                </button>
+              </div>
             ) : (
-              <i className="fas fa-file-alt" />
+              <>
+                <i className="fas fa-file-alt" />
+                <span>{attachedFile.name}</span>
+                <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }}>
+                  <i className="fas fa-times" />
+                </button>
+              </>
             )}
-            <span style={{ marginLeft: attachedFile.type?.startsWith('image/') ? '8px' : '0' }}>{attachedFile.name}</span>
-            <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }}>
-              <i className="fas fa-times" />
-            </button>
           </div>
         )}
 
