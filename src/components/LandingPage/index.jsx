@@ -45,33 +45,35 @@ const StarIcon = () => (
 );
 
 const OrnamentalDivider = () => (
-  <svg width="280" height="40" viewBox="0 0 340 50" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '24px', filter: 'drop-shadow(0 0 8px rgba(10, 132, 255, 0.5))' }}>
-    <defs>
-      <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#0a84ff" />
-        <stop offset="50%" stopColor="#8be9fd" /> /* Bright neon cyan-blue middle */
-        <stop offset="100%" stopColor="#0a84ff" />
-      </linearGradient>
-    </defs>
-    <g fill="url(#blueGlow)">
-      {/* Left Design */}
-      <path d="M160,18 c-3,-9 -14,-15 -21,-12 c-6,3 -8,11 -4,16 c3,5 9,6 12,4 c2,-1 3,-3 2,-4 c-1,-1 -3,-2 -4,-1 c-2,1 -4,0 -5,-2 c-2,-3 -1,-8 3,-10 c4,-2 11,-1 14,3 c3,5 0,13 -6,17 c-12,8 -32,10 -116,9 l0,2 c85,0 106,-3 120,-11 c7,-5 10,-14 6,-21 z" />
-      {/* Left Leaf 1 */}
-      <path d="M141,31 c-15,-6 -34,-6 -49,-2 c18,5 35,4 49,2 z" />
-      {/* Left Leaf 2 */}
-      <path d="M140,26 c-13,-12 -29,-16 -46,-12 c16,10 32,14 46,12 z" />
-      {/* Left Leaf 3 */}
-      <path d="M136,19 c-11,-15 -26,-22 -41,-18 c14,14 28,21 41,18 z" />
-      
-      {/* Right Design (Mirrored) */}
-      <g transform="translate(340, 0) scale(-1, 1)">
-        <path d="M160,18 c-3,-9 -14,-15 -21,-12 c-6,3 -8,11 -4,16 c3,5 9,6 12,4 c2,-1 3,-3 2,-4 c-1,-1 -3,-2 -4,-1 c-2,1 -4,0 -5,-2 c-2,-3 -1,-8 3,-10 c4,-2 11,-1 14,3 c3,5 0,13 -6,17 c-12,8 -32,10 -116,9 l0,2 c85,0 106,-3 120,-11 c7,-5 10,-14 6,-21 z" />
-        <path d="M141,31 c-15,-6 -34,-6 -49,-2 c18,5 35,4 49,2 z" />
-        <path d="M140,26 c-13,-12 -29,-16 -46,-12 c16,10 32,14 46,12 z" />
-        <path d="M136,19 c-11,-15 -26,-22 -41,-18 c14,14 28,21 41,18 z" />
+  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px', marginTop: '16px' }}>
+    <svg width="450" height="70" viewBox="0 0 400 70" fill="none" xmlns="http://www.w3.org/2000/svg" 
+         style={{ filter: 'drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 8px #8be9fd) drop-shadow(0 0 20px #0a84ff) drop-shadow(0 0 30px rgba(10, 132, 255, 0.6))' }}>
+      <defs>
+        <linearGradient id="vertGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#d1fbff" />
+          <stop offset="35%" stopColor="#64d2ff" />
+          <stop offset="100%" stopColor="#0a84ff" />
+        </linearGradient>
+      </defs>
+      <g fill="url(#vertGlow)">
+        {/* LEFT FLOURISH */}
+        <path d="M 20,56 Q 130,56 155,40 Q 180,20 170,8 C 160,-2 145,5 152,18 Q 165,32 145,50 Q 100,58 20,58 Z" />
+        <circle cx="152" cy="18" r="5.5" />
+        <path d="M 152,42 Q 100,44 90,42 Q 115,32 155,35 Z" />
+        <path d="M 160,30 Q 110,30 95,20 Q 125,10 162,22 Z" />
+        <path d="M 162,20 Q 120,14 110,4 Q 130,-2 158,12 Z" />
+        
+        {/* RIGHT FLOURISH (Mirrored) */}
+        <g transform="translate(400, 0) scale(-1, 1)">
+          <path d="M 20,56 Q 130,56 155,40 Q 180,20 170,8 C 160,-2 145,5 152,18 Q 165,32 145,50 Q 100,58 20,58 Z" />
+          <circle cx="152" cy="18" r="5.5" />
+          <path d="M 152,42 Q 100,44 90,42 Q 115,32 155,35 Z" />
+          <path d="M 160,30 Q 110,30 95,20 Q 125,10 162,22 Z" />
+          <path d="M 162,20 Q 120,14 110,4 Q 130,-2 158,12 Z" />
+        </g>
       </g>
-    </g>
-  </svg>
+    </svg>
+  </div>
 );
 
 
