@@ -135,9 +135,28 @@ export default function Message({ message, streaming = false }) {
   }, []);
 
   if (isUser) {
+    let userImgUrl = null;
+    let finalUserText = displayText;
+    
+    // Check for our special attached image syntax
+    const imgMatch = displayText.match(/^!\[Attached Image\]\((blob:[^)]+)\)\n\n([\s\S]*)$/);
+    if (imgMatch) {
+      userImgUrl = imgMatch[1];
+      finalUserText = imgMatch[2];
+    }
+
     return (
       <div className="msg-row msg-user">
-        <div className="msg-user-bubble">{displayText}</div>
+        <div className="msg-user-bubble">
+          {userImgUrl && (
+            <img 
+              src={userImgUrl} 
+              alt="Uploaded" 
+              style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', marginBottom: '8px', display: 'block', objectFit: 'cover' }} 
+            />
+          )}
+          {finalUserText}
+        </div>
       </div>
     );
   }
