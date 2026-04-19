@@ -795,7 +795,9 @@ Ensure you strictly follow the roadmap context.`;
     setSlides([]);
     activeRef.current = true;
 
-    const fileContext = fileContent
+    const isBase64Image = fileContent && fileContent.startsWith('data:image/');
+    
+    const fileContext = fileContent && !isBase64Image
       ? `\n\nAttached document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\nUse this as primary source.`
       : '';
 
@@ -874,18 +876,35 @@ Return ONLY valid JSON array.`;
       if (activeEngine === 'gemini') {
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`;
         headers = { 'Content-Type': 'application/json' };
+        
+        let currentParts = [{ text: outlinePrompt }];
+        if (isBase64Image) {
+           const mimeType = fileContent.substring(fileContent.indexOf(':') + 1, fileContent.indexOf(';'));
+           const base64Data = fileContent.substring(fileContent.indexOf(',') + 1);
+           currentParts.unshift({ inlineData: { mimeType, data: base64Data } });
+        }
+        
         payload = {
           systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing a node graph. No markdown.' }] },
-          contents: [{ role: 'user', parts: [{ text: outlinePrompt }] }]
+          contents: [{ role: 'user', parts: currentParts }]
         };
       } else {
         url = 'https://openrouter.ai/api/v1/chat/completions';
         headers = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
+        
+        let userMessage = { role: 'user', content: outlinePrompt };
+        if (isBase64Image) {
+           userMessage.content = [
+              { type: "text", text: outlinePrompt },
+              { type: "image_url", image_url: { url: fileContent } }
+           ];
+        }
+        
         payload = {
-          model: 'arcee-ai/trinity-large-preview:free',
+          model: 'google/gemini-1.5-flash:free',
           messages: [
             { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
-            { role: 'user', content: outlinePrompt }
+            userMessage
           ],
           stream: true
         };
