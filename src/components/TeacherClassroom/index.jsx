@@ -96,7 +96,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const saveActiveVoiceAPI = (v) => { setActiveVoiceAPI(v); localStorage.setItem('meanai_voice_api', v); };
 
   // Model Selection
-  const [activeEngine, setActiveEngine] = useState('gemini'); // 'gemini' | 'arcee'
+  const [activeEngine, setActiveEngine] = useState('openrouter'); // Default to openrouter for users without Gemini quota
 
   // File upload state
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -1551,10 +1551,10 @@ Return ONLY valid JSON array.`;
                 <i className="fas fa-gem" style={{ color: '#0A84FF', marginRight: '6px' }}/> Gemini
               </button>
               <button 
-                onClick={() => setActiveEngine('arcee')}
-                style={{ background: activeEngine === 'arcee' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'arcee' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'arcee' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={() => setActiveEngine('openrouter')}
+                style={{ background: activeEngine === 'openrouter' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'openrouter' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'openrouter' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
               >
-                <i className="fas fa-brain" style={{ color: '#5E5CE6', marginRight: '6px' }}/> Arcee
+                <i className="fas fa-network-wired" style={{ color: '#5E5CE6', marginRight: '6px' }}/> OpenRouter
               </button>
             </div>
             
