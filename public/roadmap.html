@@ -1792,6 +1792,7 @@ window.addEventListener('message', e => {
     }
   } else if (e.data && e.data.type === 'MOVE_CURSOR') {
     const addr = e.data.payload.address;
+    const action = e.data.payload.action;
     const vc = document.getElementById('virtual-cursor');
     if (!addr) {
       vc.classList.remove('active');
@@ -1800,12 +1801,50 @@ window.addEventListener('message', e => {
     const nd = nodeData[addr];
     if (nd) {
       vc.classList.add('active');
-      vc.style.left = (nd.x + nd.w - 15) + 'px';
-      vc.style.top = (nd.y + nd.h - 15) + 'px';
+      
+      if (action === 'highlight') {
+         vc.style.transition = 'all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+         vc.style.left = (nd.x + nd.w / 2) + 'px';
+         vc.style.top = (nd.y - 10) + 'px';
+         
+         nd.el.style.boxShadow = '0 0 25px rgba(10,132,255,0.8)';
+         setTimeout(() => { if (nd.el) nd.el.style.boxShadow = ''; }, 2500);
+      } else if (action === 'interact') {
+         vc.style.transition = 'all 0.8s ease-in-out';
+         const nextBtn = nd.el.querySelector('.viz-btn-next') || nd.el.querySelector('.dia-play-btn');
+         const worldRect = document.getElementById('world').getBoundingClientRect();
+         
+         if (nextBtn && !nextBtn.disabled) {
+            const btnRect = nextBtn.getBoundingClientRect();
+            // Calculate absolute position inside the #world container based on scale
+            const btnX = (btnRect.left - worldRect.left) / scale;
+            const btnY = (btnRect.top - worldRect.top) / scale;
+            vc.style.left = (btnX + btnRect.width / 2) + 'px';
+            vc.style.top = (btnY + btnRect.height / 2) + 'px';
+            
+            setTimeout(() => {
+               vc.style.transform = 'scale(0.7)';
+               nextBtn.click();
+               setTimeout(() => vc.style.transform = 'scale(1)', 150);
+            }, 800);
+         } else {
+            // Read through the text block
+            vc.style.left = (nd.x + 30) + 'px';
+            vc.style.top = (nd.y + nd.h / 2) + 'px';
+            // slight horizontal reading animation
+            setTimeout(() => {
+               vc.style.transition = 'all 2s linear';
+               vc.style.left = (nd.x + nd.w - 30) + 'px';
+            }, 800);
+         }
+      } else {
+         vc.style.left = (nd.x + nd.w - 15) + 'px';
+         vc.style.top = (nd.y + nd.h - 15) + 'px';
+      }
       
       const viewportX = (nd.x * scale) + tx;
       const viewportY = (nd.y * scale) + ty;
-      if (viewportX < 50 || viewportX > window.innerWidth - 300 || viewportY < 50 || viewportY > window.innerHeight - 100) {
+      if (viewportX < 100 || viewportX > window.innerWidth - 400 || viewportY < 100 || viewportY > window.innerHeight - 200) {
          tx = window.innerWidth/3 - nd.x * scale;
          ty = window.innerHeight/3 - nd.y * scale;
          applyT();

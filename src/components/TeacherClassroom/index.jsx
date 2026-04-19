@@ -956,36 +956,6 @@ Return ONLY valid JSON array.`;
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
-        
-        // VIRTUAL CURSOR: Auto-Play AI Explanations
-        const explainSequence = async () => {
-           for (const node of parsed) {
-              if (node.dialogs && Array.isArray(node.dialogs) && node.dialogs.length > 0) {
-                 if (abortControllerRef.current?.signal.aborted) return;
-                 // Move virtual cursor to this block
-                 frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address } }, '*');
-                 
-                 for (const dialog of node.dialogs) {
-                    if (abortControllerRef.current?.signal.aborted) return;
-                    const speechText = dialog.explanation || dialog.output || dialog.topic;
-                    if (!speechText) continue;
-                    
-                    await new Promise(resolve => {
-                       window.speechSynthesis?.cancel();
-                       const u = new SpeechSynthesisUtterance(speechText);
-                       u.lang = 'en-US';
-                       u.rate = 1.0;
-                       u.onend = resolve;
-                       u.onerror = resolve;
-                       window.speechSynthesis.speak(u);
-                    });
-                 }
-              }
-           }
-           // Hide cursor when done
-           frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: null } }, '*');
-        };
-        setTimeout(explainSequence, 1500); // Wait for roadmap to layout
       }
     } catch (e) {
       if (e.name === 'AbortError') {
@@ -996,6 +966,58 @@ Return ONLY valid JSON array.`;
       setJsonStreamData(`[ERROR] ${e.message}`);
       setPhase('error');
     }
+  };
+
+  const explainWithAI = async () => {
+     if (!slides || slides.length === 0) return;
+     const frame = document.getElementById('roadmapFrame');
+     if (!frame?.contentWindow) return;
+     
+     // 1. Brief Intro
+     await new Promise(resolve => {
+        window.speechSynthesis?.cancel();
+        const u = new SpeechSynthesisUtterance(`Welcome to today's lesson. Today, we are going to cover ${sessionTopic || 'this topic'}. Let's begin!`);
+        u.lang = 'en-US';
+        u.onend = resolve;
+        u.onerror = resolve;
+        window.speechSynthesis.speak(u);
+     });
+
+     for (const node of slides) {
+        if (node.dialogs && Array.isArray(node.dialogs) && node.dialogs.length > 0) {
+           if (!activeRef.current) return;
+           
+           // Highlight block & announce it
+           frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address, action: 'highlight' } }, '*');
+           await new Promise(resolve => {
+              const u = new SpeechSynthesisUtterance(`Let's look at ${node.title || node['in-content'] || node.address}.`);
+              u.lang = 'en-US';
+              u.onend = resolve;
+              window.speechSynthesis.speak(u);
+           });
+           
+           for (const dialog of node.dialogs) {
+              if (!activeRef.current) return;
+              const speechText = dialog.explanation || dialog.output || dialog.topic;
+              if (!speechText) continue;
+              
+              // Simulate cursor reading text or clicking depending on block type
+              frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address, action: 'interact' } }, '*');
+              
+              await new Promise(resolve => {
+                 window.speechSynthesis?.cancel();
+                 const u = new SpeechSynthesisUtterance(speechText);
+                 u.lang = 'en-US';
+                 u.onend = resolve;
+                 u.onerror = resolve;
+                 window.speechSynthesis.speak(u);
+              });
+           }
+        }
+     }
+     
+     // Hide cursor when done
+     frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: null } }, '*');
   };
 
   const handleIframeLoad = (e) => {
@@ -1202,6 +1224,15 @@ Return ONLY valid JSON array.`;
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {slides.length > 0 && (
+             <button 
+               onClick={explainWithAI}
+               style={{ background: 'var(--accent-color, #0a84ff)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 0 12px rgba(10,132,255,0.4)' }}
+               title="Explain with AI"
+             >
+               <i className="fas fa-magic" /> Explain
+             </button>
+          )}
           <button 
             onClick={handleNewSession}
             style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
