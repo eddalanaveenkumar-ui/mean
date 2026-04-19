@@ -70,6 +70,16 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [openRouterKey, setOpenRouterKey] = useState(() => localStorage.getItem('meanai_openrouter_key') || '');
   const saveOpenRouterKey = (k) => { setOpenRouterKey(k); localStorage.setItem('meanai_openrouter_key', k); };
 
+  // Voice API Keys
+  const [sarvamKey, setSarvamKey] = useState(() => localStorage.getItem('meanai_sarvam_key') || '');
+  const saveSarvamKey = (k) => { setSarvamKey(k); localStorage.setItem('meanai_sarvam_key', k); };
+
+  const [elevenLabsKey, setElevenLabsKey] = useState(() => localStorage.getItem('meanai_elevenlabs_key') || '');
+  const saveElevenLabsKey = (k) => { setElevenLabsKey(k); localStorage.setItem('meanai_elevenlabs_key', k); };
+  
+  const [activeVoiceAPI, setActiveVoiceAPI] = useState(() => localStorage.getItem('meanai_voice_api') || 'browser');
+  const saveActiveVoiceAPI = (v) => { setActiveVoiceAPI(v); localStorage.setItem('meanai_voice_api', v); };
+
   // Model Selection
   const [activeEngine, setActiveEngine] = useState('gemini'); // 'gemini' | 'arcee'
 
@@ -830,10 +840,11 @@ JSON STRUCTURE RULES:
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "first-connection": "parent_id", "next-connection": "child_id"}
 
 MANDATORY VIRTUAL CURSOR DIALOGS RULE:
-- For EVERY block generated, you MUST include a "dialogs" array inside the block JSON. This is what the AI will speak while pointing at the block.
+- For EVERY single block generated (including coding, maths, diagram blocks, and text blocks), you MUST include a "dialogs" array inside the block JSON. This is what the AI will speak while pointing at the block.
 - IMPORTANT: The user can ask about ANY topic. Do NOT just copy the examples from data.txt. Use data.txt purely as a REFERENCE for the style, structure, and high quality of explanations.
-- The structure MUST strictly follow this exact schema: "dialogs": [ { "topic": "Name", "input": "...", "output": "...", "explanation": "Simple analogy or explanation..." } ]
+- The structure MUST strictly follow this exact schema: "dialogs": [ { "topic": "Name", "input": "...", "output": "...", "explanation": "Detailed explanation..." } ]
 - Ensure "explanation" always uses clear, real-world analogies (like "A queue is like a line at a ticket counter").
+- CRITICAL: The "explanation" MUST be AT LEAST 20 words long for EVERY single block. Be detailed!
 
 
 CRITICAL REMINDER: If the topic has charts/metrics, use graphblock. If the topic is about data structures, use diablock. If the topic has code, include coder+visualizer+outputer. If the topic has math, include mathblock.
@@ -968,20 +979,80 @@ Return ONLY valid JSON array.`;
     }
   };
 
+  const playAudioWithAPI = async (text) => {
+     if (!text) return;
+     if (activeVoiceAPI === 'browser') {
+         return new Promise(resolve => {
+            window.speechSynthesis?.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.onend = resolve;
+            u.onerror = resolve;
+            window.speechSynthesis.speak(u);
+         });
+     }
+
+     try {
+         let audioUrl = null;
+         if (activeVoiceAPI === 'elevenlabs' && elevenLabsKey) {
+             const resp = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+                 method: 'POST',
+                 headers: { 'xi-api-key': elevenLabsKey, 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ text, model_id: 'eleven_monolingual_v1', voice_settings: { stability: 0.5, similarity_boost: 0.5 } })
+             });
+             if (resp.ok) {
+                const blob = await resp.blob();
+                audioUrl = URL.createObjectURL(blob);
+             }
+         } else if (activeVoiceAPI === 'sarvam' && sarvamKey) {
+             const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
+                 method: 'POST',
+                 headers: { 'api-subscription-key': sarvamKey, 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ inputs: [text], target_language_code: 'hi-IN', speaker: 'meera', pace: 1.05, model: 'sarvam-1' })
+             });
+             if (resp.ok) {
+                 const data = await resp.json();
+                 if (data.audios && data.audios[0]) {
+                     const binaryStr = window.atob(data.audios[0]);
+                     const len = binaryStr.length;
+                     const bytes = new Uint8Array(len);
+                     for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
+                     const blob = new Blob([bytes], { type: 'audio/wav' });
+                     audioUrl = URL.createObjectURL(blob);
+                 }
+             }
+         }
+
+         if (audioUrl) {
+             return new Promise(resolve => {
+                 const audio = new Audio(audioUrl);
+                 audio.onended = resolve;
+                 audio.onerror = resolve;
+                 audio.play().catch(resolve);
+             });
+         }
+     } catch (e) {
+         console.error('TTS API Error:', e);
+     }
+     
+     // Fallback to browser
+     return new Promise(resolve => {
+        window.speechSynthesis?.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.onend = resolve;
+        u.onerror = resolve;
+        window.speechSynthesis.speak(u);
+     });
+  };
+
   const explainWithAI = async () => {
      if (!slides || slides.length === 0) return;
      const frame = document.getElementById('roadmapFrame');
      if (!frame?.contentWindow) return;
      
      // 1. Brief Intro
-     await new Promise(resolve => {
-        window.speechSynthesis?.cancel();
-        const u = new SpeechSynthesisUtterance(`Welcome to today's lesson. Today, we are going to cover ${sessionTopic || 'this topic'}. Let's begin!`);
-        u.lang = 'en-US';
-        u.onend = resolve;
-        u.onerror = resolve;
-        window.speechSynthesis.speak(u);
-     });
+     await playAudioWithAPI(`Welcome to today's lesson. Today, we are going to cover ${sessionTopic || 'this topic'}. Let's begin!`);
 
      for (const node of slides) {
         if (node.dialogs && Array.isArray(node.dialogs) && node.dialogs.length > 0) {
@@ -989,12 +1060,7 @@ Return ONLY valid JSON array.`;
            
            // Highlight block & announce it
            frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address, action: 'highlight' } }, '*');
-           await new Promise(resolve => {
-              const u = new SpeechSynthesisUtterance(`Let's look at ${node.title || node['in-content'] || node.address}.`);
-              u.lang = 'en-US';
-              u.onend = resolve;
-              window.speechSynthesis.speak(u);
-           });
+           await playAudioWithAPI(`Let's look at ${node.title || node['in-content'] || node.address}.`);
            
            for (const dialog of node.dialogs) {
               if (!activeRef.current) return;
@@ -1003,15 +1069,7 @@ Return ONLY valid JSON array.`;
               
               // Simulate cursor reading text or clicking depending on block type
               frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address, action: 'interact' } }, '*');
-              
-              await new Promise(resolve => {
-                 window.speechSynthesis?.cancel();
-                 const u = new SpeechSynthesisUtterance(speechText);
-                 u.lang = 'en-US';
-                 u.onend = resolve;
-                 u.onerror = resolve;
-                 window.speechSynthesis.speak(u);
-              });
+              await playAudioWithAPI(speechText);
            }
         }
      }
@@ -1429,35 +1487,80 @@ Return ONLY valid JSON array.`;
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowSettings(false)}
         >
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-key" style={{ color: '#e8913a', marginRight: '8px' }}/>Gemini API Key</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 8px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#0a84ff' }}>Google AI Studio</a></p>
-              <input
-                type="password"
-                placeholder="AIza..."
-                value={localKey}
-                onChange={e => saveKey(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-              />
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 16px', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                Text API Options
+              </h3>
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '15px' }}><i className="fas fa-gem" style={{ color: '#0a84ff', marginRight: '8px' }}/>Gemini API Key</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: '0 0 8px' }}>Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#0a84ff' }}>Google AI Studio</a></p>
+                <input
+                  type="password"
+                  placeholder="AIza..."
+                  value={localKey}
+                  onChange={e => saveKey(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '15px' }}><i className="fas fa-star" style={{ color: '#5e5ce6', marginRight: '8px' }}/>OpenRouter API Key</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: 'var(--text-muted)' }}>arcee-ai/trinity-large-preview:free</span></p>
+                <input
+                  type="password"
+                  placeholder="sk-or-v1-..."
+                  value={openRouterKey}
+                  onChange={e => saveOpenRouterKey(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
             </div>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '16px' }}><i className="fas fa-star" style={{ color: '#5e5ce6', marginRight: '8px' }}/>OpenRouter API Key</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: 'var(--text-muted)' }}>arcee-ai/trinity-large-preview:free</span></p>
-              <input
-                type="password"
-                placeholder="sk-or-v1-..."
-                value={openRouterKey}
-                onChange={e => saveOpenRouterKey(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-              />
+
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 16px', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                Voices in Setting
+              </h3>
+              
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                 {['browser', 'sarvam', 'elevenlabs'].map(v => (
+                    <button key={v} onClick={() => saveActiveVoiceAPI(v)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: activeVoiceAPI === v ? 'var(--accent-color, #0a84ff)' : 'var(--input-bg)', color: activeVoiceAPI === v ? '#fff' : 'var(--text-primary)', cursor: 'pointer', textTransform: 'capitalize', fontSize: '12px', fontWeight: activeVoiceAPI === v ? 'bold' : 'normal' }}>
+                      {v}
+                    </button>
+                 ))}
+              </div>
+
+              {activeVoiceAPI === 'sarvam' && (
+                 <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '14px' }}>Sarvam AI Key</h4>
+                    <input
+                      type="password"
+                      value={sarvamKey}
+                      onChange={(e) => saveSarvamKey(e.target.value)}
+                      placeholder="Enter Sarvam AI API Key..."
+                      style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                 </div>
+              )}
+
+              {activeVoiceAPI === 'elevenlabs' && (
+                 <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '14px' }}>ElevenLabs API Key</h4>
+                    <input
+                      type="password"
+                      value={elevenLabsKey}
+                      onChange={(e) => saveElevenLabsKey(e.target.value)}
+                      placeholder="Enter ElevenLabs API Key..."
+                      style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                 </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '10px' }}>
-              <button onClick={() => setShowSettings(false)} style={{ padding: '8px 20px', background: 'var(--text-primary)', color: 'var(--bg-dark)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Done</button>
+              <button onClick={() => setShowSettings(false)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg, var(--accent-color, #0a84ff), #005bb5)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Save & Close</button>
             </div>
           </div>
         </div>
