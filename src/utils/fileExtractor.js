@@ -1,5 +1,12 @@
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import * as pdfjsLibRaw from 'pdfjs-dist/build/pdf';
+const pdfjsLib = pdfjsLibRaw.default || pdfjsLibRaw;
+try {
+  if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.0.379'}/pdf.worker.min.js`;
+  }
+} catch (e) {
+  console.warn("PDF.js worker setup failed:", e);
+}
 
 export const extractPdfText = async (file, onProgress) => {
   if (onProgress) onProgress('📄 Loading PDF...');
