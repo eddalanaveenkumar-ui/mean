@@ -45,22 +45,30 @@ const StarIcon = () => (
 );
 
 const OrnamentalDivider = () => (
-  <svg width="240" height="40" viewBox="0 -10 300 50" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '24px', opacity: 0.9 }}>
-    <g fill="#0a84ff" opacity="0.8">
-      {/* Left side */}
-      <path d="M140,25 C130,25 120,15 128,8 C135,2 145,8 140,16 C137,20 132,20 130,17 C128,14 132,9 135,12 C139,15 135,22 130,22 C122,22 122,12 130,5 C142,-2 152,8 144,20 C140,24 135,26 128,27" />
-      <path d="M128,24 Q95,20 60,16 Q95,28 134,29 Z" />
-      <path d="M124,18 Q95,8 75,-2 Q105,15 128,24 Z" />
-      <path d="M120,12 Q100,0 90,-8 Q110,8 124,19 Z" />
-      <rect x="10" y="32" width="120" height="1.5" rx="0.75" />
+  <svg width="280" height="40" viewBox="0 0 340 50" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '24px', filter: 'drop-shadow(0 0 8px rgba(10, 132, 255, 0.5))' }}>
+    <defs>
+      <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#0a84ff" />
+        <stop offset="50%" stopColor="#8be9fd" /> /* Bright neon cyan-blue middle */
+        <stop offset="100%" stopColor="#0a84ff" />
+      </linearGradient>
+    </defs>
+    <g fill="url(#blueGlow)">
+      {/* Left Design */}
+      <path d="M160,18 c-3,-9 -14,-15 -21,-12 c-6,3 -8,11 -4,16 c3,5 9,6 12,4 c2,-1 3,-3 2,-4 c-1,-1 -3,-2 -4,-1 c-2,1 -4,0 -5,-2 c-2,-3 -1,-8 3,-10 c4,-2 11,-1 14,3 c3,5 0,13 -6,17 c-12,8 -32,10 -116,9 l0,2 c85,0 106,-3 120,-11 c7,-5 10,-14 6,-21 z" />
+      {/* Left Leaf 1 */}
+      <path d="M141,31 c-15,-6 -34,-6 -49,-2 c18,5 35,4 49,2 z" />
+      {/* Left Leaf 2 */}
+      <path d="M140,26 c-13,-12 -29,-16 -46,-12 c16,10 32,14 46,12 z" />
+      {/* Left Leaf 3 */}
+      <path d="M136,19 c-11,-15 -26,-22 -41,-18 c14,14 28,21 41,18 z" />
       
-      {/* Right side - mirrored */}
-      <g transform="translate(300, 0) scale(-1, 1)">
-        <path d="M140,25 C130,25 120,15 128,8 C135,2 145,8 140,16 C137,20 132,20 130,17 C128,14 132,9 135,12 C139,15 135,22 130,22 C122,22 122,12 130,5 C142,-2 152,8 144,20 C140,24 135,26 128,27" />
-        <path d="M128,24 Q95,20 60,16 Q95,28 134,29 Z" />
-        <path d="M124,18 Q95,8 75,-2 Q105,15 128,24 Z" />
-        <path d="M120,12 Q100,0 90,-8 Q110,8 124,19 Z" />
-        <rect x="10" y="32" width="120" height="1.5" rx="0.75" />
+      {/* Right Design (Mirrored) */}
+      <g transform="translate(340, 0) scale(-1, 1)">
+        <path d="M160,18 c-3,-9 -14,-15 -21,-12 c-6,3 -8,11 -4,16 c3,5 9,6 12,4 c2,-1 3,-3 2,-4 c-1,-1 -3,-2 -4,-1 c-2,1 -4,0 -5,-2 c-2,-3 -1,-8 3,-10 c4,-2 11,-1 14,3 c3,5 0,13 -6,17 c-12,8 -32,10 -116,9 l0,2 c85,0 106,-3 120,-11 c7,-5 10,-14 6,-21 z" />
+        <path d="M141,31 c-15,-6 -34,-6 -49,-2 c18,5 35,4 49,2 z" />
+        <path d="M140,26 c-13,-12 -29,-16 -46,-12 c16,10 32,14 46,12 z" />
+        <path d="M136,19 c-11,-15 -26,-22 -41,-18 c14,14 28,21 41,18 z" />
       </g>
     </g>
   </svg>
