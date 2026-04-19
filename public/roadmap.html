@@ -436,6 +436,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 }
 .dia-footer-text { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
 @keyframes diaNodePop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ===== SPECIAL BLOCK (User Input/Document) ===== */
+.block-node.shape-special_block {
+  min-width: 380px; max-width: 600px;
+  background: #111827; border: 1px solid #4b5563; border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.special-header {
+  padding: 10px 14px; border-bottom: 1px solid #374151;
+  background: linear-gradient(135deg, #1f2937, #111827); border-radius: 12px 12px 0 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.special-icon { color: #10b981; font-size: 14px; }
+.special-title { font-size: 12px; font-weight: 600; color: #f3f4f6; font-family: 'Syne', sans-serif; letter-spacing: 0.5px; }
+.special-body { padding: 14px; background: #0f172a; border-radius: 0 0 12px 12px; }
+.special-content {
+  margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: #94a3b8; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+  max-height: 250px; overflow-y: auto;
+}
+.special-content::-webkit-scrollbar { width: 4px; }
+.special-content::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -1357,6 +1379,19 @@ function renderTree(data, isPartial = false){
              // Register group (will init SVG after innerHTML set)
              const diaLayout = b.layout || 'grid';
              diaGroups[gid] = { currentStep: -1, steps, baseNodes: nodes, baseEdges: edgesDia, el, svgEl: null, infoEl: null, playTimer: null, layout: diaLayout };
+
+          } else if (b.type === 'special_block') {
+             // === SPECIAL BLOCK (User Input/Context) ===
+             el.className = 'block-node shape-special_block';
+             el.style.background = '';
+             innerHtml = `
+               <div class="special-header">
+                 <span class="special-icon"><i class="fas fa-file-alt"></i></span>
+                 <span class="special-title">${esc(b.title || 'Input')}</span>
+               </div>
+               <div class="special-body">
+                 <pre class="special-content">${esc(b.content || '')}</pre>
+               </div>`;
 
           } else if (b.type === 'textblock') {
              el.className = `block-node shape-text-field`;

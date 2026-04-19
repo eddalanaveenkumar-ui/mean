@@ -938,6 +938,18 @@ Return ONLY valid JSON array.`;
                     const partialStr = clean.substring(firstBracket, lastBrace + 1) + ']';
                     const partial = JSON.parse(partialStr);
                     if (Array.isArray(partial) && partial.length > 0) {
+                      const pContent = fileContent || currentTopic;
+                      if (pContent) {
+                         const pDisp = pContent.length > 800 ? pContent.slice(0, 800) + '\n\n[...Content truncated]' : pContent;
+                         const pRoots = partial.filter(n => !partial.some(p => p.connect?.includes(n.address))).map(n => n.address);
+                         partial.unshift({
+                            address: "user_input_special",
+                            type: "special_block",
+                            title: fileContent ? (fileName || "Uploaded Document") : "Your Prompt",
+                            content: pDisp,
+                            connect: pRoots
+                         });
+                      }
                       setSlides(partial);
                       const frame = document.getElementById('roadmapFrame');
                       if (frame?.contentWindow) {
@@ -962,6 +974,29 @@ Return ONLY valid JSON array.`;
 
       if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
         setPhase('error'); return;
+      }
+
+      // Auto-inject User Input Block
+      const contentToDisplay = fileContent || currentTopic;
+      if (contentToDisplay) {
+         const displayContent = contentToDisplay.length > 800 ? contentToDisplay.slice(0, 800) + '\n\n[...Content truncated for display]' : contentToDisplay;
+         const roots = parsed.filter(n => !parsed.some(p => p.connect?.includes(n.address))).map(n => n.address);
+
+         parsed.unshift({
+            address: "user_input_special",
+            type: "special_block",
+            title: fileContent ? (fileName || "Uploaded Document") : "Your Prompt",
+            content: displayContent,
+            dialogs: [
+                {
+                   topic: fileContent ? "Document Received" : "Prompt Received",
+                   input: "",
+                   output: "",
+                   explanation: fileContent ? "I have analyzed the document you provided. Let's walk through the detailed explanation I have prepared for you." : "I have received your prompt. Let's explore the roadmap based on it."
+                }
+            ],
+            connect: roots
+         });
       }
 
       setSlides(parsed);
@@ -1453,7 +1488,7 @@ Return ONLY valid JSON array.`;
             </button>
             <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 500, transition: 'color 0.2s' }} onMouseOver={e=>e.currentTarget.style.color='var(--text-primary)'} onMouseOut={e=>e.currentTarget.style.color='var(--text-secondary)'}>
               <i className="fas fa-paperclip" /> {uploadedFile ? fileName : ''}
-              <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.doc,.docx" hidden disabled={phase==='loading'}/>
+              <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.doc,.docx,image/*" hidden disabled={phase==='loading'}/>
             </label>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
