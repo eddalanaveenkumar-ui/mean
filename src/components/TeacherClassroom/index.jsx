@@ -18,8 +18,8 @@ const initLibs = async () => {
   }
   try {
     if (!mammoth) {
-       const m = await import('mammoth');
-       mammoth = m.default || m;
+       const m = await import('mammoth/mammoth.browser.min.js');
+       mammoth = m.default || window.mammoth || m;
     }
   } catch (e) {
     console.warn('[Classroom] mammoth not available:', e.message);

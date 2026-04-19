@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-import mammoth from 'mammoth';
+import * as mammothBrowser from 'mammoth/mammoth.browser.min.js';
+const mammoth = mammothBrowser.default || window.mammoth || mammothBrowser;
 
 export const extractPdfText = async (file, onProgress) => {
   if (onProgress) onProgress('📄 Loading PDF...');
