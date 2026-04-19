@@ -900,10 +900,8 @@ Return ONLY valid JSON array.`;
            ];
         }
         
-        const openRouterModel = selectedModel?.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
-
         payload = {
-          model: openRouterModel,
+          model: 'arcee-ai/trinity-large-preview:free',
           messages: [
             { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
             userMessage
