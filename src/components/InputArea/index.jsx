@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { extractFileContent } from '../../utils/fileExtractor';
 import './InputArea.css';
 
 export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
@@ -8,6 +9,8 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
   const [attachedFile, setAttachedFile] = useState(null);
   const [attachedContent, setAttachedContent] = useState('');
   const [showTools, setShowTools] = useState(false);
+  const [extractStatus, setExtractStatus] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
   const inputRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -31,14 +34,25 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setAttachedFile(file);
-    const textExts = ['.txt','.md','.json','.csv','.py','.js','.html','.css','.java','.xml','.yaml','.yml','.tsx','.jsx','.ts','.c','.cpp','.h','.sql','.sh'];
-    const isText = file.type.includes('text') || textExts.some(ext => file.name.toLowerCase().endsWith(ext));
-    if (isText) {
-      setAttachedContent(await file.text());
-    } else {
-      setAttachedContent(`[File: ${file.name}, ${(file.size / 1024).toFixed(1)}KB]`);
-    }
+    setIsExtracting(true);
+    
+    const content = await extractFileContent(file, setExtractStatus);
+    setAttachedContent(content);
+    setIsExtracting(false);
+    setTimeout(() => setExtractStatus(''), 2000);
     e.target.value = '';
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        handleFileChange({ target: { files: [file] } });
+        e.preventDefault();
+        break;
+      }
+    }
   };
 
   const hasInput = text.trim().length > 0 || attachedFile;
@@ -67,12 +81,13 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
           <textarea
             ref={inputRef}
             className="main-input"
-            placeholder="Ask anything"
+            placeholder={isExtracting ? extractStatus || "Extracting file..." : "Ask anything"}
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             rows={1}
-            disabled={isStreaming}
+            disabled={isStreaming || isExtracting}
           />
 
           {/* Right side: mic + send/voice */}
@@ -126,7 +141,14 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
           </div>
         )}
 
-        <input type="file" ref={fileRef} style={{ display: 'none' }} onChange={handleFileChange} />
+        {extractStatus && isExtracting && (
+           <div style={{ position: 'absolute', bottom: '100%', left: '16px', marginBottom: '8px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+              <span className="tc-loading-spinner" style={{ width: '12px', height: '12px', margin: 0 }}></span>
+              {extractStatus}
+           </div>
+        )}
+
+        <input type="file" ref={fileRef} accept="image/*,.txt,.md,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
     </div>
   );
