@@ -901,7 +901,7 @@ Return ONLY valid JSON array.`;
         }
         
         payload = {
-          model: 'google/gemini-1.5-flash:free',
+          model: 'google/gemini-1.0-flash:free',
           messages: [
             { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
             userMessage
