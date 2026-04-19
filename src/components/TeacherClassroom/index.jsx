@@ -1,24 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import './TeacherClassroom.css';
-
-// Lazy-loaded library variables
-let pdfjsLib = null;
-let mammoth = null;
-
-// Safe async initializer
-const initLibs = async () => {
-  try {
-    if (!pdfjsLib) {
-       pdfjsLib = await import('pdfjs-dist');
-       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-    }
-  } catch (e) {
-    console.warn('[Classroom] pdfjs-dist not available:', e.message);
-  }
-};
-// Fire initializer without blocking the module JS export chain
-initLibs();
+import { extractFileContent } from '../../utils/fileExtractor';
 
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
@@ -482,105 +465,41 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   };
 
   // Extract text from DOCX using mammoth
-  const extractDocxText = async (arrayBuffer) => {
-    if (!window.mammoth) return '[Mammoth library not loaded]';
-    setExtractStatus('📝 Extracting DOCX content...');
-    const result = await window.mammoth.extractRawText({ arrayBuffer });
-    return result.value.trim();
-  };
-
-  // Extract text from images using Tesseract.js OCR
-  const extractImageText = async (file) => {
-    setExtractStatus('🖼️ Preparing image for Vision AI...');
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result); // Returns data:image/png;base64,...
-      };
-      reader.onerror = () => {
-        setExtractStatus('❌ Failed to prepare image');
-        reject('[Failed to prepare image]');
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // Auto-detect file content type
-  const detectFileType = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('syllabus') || lower.includes('curriculum') || lower.includes('semester') || lower.includes('unit') || lower.includes('module')) {
-      return 'syllabus';
-    } else if (lower.includes('question') || lower.includes('answer') || lower.includes('?') || lower.includes('solve') || lower.includes('exam') || lower.includes('marks')) {
-      return 'questions';
-    }
-    return 'concepts';
-  };
-
   // ===== MAIN FILE HANDLER =====
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const name = file.name;
-    const ext = name.split('.').pop().toLowerCase();
-    setFileName(name);
+    setFileName(file.name);
     setUploadedFile(file);
     setExtracting(true);
     setExtractStatus('📂 Reading file...');
 
     try {
-      let extractedText = '';
+      let extractedText = await extractFileContent(file, setExtractStatus);
 
-      // PDF files
-      if (ext === 'pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        extractedText = await extractPdfText(arrayBuffer);
-      }
-      // DOCX files
-      else if (ext === 'docx') {
-        const arrayBuffer = await file.arrayBuffer();
-        extractedText = await extractDocxText(arrayBuffer);
-      }
-      // DOC files (old Word format) — try mammoth, fallback to text
-      else if (ext === 'doc') {
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          extractedText = await extractDocxText(arrayBuffer);
-        } catch {
-          setExtractStatus('📝 Reading as plain text...');
-          extractedText = await file.text();
-        }
-      }
-      // Image files — OCR
-      else if (['png', 'jpg', 'jpeg', 'bmp', 'webp', 'tiff', 'tif'].includes(ext)) {
-        extractedText = await extractImageText(file);
-      }
-      // Plain text files (.txt, .md, .csv, .json, etc.)
-      else {
-        setExtractStatus('📝 Reading text file...');
-        extractedText = await file.text();
-      }
-
-      if (!extractedText || extractedText.trim().length < 5) {
+      if (!extractedText || extractedText.includes('[Failed to extract]')) {
         setExtractStatus('⚠️ No text could be extracted');
         extractedText = '[File content could not be extracted. The file may be empty or in an unsupported format.]';
+      } else if (!extractedText.startsWith('data:image/') && extractedText.trim().length < 5) {
+        setExtractStatus('⚠️ Insufficient data');
+        extractedText = '[File content is too short.]';
+      } else if (extractedText.startsWith('data:image/')) {
+        setExtractStatus('✅ Image attached');
+      } else {
+        setExtractStatus(`✅ Extracted ${extractedText.length.toLocaleString()} characters`);
       }
 
       setFileContent(extractedText);
-      setFileType(detectFileType(extractedText));
-      setExtractStatus(`✅ Extracted ${extractedText.length.toLocaleString()} characters`);
+      const lower = extractedText.toLowerCase();
+      let type = 'concepts';
+      if (lower.includes('syllabus') || lower.includes('curriculum') || lower.includes('semester')) type = 'syllabus';
+      else if (lower.includes('question') || lower.includes('answer') || lower.includes('exam')) type = 'questions';
+      setFileType(type);
     } catch (err) {
       console.error('File extraction error:', err);
-      setExtractStatus('❌ Extraction failed — trying plain text...');
-      try {
-        const fallbackText = await file.text();
-        setFileContent(fallbackText);
-        setFileType(detectFileType(fallbackText));
-        setExtractStatus(`⚠️ Fallback: ${fallbackText.length.toLocaleString()} chars (may contain artifacts)`);
-      } catch {
-        setFileContent('[Failed to extract file content]');
-        setExtractStatus('❌ Could not read file');
-      }
+      setFileContent('[Failed to extract file content]');
+      setExtractStatus('❌ Could not read file');
     } finally {
       setExtracting(false);
     }
