@@ -44,6 +44,28 @@ const StarIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 );
 
+const OrnamentalDivider = () => (
+  <svg width="240" height="40" viewBox="0 -10 300 50" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: '24px', opacity: 0.9 }}>
+    <g fill="#0a84ff" opacity="0.8">
+      {/* Left side */}
+      <path d="M140,25 C130,25 120,15 128,8 C135,2 145,8 140,16 C137,20 132,20 130,17 C128,14 132,9 135,12 C139,15 135,22 130,22 C122,22 122,12 130,5 C142,-2 152,8 144,20 C140,24 135,26 128,27" />
+      <path d="M128,24 Q95,20 60,16 Q95,28 134,29 Z" />
+      <path d="M124,18 Q95,8 75,-2 Q105,15 128,24 Z" />
+      <path d="M120,12 Q100,0 90,-8 Q110,8 124,19 Z" />
+      <rect x="10" y="32" width="120" height="1.5" rx="0.75" />
+      
+      {/* Right side - mirrored */}
+      <g transform="translate(300, 0) scale(-1, 1)">
+        <path d="M140,25 C130,25 120,15 128,8 C135,2 145,8 140,16 C137,20 132,20 130,17 C128,14 132,9 135,12 C139,15 135,22 130,22 C122,22 122,12 130,5 C142,-2 152,8 144,20 C140,24 135,26 128,27" />
+        <path d="M128,24 Q95,20 60,16 Q95,28 134,29 Z" />
+        <path d="M124,18 Q95,8 75,-2 Q105,15 128,24 Z" />
+        <path d="M120,12 Q100,0 90,-8 Q110,8 124,19 Z" />
+        <rect x="10" y="32" width="120" height="1.5" rx="0.75" />
+      </g>
+    </g>
+  </svg>
+);
+
 
 export default function LandingPage({ onGetStarted }) {
   const [scrolled, setScrolled] = useState(false);
@@ -125,10 +147,7 @@ export default function LandingPage({ onGetStarted }) {
 
         {/* Hero Section */}
         <section className="hero-section">
-          <div className="hero-badge">
-            <span className="hero-badge-dot" />
-            <span>Powered by Gemini & OpenRouter</span>
-          </div>
+          <OrnamentalDivider />
 
           <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.8rem)' }}>
             The AI That Teaches<br />
