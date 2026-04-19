@@ -829,6 +829,13 @@ JSON STRUCTURE RULES:
 - Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
 - Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "first-connection": "parent_id", "next-connection": "child_id"}
 
+MANDATORY VIRTUAL CURSOR DIALOGS RULE:
+- For EVERY block generated, you MUST include a "dialogs" array inside the block JSON. This is what the AI will speak while pointing at the block.
+- IMPORTANT: The user can ask about ANY topic. Do NOT just copy the examples from data.txt. Use data.txt purely as a REFERENCE for the style, structure, and high quality of explanations.
+- The structure MUST strictly follow this exact schema: "dialogs": [ { "topic": "Name", "input": "...", "output": "...", "explanation": "Simple analogy or explanation..." } ]
+- Ensure "explanation" always uses clear, real-world analogies (like "A queue is like a line at a ticket counter").
+
+
 CRITICAL REMINDER: If the topic has charts/metrics, use graphblock. If the topic is about data structures, use diablock. If the topic has code, include coder+visualizer+outputer. If the topic has math, include mathblock.
 
 Dense and accurate.${fileContext}
@@ -949,6 +956,36 @@ Return ONLY valid JSON array.`;
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
+        
+        // VIRTUAL CURSOR: Auto-Play AI Explanations
+        const explainSequence = async () => {
+           for (const node of parsed) {
+              if (node.dialogs && Array.isArray(node.dialogs) && node.dialogs.length > 0) {
+                 if (abortControllerRef.current?.signal.aborted) return;
+                 // Move virtual cursor to this block
+                 frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: node.address } }, '*');
+                 
+                 for (const dialog of node.dialogs) {
+                    if (abortControllerRef.current?.signal.aborted) return;
+                    const speechText = dialog.explanation || dialog.output || dialog.topic;
+                    if (!speechText) continue;
+                    
+                    await new Promise(resolve => {
+                       window.speechSynthesis?.cancel();
+                       const u = new SpeechSynthesisUtterance(speechText);
+                       u.lang = 'en-US';
+                       u.rate = 1.0;
+                       u.onend = resolve;
+                       u.onerror = resolve;
+                       window.speechSynthesis.speak(u);
+                    });
+                 }
+              }
+           }
+           // Hide cursor when done
+           frame.contentWindow.postMessage({ type: 'MOVE_CURSOR', payload: { address: null } }, '*');
+        };
+        setTimeout(explainSequence, 1500); // Wait for roadmap to layout
       }
     } catch (e) {
       if (e.name === 'AbortError') {
