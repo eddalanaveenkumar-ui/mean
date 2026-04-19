@@ -3,12 +3,14 @@
 /* Page Shell */
 .sp-page {
   min-height: 100vh;
+  height: 100vh;
   background: var(--bg-dark);
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Background Effects */
