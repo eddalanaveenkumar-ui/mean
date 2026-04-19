@@ -248,6 +248,21 @@
   animation: appleScaleUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) both;
 }
 
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0a84ff;
+  box-shadow: 0 0 8px #0a84ff;
+  animation: pulseBlue 2s infinite;
+}
+
+@keyframes pulseBlue {
+  0% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(10, 132, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0); }
+}
+
 .hero-badge svg {
   width: 16px;
   height: 16px;

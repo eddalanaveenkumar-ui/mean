@@ -125,7 +125,10 @@ export default function LandingPage({ onGetStarted }) {
 
         {/* Hero Section */}
         <section className="hero-section">
-
+          <div className="hero-badge">
+            <span className="hero-badge-dot" />
+            <span>Powered by Gemini & OpenRouter</span>
+          </div>
 
           <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.8rem)' }}>
             The AI That Teaches<br />
