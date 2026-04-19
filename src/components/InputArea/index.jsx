@@ -64,7 +64,7 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
       <div className="input-container">
         {/* Attachment preview */}
         {attachedFile && (
-          <div className="attach-preview" style={attachedFile.type?.startsWith('image/') ? { padding: '12px', background: 'transparent', border: 'none' } : {}}>
+          <div className="attach-preview" style={{ padding: '12px', background: 'transparent', border: 'none' }}>
             {attachedFile.type?.startsWith('image/') ? (
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <img src={URL.createObjectURL(attachedFile)} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', display: 'block' }} alt="preview" />
@@ -73,13 +73,13 @@ export default function InputArea({ onVoice, onPpt, onTeacher, onMusic }) {
                 </button>
               </div>
             ) : (
-              <>
-                <i className="fas fa-file-alt" />
-                <span>{attachedFile.name}</span>
-                <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }}>
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', fontSize: '13px', fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                <i className="fas fa-file-alt" style={{ fontSize: '20px', color: '#e8913a' }}></i>
+                <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachedFile.name}</span>
+                <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', background: '#374151', color: 'white', border: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', padding: 0 }}>
                   <i className="fas fa-times" />
                 </button>
-              </>
+              </div>
             )}
           </div>
         )}
