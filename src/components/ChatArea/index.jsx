@@ -8,6 +8,7 @@ import './ChatArea.css';
 export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
   const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS } = useApp();
   const chatRef = useRef(null);
+  const shouldAutoScroll = useRef(true);
   const [streamText, setStreamText] = useState('');
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -76,8 +77,26 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
   }, []);
 
   useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    if (chatRef.current && shouldAutoScroll.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
   }, [currentChat?.messages, streamText]);
+
+  // When a completely new message starts (stream text restarts or messages length changes),
+  // we might want to force scroll to bottom, but the simplest robust fix is just 
+  // letting shouldAutoScroll decide. If the user intentionally scrolls to bottom, they will snap.
+  // To ensure they snap when sending a message, we can reset shouldAutoScroll when stream becomes active.
+  useEffect(() => {
+    if (isStreamActive) {
+      shouldAutoScroll.current = true;
+    }
+  }, [isStreamActive]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // Consider it "at the bottom" if they are within 150px
+    shouldAutoScroll.current = scrollHeight - scrollTop - clientHeight < 150;
+  };
 
   const messages = currentChat?.messages || [];
   const isEmpty = messages.length === 0 && !isStreamActive;
@@ -134,7 +153,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
         </div>
       ) : (
         <>
-          <div className="chat-messages" ref={chatRef}>
+          <div className="chat-messages" ref={chatRef} onScroll={handleScroll}>
             <div className="messages-container">
               {messages.map((msg, i) => (
                 <Message key={i} message={msg} />
