@@ -52,7 +52,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose }) {
-  const { user, webSearchActive, saveClass, classes, deleteClass, theme } = useApp();
+  const { user, webSearchActive, saveClass, classes, deleteClass, theme, selectedModel } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
   const [sessionTitle, setSessionTitle] = useState('');
@@ -900,8 +900,10 @@ Return ONLY valid JSON array.`;
            ];
         }
         
+        const openRouterModel = selectedModel?.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
+
         payload = {
-          model: 'google/gemini-1.0-flash:free',
+          model: openRouterModel,
           messages: [
             { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
             userMessage
