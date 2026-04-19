@@ -1026,7 +1026,7 @@ Return ONLY valid JSON array.`;
              const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
                  method: 'POST',
                  headers: { 'api-subscription-key': sarvamKey, 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ inputs: [text], target_language_code: targetCode, speaker: 'anushka', pace: 1.05, model: 'bulbul:v3' })
+                 body: JSON.stringify({ inputs: [text], target_language_code: targetCode, speaker: 'ritu', pace: 1.05, model: 'bulbul:v3' })
              });
              if (resp.ok) {
                  const data = await resp.json();
