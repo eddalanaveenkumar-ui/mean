@@ -142,7 +142,7 @@ export default function LandingPage({ onGetStarted }) {
               Start Learning Free →
             </button>
             <button className="hero-btn-secondary" onClick={() => document.getElementById('demo').scrollIntoView({ behavior: 'smooth' })}>
-              <CodeIcon /> Live Demo
+              Live Demo
             </button>
           </div>
 
