@@ -136,13 +136,21 @@ export default function Message({ message, streaming = false }) {
 
   if (isUser) {
     let userImgUrl = null;
+    let docFileName = null;
     let finalUserText = displayText;
     
     // Check for our special attached image syntax
-    const imgMatch = displayText.match(/^!\[Attached Image\]\((blob:[^)]+)\)\n\n([\s\S]*)$/);
+    const imgMatch = displayText.match(/^!\[Attached Image\]\((blob:[^)]+|data:image\/[^)]+)\)\n\n([\s\S]*)$/);
     if (imgMatch) {
       userImgUrl = imgMatch[1];
       finalUserText = imgMatch[2];
+    } else {
+      // Check for attached document syntax
+      const docMatch = displayText.match(/^📎 (.*)\n\n([\s\S]*)$/);
+      if (docMatch) {
+        docFileName = docMatch[1];
+        finalUserText = docMatch[2];
+      }
     }
 
     return (
@@ -152,8 +160,14 @@ export default function Message({ message, streaming = false }) {
             <img 
               src={userImgUrl} 
               alt="Uploaded" 
-              style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', marginBottom: '8px', display: 'block', objectFit: 'cover' }} 
+              style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', marginBottom: '10px', display: 'block', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
             />
+          )}
+          {docFileName && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '10px', marginBottom: '10px', fontSize: '13px', fontWeight: '500' }}>
+              <i className="fas fa-file-alt" style={{ fontSize: '20px', color: '#e8913a' }}></i>
+              <span style={{ wordBreak: 'break-all' }}>{docFileName}</span>
+            </div>
           )}
           {finalUserText}
         </div>
