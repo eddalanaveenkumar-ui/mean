@@ -344,8 +344,8 @@ export function AppProvider({ children }) {
     const isBase64Image = fileContent && fileContent.startsWith('data:image/');
 
     if (fileName && fileContent) {
-      if (imageUrl) {
-         displayContent = `![Attached Image](${imageUrl})\n\n${text || 'Extract the data'}`;
+      if (isBase64Image) {
+         displayContent = `![Attached Image](${fileContent})\n\n${text || 'Please analyze this image.'}`;
       } else {
          displayContent = `📎 ${fileName}\n\n${text || 'Please analyze this document.'}`;
       }
