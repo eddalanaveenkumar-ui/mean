@@ -498,30 +498,18 @@ export default function TeacherClassroom({ isOpen, onClose }) {
 
   // Extract text from images using Tesseract.js OCR
   const extractImageText = async (file) => {
-    if (!window.Tesseract) {
-      setExtractStatus('⚠️ OCR not available');
-      return '[OCR library not loaded]';
-    }
-
-    setExtractStatus('🖼️ Running OCR on image...');
-
-    try {
-      const result = await window.Tesseract.recognize(file, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            setExtractStatus(`🖼️ OCR: ${Math.round(m.progress * 100)}%`);
-          } else if (m.status === 'loading tesseract core') {
-            setExtractStatus('🖼️ Loading OCR engine...');
-          } else if (m.status === 'loading language traineddata') {
-            setExtractStatus(`🖼️ Downloading language model: ${Math.round((m.progress||0) * 100)}%`);
-          }
-        }
-      });
-      return result.data.text.trim();
-    } catch (err) {
-      console.warn('Image OCR failed:', err);
-      return '[Image OCR failed]';
-    }
+    setExtractStatus('🖼️ Preparing image for Vision AI...');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result); // Returns data:image/png;base64,...
+      };
+      reader.onerror = () => {
+        setExtractStatus('❌ Failed to prepare image');
+        reject('[Failed to prepare image]');
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   // Auto-detect file content type
