@@ -59,8 +59,23 @@ export default function TeacherClassroom({ isOpen, onClose }) {
   const [sessionTopic, setSessionTopic] = useState('');
   const [subject, setSubject] = useState('General');
   const [level] = useState('high');
-  const lang = 'English';
   const duration = 30;
+
+  const LANGUAGES = {
+     'English': 'en-IN',
+     'Hindi': 'hi-IN',
+     'Tamil': 'ta-IN',
+     'Telugu': 'te-IN',
+     'Malayalam': 'ml-IN',
+     'Kannada': 'kn-IN',
+     'Marathi': 'mr-IN',
+     'Bengali': 'bn-IN',
+     'Gujarati': 'gu-IN',
+     'Punjabi': 'pa-IN',
+     'Odia': 'od-IN'
+  };
+  const [lang, setLang] = useState(() => localStorage.getItem('meanai_lang') || 'English');
+  const saveLang = (l) => { setLang(l); localStorage.setItem('meanai_lang', l); };
 
   // Settings modal — local keys from AI Studio and OpenRouter
   const [showSettings, setShowSettings] = useState(false);
@@ -842,6 +857,7 @@ JSON STRUCTURE RULES:
 MANDATORY VIRTUAL CURSOR DIALOGS RULE:
 - For EVERY single block generated (including coding, maths, diagram blocks, and text blocks), you MUST include a "dialogs" array inside the block JSON. This is what the AI will speak while pointing at the block.
 - IMPORTANT: The user can ask about ANY topic. Do NOT just copy the examples from data.txt. Use data.txt purely as a REFERENCE for the style, structure, and high quality of explanations.
+- ALL text in the "dialogs" array (topic, input, output, explanation) MUST be written in the following language: ${lang}.
 - The structure MUST strictly follow this exact schema: "dialogs": [ { "topic": "Name", "input": "...", "output": "...", "explanation": "Detailed explanation..." } ]
 - Ensure "explanation" always uses clear, real-world analogies (like "A queue is like a line at a ticket counter").
 - CRITICAL: The "explanation" MUST be AT LEAST 20 words long for EVERY single block. Be detailed!
@@ -986,6 +1002,7 @@ Return ONLY valid JSON array.`;
             window.speechSynthesis?.cancel();
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'en-US';
+            u.rate = 0.9;
             u.onend = resolve;
             u.onerror = resolve;
             window.speechSynthesis.speak(u);
@@ -1005,10 +1022,11 @@ Return ONLY valid JSON array.`;
                 audioUrl = URL.createObjectURL(blob);
              }
          } else if (activeVoiceAPI === 'sarvam' && sarvamKey) {
+             const targetCode = LANGUAGES[lang] || 'hi-IN';
              const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
                  method: 'POST',
                  headers: { 'api-subscription-key': sarvamKey, 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ inputs: [text], target_language_code: 'hi-IN', speaker: 'meera', pace: 1.05, model: 'sarvam-1' })
+                 body: JSON.stringify({ inputs: [text], target_language_code: targetCode, speaker: 'meera', pace: 1.05, model: 'sarvam-1' })
              });
              if (resp.ok) {
                  const data = await resp.json();
@@ -1040,6 +1058,7 @@ Return ONLY valid JSON array.`;
         window.speechSynthesis?.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
+        u.rate = 0.9;
         u.onend = resolve;
         u.onerror = resolve;
         window.speechSynthesis.speak(u);
@@ -1449,6 +1468,31 @@ Return ONLY valid JSON array.`;
                 <i className="fas fa-brain" style={{ color: '#5E5CE6', marginRight: '6px' }}/> Arcee
               </button>
             </div>
+            
+            {/* Voice Model Selector */}
+            <select
+               value={activeVoiceAPI}
+               onChange={e => saveActiveVoiceAPI(e.target.value)}
+               disabled={phase === 'loading'}
+               style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px 12px', fontSize: '13px', outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: '24px' }}
+            >
+               <option value="browser">Computer Voice</option>
+               <option value="elevenlabs">ElevenLabs</option>
+               <option value="sarvam">Sarvam AI</option>
+            </select>
+
+            {/* Language Selector */}
+            <select
+               value={lang}
+               onChange={e => saveLang(e.target.value)}
+               disabled={phase === 'loading'}
+               style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px 12px', fontSize: '13px', outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: '24px' }}
+            >
+               {Object.keys(LANGUAGES).map(l => (
+                 <option key={l} value={l}>{l}</option>
+               ))}
+            </select>
+
             {phase === 'loading' ? (
               <button
                 onClick={() => {
