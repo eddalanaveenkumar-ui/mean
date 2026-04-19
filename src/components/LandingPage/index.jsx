@@ -44,50 +44,7 @@ const StarIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 );
 
-const OrnamentalDivider = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px', marginTop: '16px' }}>
-    <svg width="450" height="70" viewBox="0 0 400 70" fill="none" xmlns="http://www.w3.org/2000/svg" 
-         style={{ filter: 'drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 8px #8be9fd) drop-shadow(0 0 20px #0a84ff)' }}>
-      <defs>
-        <linearGradient id="vertGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#e0f8ff" />
-          <stop offset="35%" stopColor="#64d2ff" />
-          <stop offset="100%" stopColor="#0a84ff" />
-        </linearGradient>
-      </defs>
-      
-      {/* Intense Center Optical Flare Glow */}
-      <circle cx="200" cy="40" r="40" fill="#64d2ff" opacity="0.15" filter="blur(10px)"/>
-      <circle cx="200" cy="35" r="15" fill="#8be9fd" opacity="0.3" filter="blur(4px)"/>
 
-      <g fill="url(#vertGlow)">
-        {/* LEFT FLOURISH (Math-Perfect Q-Curves) */}
-        <path d="M 10,60
-                 Q 130,60 155,45
-                 Q 175,35 165,20
-                 Q 155,5 145,15
-                 Q 130,30 155,40
-                 Q 130,55 10,60 Z" />
-        <path d="M 140,55 Q 80,60 75,52 Q 100,40 142,48 Z" />
-        <path d="M 145,44 Q 90,40 85,30 Q 110,20 150,32 Z" />
-        <path d="M 152,30 Q 110,25 105,15 Q 125,5 155,20 Z" />
-        
-        {/* RIGHT FLOURISH (Mirrored) */}
-        <g transform="translate(400, 0) scale(-1, 1)">
-          <path d="M 10,60
-                   Q 130,60 155,45
-                   Q 175,35 165,20
-                   Q 155,5 145,15
-                   Q 130,30 155,40
-                   Q 130,55 10,60 Z" />
-          <path d="M 140,55 Q 80,60 75,52 Q 100,40 142,48 Z" />
-          <path d="M 145,44 Q 90,40 85,30 Q 110,20 150,32 Z" />
-          <path d="M 152,30 Q 110,25 105,15 Q 125,5 155,20 Z" />
-        </g>
-      </g>
-    </svg>
-  </div>
-);
 
 
 export default function LandingPage({ onGetStarted }) {
@@ -170,7 +127,6 @@ export default function LandingPage({ onGetStarted }) {
 
         {/* Hero Section */}
         <section className="hero-section">
-          <OrnamentalDivider />
 
           <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.8rem)' }}>
             The AI That Teaches<br />
