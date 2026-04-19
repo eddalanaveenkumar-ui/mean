@@ -1072,6 +1072,19 @@ function renderTree(data, isPartial = false){
   arrowDefs.forEach(a=>{const key=`${a['first-connection']}->${a['next-connection']}`;arrowExplanationMap[key]=a.explanation || a['in-content'] || '';});
   
   const hasParent=new Set();
+  
+  // Auto-repair missing logical connections for code sequences
+  blocks.forEach(b => {
+     if(b.type === 'visualizer' && b.coder_ref && blockMap[b.coder_ref]) {
+         blockMap[b.coder_ref].connect = blockMap[b.coder_ref].connect || [];
+         if(!blockMap[b.coder_ref].connect.includes(b.address)) blockMap[b.coder_ref].connect.push(b.address);
+     }
+     if(b.type === 'outputer' && b.visualizer_ref && blockMap[b.visualizer_ref]) {
+         blockMap[b.visualizer_ref].connect = blockMap[b.visualizer_ref].connect || [];
+         if(!blockMap[b.visualizer_ref].connect.includes(b.address)) blockMap[b.visualizer_ref].connect.push(b.address);
+     }
+  });
+
   const dirAdj = {};
   blocks.forEach(b => { dirAdj[b.address] = []; });
   blocks.forEach(b => {
