@@ -1031,13 +1031,10 @@ Return ONLY valid JSON array.`;
              if (resp.ok) {
                  const data = await resp.json();
                  if (data.audios && data.audios[0]) {
-                     const binaryStr = window.atob(data.audios[0]);
-                     const len = binaryStr.length;
-                     const bytes = new Uint8Array(len);
-                     for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
-                     const blob = new Blob([bytes], { type: 'audio/wav' });
-                     audioUrl = URL.createObjectURL(blob);
+                     audioUrl = `data:audio/wav;base64,${data.audios[0]}`;
                  }
+             } else {
+                 console.error('Sarvam API failed:', await resp.text());
              }
          }
 
