@@ -104,10 +104,18 @@
 /* ===== BOTTOM INPUT BAR ===== */
 .welcome-input-wrap {
   width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
   padding: 12px 16px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
   position: relative;
   flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .welcome-input-wrap {
+    max-width: 680px;
+  }
 }
 
 .w-attach-bar {
