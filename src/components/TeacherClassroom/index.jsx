@@ -504,20 +504,21 @@ export default function TeacherClassroom({ isOpen, onClose }) {
     }
 
     setExtractStatus('🖼️ Running OCR on image...');
-    const imageUrl = URL.createObjectURL(file);
 
     try {
-      const result = await window.Tesseract.recognize(imageUrl, 'eng', {
+      const result = await window.Tesseract.recognize(file, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             setExtractStatus(`🖼️ OCR: ${Math.round(m.progress * 100)}%`);
+          } else if (m.status === 'loading tesseract core') {
+            setExtractStatus('🖼️ Loading OCR engine...');
+          } else if (m.status === 'loading language traineddata') {
+            setExtractStatus(`🖼️ Downloading language model: ${Math.round((m.progress||0) * 100)}%`);
           }
         }
       });
-      URL.revokeObjectURL(imageUrl);
       return result.data.text.trim();
     } catch (err) {
-      URL.revokeObjectURL(imageUrl);
       console.warn('Image OCR failed:', err);
       return '[Image OCR failed]';
     }
@@ -1477,6 +1478,17 @@ Return ONLY valid JSON array.`;
             value={topic}
             onChange={e => setTopic(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && topic.trim() && phase !== 'loading') startClass(); }}
+            onPaste={e => {
+              const items = e.clipboardData.items;
+              for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                  const file = items[i].getAsFile();
+                  handleFileUpload({ target: { files: [file] } });
+                  e.preventDefault();
+                  break;
+                }
+              }
+            }}
             disabled={phase === 'loading'}
             autoFocus
           />
