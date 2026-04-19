@@ -73,12 +73,6 @@ export default function LandingPage({ onGetStarted }) {
     { icon: <PresentIcon />, title: 'Presentations', desc: 'Auto-generate beautiful slide decks from any topic. Export-ready presentations powered by AI.' },
   ];
 
-  const stats = [
-    { number: '10K+', label: 'Lines Explained' },
-    { number: '500+', label: 'Active Learners' },
-    { number: '28+', label: 'Blog Articles' },
-    { number: '99.9%', label: 'Uptime' },
-  ];
 
   const testimonials = [
     { text: 'Mean AI made recursion finally click for me. The execution flow is genius.', author: 'Arjun K.', role: 'CS Student', rating: 5 },
@@ -154,18 +148,7 @@ export default function LandingPage({ onGetStarted }) {
             </button>
           </div>
 
-          {/* Stats Bar */}
-          <div className="hero-stats">
-            {stats.map((s, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <div className="stat-divider" />}
-                <div className="stat-item">
-                  <span className="stat-number">{s.number}</span>
-                  <span className="stat-label">{s.label}</span>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
+
         </section>
 
         {/* Demo Section */}
