@@ -331,7 +331,7 @@ export function AppProvider({ children }) {
   }, [apiKey, persistChats]);
 
   // Stream AI response
-  const sendMessage = useCallback(async (text, fileContent = null, fileName = null) => {
+  const sendMessage = useCallback(async (text, fileContent = null, fileName = null, imageUrl = null) => {
     if ((!text.trim() && !fileName) || isStreaming) {
       if (isStreaming && streamAbortRef.current) {
         streamAbortRef.current.abort();
@@ -343,7 +343,11 @@ export function AppProvider({ children }) {
     let displayContent = text;
 
     if (fileName && fileContent) {
-      displayContent = `📎 ${fileName}\n\n${text || 'Please analyze this document.'}`;
+      if (imageUrl) {
+         displayContent = `![Attached Image](${imageUrl})\n\n${text || 'Extract the data'}`;
+      } else {
+         displayContent = `📎 ${fileName}\n\n${text || 'Please analyze this document.'}`;
+      }
       userContent = `[ATTACHED FILE: "${fileName}"]\n\n=== FILE CONTENT ===\n${fileContent}\n=== END ===\n\nUser: ${text || 'Analyze this document.'}`;
     }
 

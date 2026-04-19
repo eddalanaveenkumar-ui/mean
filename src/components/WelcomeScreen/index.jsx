@@ -15,7 +15,9 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
 
   const handleSend = () => {
     if (!text.trim() && !attachedFile) return;
-    sendMessage(text, attachedContent || null, attachedFile?.name || null);
+    const isImg = attachedFile?.type?.startsWith('image/');
+    const imgUrl = isImg ? URL.createObjectURL(attachedFile) : null;
+    sendMessage(text, attachedContent || null, attachedFile?.name || null, imgUrl);
     setText('');
     setAttachedFile(null);
     setAttachedContent('');
@@ -82,9 +84,13 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
       {/* Bottom-fixed input bar */}
       <div className="welcome-input-wrap">
         {attachedFile && (
-          <div className="w-attach-bar">
-            <i className="fas fa-file-alt" />
-            <span>{attachedFile.name}</span>
+          <div className="w-attach-bar" style={attachedFile.type?.startsWith('image/') ? { padding: '4px', paddingRight: '12px', background: 'var(--card-bg)' } : {}}>
+            {attachedFile.type?.startsWith('image/') ? (
+              <img src={URL.createObjectURL(attachedFile)} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} alt="preview" />
+            ) : (
+              <i className="fas fa-file-alt" />
+            )}
+            <span style={{ marginLeft: attachedFile.type?.startsWith('image/') ? '8px' : '0' }}>{attachedFile.name}</span>
             <button onClick={() => { setAttachedFile(null); setAttachedContent(''); }}><i className="fas fa-times" /></button>
           </div>
         )}
