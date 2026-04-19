@@ -1,8 +1,10 @@
-import * as pdfjsLibRaw from 'pdfjs-dist/build/pdf';
+import * as pdfjsLibRaw from 'pdfjs-dist/build/pdf.mjs';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
+
 const pdfjsLib = pdfjsLibRaw.default || pdfjsLibRaw;
 try {
   if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.0.379'}/pdf.worker.min.js`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
   }
 } catch (e) {
   console.warn("PDF.js worker setup failed:", e);

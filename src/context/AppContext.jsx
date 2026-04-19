@@ -450,7 +450,11 @@ export function AppProvider({ children }) {
     } else {
        url = 'https://openrouter.ai/api/v1/chat/completions';
        headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
-       const modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
+       let modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'arcee-ai/trinity-large-preview:free';
+       
+       if (isBase64Image && (modelId.includes('arcee') || modelId.includes('llama') || modelId.includes('deepseek') || modelId.includes('qwen'))) {
+           modelId = 'google/gemini-2.0-flash-lite-preview-02-05:free';
+       }
        
        let finalOrMessage = { role: 'user', content: finalUserContent };
        if (isBase64Image) {

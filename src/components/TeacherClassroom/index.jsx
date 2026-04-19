@@ -801,7 +801,7 @@ Return ONLY valid JSON array.`;
         }
         
         payload = {
-          model: 'arcee-ai/trinity-large-preview:free',
+          model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'arcee-ai/trinity-large-preview:free',
           messages: [
             { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
             userMessage
