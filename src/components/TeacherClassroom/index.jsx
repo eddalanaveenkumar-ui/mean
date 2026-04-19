@@ -1012,20 +1012,24 @@ Return ONLY valid JSON array.`;
      try {
          let audioUrl = null;
          if (activeVoiceAPI === 'elevenlabs' && elevenLabsKey) {
+             const cleanEleven = elevenLabsKey.trim();
              const resp = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
                  method: 'POST',
-                 headers: { 'xi-api-key': elevenLabsKey, 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ text, model_id: 'eleven_monolingual_v1', voice_settings: { stability: 0.5, similarity_boost: 0.5 } })
+                 headers: { 'xi-api-key': cleanEleven, 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.5 } })
              });
              if (resp.ok) {
                 const blob = await resp.blob();
                 audioUrl = URL.createObjectURL(blob);
+             } else {
+                console.error('ElevenLabs API failed:', await resp.text());
              }
          } else if (activeVoiceAPI === 'sarvam' && sarvamKey) {
+             const cleanSarvam = sarvamKey.trim();
              const targetCode = LANGUAGES[lang] || 'hi-IN';
              const resp = await fetch('https://api.sarvam.ai/text-to-speech', {
                  method: 'POST',
-                 headers: { 'api-subscription-key': sarvamKey, 'Content-Type': 'application/json' },
+                 headers: { 'api-subscription-key': cleanSarvam, 'Content-Type': 'application/json' },
                  body: JSON.stringify({ inputs: [text], target_language_code: targetCode, speaker: 'ritu', pace: 1.05, model: 'bulbul:v3' })
              });
              if (resp.ok) {
