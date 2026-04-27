@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import InlineClassroom from '../InlineClassroom';
 import './Message.css';
 
 // Inline SVG icons matching the user's reference screenshot (outlined style)
@@ -46,9 +47,6 @@ function renderMarkdown(text) {
     finalHtml = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   }
 
-  if (finalHtml.includes('[RENDER_CLASSROOM_BUTTON]')) {
-    finalHtml = finalHtml.replace(/\[RENDER_CLASSROOM_BUTTON\]/g, `<div class="classroom-trigger-container"><button class="classroom-trigger-btn"><i class="fas fa-chalkboard-teacher"></i> Open Mean AI Classroom</button></div>`);
-  }
   return finalHtml;
 }
 
@@ -113,13 +111,6 @@ export default function Message({ message, streaming = false, onTeacher }) {
   const handleContentClick = useCallback((e) => {
     const copyBtn = e.target.closest('.copy-code-btn');
     const dlBtn = e.target.closest('.download-code-btn');
-    const teacherBtn = e.target.closest('.classroom-trigger-btn');
-
-    if (teacherBtn) {
-      e.preventDefault();
-      if (onTeacher) onTeacher();
-      return;
-    }
 
     if (copyBtn) {
       e.preventDefault();
@@ -189,18 +180,46 @@ export default function Message({ message, streaming = false, onTeacher }) {
     );
   }
 
-  const renderedHtml = renderMarkdown(displayText);
-  const finalHtml = streaming ? injectCursor(renderedHtml) : renderedHtml;
+  const inlineMatch = displayText.match(/\[RENDER_CLASSROOM_INLINE:\s*"([^"]+)"\]/);
+  
+  let inlineTopic = null;
+  let textBefore = displayText;
+  let textAfter = '';
+
+  if (inlineMatch && !isUser) {
+    inlineTopic = inlineMatch[1];
+    const splitArr = displayText.split(inlineMatch[0]);
+    textBefore = splitArr[0];
+    textAfter = splitArr[1] || '';
+  }
+
+  const renderedBefore = renderMarkdown(textBefore);
+  const renderedAfter = renderMarkdown(textAfter);
 
   return (
     <div className="msg-row msg-bot">
       <div className="msg-bot-content">
-        <div
-          className="msg-content"
-          ref={contentRef}
-          onClick={handleContentClick}
-          dangerouslySetInnerHTML={{ __html: finalHtml }}
-        />
+        {renderedBefore && (
+          <div
+            className="msg-content"
+            ref={contentRef}
+            onClick={handleContentClick}
+            dangerouslySetInnerHTML={{ __html: streaming && !inlineTopic ? injectCursor(renderedBefore) : renderedBefore }}
+          />
+        )}
+        
+        {inlineTopic && (
+          <InlineClassroom topic={inlineTopic} onExpand={(t, slides) => { if (onTeacher) onTeacher(t, slides); }} />
+        )}
+        
+        {renderedAfter && (
+          <div
+            className="msg-content"
+            onClick={handleContentClick}
+            dangerouslySetInnerHTML={{ __html: streaming ? injectCursor(renderedAfter) : renderedAfter }}
+          />
+        )}
+        
         {!streaming && (
           <div className="msg-actions-row">
             <CopyButton text={message.content} />

@@ -1,0 +1,129 @@
+.inline-classroom {
+  margin: 16px 0;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-color, #1a1b1e);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.ic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-light, #25262b);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.ic-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary, #e4e5e8);
+}
+
+.ic-title i {
+  color: var(--accent-color, #0a84ff);
+}
+
+.ic-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ic-badge {
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ic-badge.generating { color: var(--accent-color, #0a84ff); }
+.ic-badge.error { color: #ff4d4f; }
+.ic-badge.done { color: #52c41a; }
+
+.ic-btn-expand {
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  color: var(--text-secondary, #909296);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ic-btn-expand:hover {
+  background: var(--accent-color, #0a84ff);
+  color: #fff;
+  border-color: var(--accent-color, #0a84ff);
+}
+
+.ic-body {
+  position: relative;
+  height: 400px;
+  background: #090a0e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ic-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  transition: opacity 0.3s ease;
+}
+
+.ic-loading, .ic-error {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-secondary, #909296);
+  font-size: 13px;
+}
+
+.ic-error {
+  color: #ff4d4f;
+}
+
+.ic-error i {
+  font-size: 24px;
+}
+
+.ic-error button {
+  padding: 6px 16px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.ic-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(10, 132, 255, 0.2);
+  border-top-color: var(--accent-color, #0a84ff);
+  border-radius: 50%;
+  animation: ic-spin 1s linear infinite;
+}
+
+@keyframes ic-spin {
+  to { transform: rotate(360deg); }
+}

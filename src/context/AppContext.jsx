@@ -381,7 +381,8 @@ YOUR ABILITIES:
 - When the user asks "what can you do" or about your abilities, list these clearly.
 
 CLASSROOM TRIGGER:
-If the user asks to "create a class", "make a roadmap", "teach me", "visualize this code", or something similar that warrants using the Classroom feature, YOU MUST INCLUDE THIS EXACT STRING IN YOUR RESPONSE: [RENDER_CLASSROOM_BUTTON]`;
+If the user asks to "create a class", "make a roadmap", "teach me", "visualize this code", or something similar that warrants using the Classroom feature, YOU MUST INCLUDE THIS EXACT STRING IN YOUR RESPONSE: [RENDER_CLASSROOM_INLINE: "Extract Topic Here"]
+(Replace "Extract Topic Here" with a short, 2-5 word title of what the user wants to learn).`;
 
     const systemPrompt = deepdiveActive
       ? `${PERSONA}\nYou are in Deepdive mode — hyper-analytical. Think step-by-step, consider edge cases. Be thorough and precise.\n\nFORMATTING RULES:\n- Use emojis to make responses engaging: 👉 for bullet points, 📌 for key points, 💡 for tips, ⚡ for important notes, ✅ for conclusions, 🔥 for highlights\n- Use ## headers for sections, ### for sub-topics\n- Use code blocks with language tags\n- Use **bold** for emphasis\n- Use tables when comparing things\n- Make content scannable and visually appealing`
