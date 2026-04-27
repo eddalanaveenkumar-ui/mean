@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import './TeacherClassroom.css';
 import { extractFileContent } from '../../utils/fileExtractor';
+import { parseTOON, parsePartialTOON } from '../../utils/toonParser';
 
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
@@ -702,74 +703,201 @@ Ensure you strictly follow the roadmap context.`;
       : '';
 
     const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${currentTopic}".
-Return ONLY a JSON array representing the flow. Current year: 2026.
+Return ONLY valid TOON format (Token-Oriented Object Notation). Current year: 2026.
+
+TOON FORMAT RULES:
+- Each block is separated by a line containing only ---
+- Properties use key: value (one per line)
+- Multi-line values (like code): use key: | then indent each line with 2 spaces
+- Nested array items start with >tag (e.g. >dialog, >step) on its own line, then indented properties with 2 spaces
+- Comma-separated arrays: connect: id1, id2, id3
+- Variable maps: variables: x=5, y=10
+- Do NOT use JSON syntax. No braces, no brackets, no quotes around keys/values.
 
 CRITICAL GRAPH FRACTURING RULES:
-1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children. 
-2. FRACTURE SUB-TREES: If a child node (e.g. "B") needs its own children, DO NOT build it inside the same tree. You MUST create a completely separate, disconnected tree where "B" is the new parent. 
-3. DUPLICATE WITH UNIQUE IDs: Because "B" appears as a child in Tree 1, and a parent in Tree 2, you MUST give them different 'address' IDs (e.g. "B_child" and "B_root") so the layout engine draws them as totally separate islands! Do not connect them!
+1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children.
+2. FRACTURE SUB-TREES: If a child node needs its own children, create a separate disconnected tree where it is the new parent.
+3. DUPLICATE WITH UNIQUE IDs: Give them different address IDs so the layout draws them as separate islands.
 
 MANDATORY TEXTBLOCK RULE:
-- EVERY single block node MUST have AT LEAST ONE textblock connected to it.
-- The textblock acts as the detailed explanation/sub-category for that block.
-- Add the textblock's address to the block's "connect" array.
-- The textblock should provide useful, educational content explaining the concept of its parent block.
-- You can attach MULTIPLE textblocks to a single block if the topic needs it (e.g. "Definition", "Example", "Syntax").
+- EVERY block node MUST have AT LEAST ONE textblock connected to it.
+- Add the textblock address to the block's connect list.
+- Provide useful educational content. You can attach MULTIPLE textblocks per block.
 
 MANDATORY CODE VISUALIZATION RULE:
-- If the topic involves ANY coding example or algorithm (Python, Java, C, C++, C#, JavaScript, HTML, etc.), you MUST include these three connected blocks:
-  1. Coder: {"type": "coder", "address": "coder_1", "group": "g1", "language": "python", "code": "full code here with newlines", "connect": ["viz_1"]}
-  2. Visualizer: {"type": "visualizer", "address": "viz_1", "group": "g1", "coder_ref": "coder_1", "steps": [{"line": 1, "description": "What happens at this line", "variables": {"var_name": "value"}, "output": ""}, ...], "connect": ["out_1"]}
-  3. Outputer: {"type": "outputer", "address": "out_1", "group": "g1", "visualizer_ref": "viz_1"}
-- The "group" field MUST be the SAME string across all 3 blocks to link them.
-- Each step in "steps" must have: "line" (1-indexed line number), "description" (what happens), "variables" (current state of all variables as key-value), "output" (what gets printed at this step, empty string if nothing).
-- Include enough steps to trace through the FULL execution of the code with realistic sample input.
-- Arrow connections between coder->visualizer->outputer are MANDATORY.
+- If the topic involves ANY coding, you MUST include these three connected blocks:
+1. Coder block example:
+---
+type: coder
+address: coder_1
+group: g1
+language: python
+code: |
+  x = 5
+  y = 10
+  print(x + y)
+connect: viz_1
+>dialog
+  topic: Addition Program
+  input: x=5, y=10
+  output: 15
+  explanation: This program demonstrates basic variable assignment and addition.
+
+2. Visualizer block example:
+---
+type: visualizer
+address: viz_1
+group: g1
+coder_ref: coder_1
+connect: out_1
+>step
+  line: 1
+  description: Assign 5 to variable x
+  variables: x=5
+  output:
+>step
+  line: 2
+  description: Assign 10 to variable y
+  variables: x=5, y=10
+  output:
+>step
+  line: 3
+  description: Print sum of x and y
+  variables: x=5, y=10
+  output: 15
+
+3. Outputer block example:
+---
+type: outputer
+address: out_1
+group: g1
+visualizer_ref: viz_1
+
+- The group field MUST be the SAME across all 3 blocks.
+- Include enough steps to trace FULL execution.
 
 MANDATORY MATHBLOCK RULE:
-- If the topic involves ANY mathematical problem, equation, physics formula, calculus, algebra, geometry, statistics, or numerical computation, you MUST include a mathblock.
-- Mathblock: {"type": "mathblock", "address": "math_1", "title": "Solving [Problem Name]", "steps": [{"label": "Given", "content": "LaTeX expression"}, {"label": "Step 1", "content": "LaTeX expression"}, {"label": "Answer", "content": "LaTeX expression"}]}
-- EVERY step "content" MUST use LaTeX notation for math expressions (e.g. \\frac{a}{b}, \\sqrt{x}, x^2, \\int, \\sum, \\alpha, \\beta, \\pi, \\theta, \\geq, \\leq, \\cdot, \\times, \\div, \\pm, \\infty, \\rightarrow, \\vec{F}, \\hat{i}).
-- Use \\text{...} for plain text within LaTeX expressions.
-- Steps should be detailed like a teacher's handwritten notes: show every substitution, simplification, and intermediate result.
-- Use labels like: "Given", "Formula", "Step 1", "Step 2", "Substituting", "Simplifying", "Answer", "Verification".
-- For physics: include units, dimensional analysis, and diagrams where possible.
+- For math/physics/calculus topics, include a mathblock:
+---
+type: mathblock
+address: math_1
+title: Solving Quadratic Equation
+>step
+  label: Given
+  content: ax^2 + bx + c = 0
+>step
+  label: Formula
+  content: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
+>step
+  label: Answer
+  content: x = 2 \\text{ or } x = 3
 
-MANDATORY GRAPHBLOCK RULE (IF USER ASKS TO "GRAPH"):
-- If the user specifically asks to "graph" an equation, plot statistics, explicitly build a "chart", or use axes, YOU MUST ONLY USE A GRAPHBLOCK.
-- DO NOT use a diablock node-graph if they ask for a chart or mathematical graph!
-- Graphblock: {"type": "graphblock", "address": "g_1", "title": "Chart", "chartType": "line", "labels": ["1", "2"], "datasets": [{"label": "Data", "data": [10, 20]}]}
-- For Axis Plots of Parametric geometry (e.g., graphing a circle radius): Use "chartType": "scatter" and provide raw '{x, y}' objects in "data" with "showLine": true in the dataset.
+- Use LaTeX notation (\\frac, \\sqrt, \\int, \\sum, \\alpha, \\pi, etc.).
+- Show every substitution and simplification step.
 
-MANDATORY DRAWING RULE (IF USER ASKS TO "DRAW"):
-- If the user specifically asks to "draw" or "sketch" a shape, points on a plane, or any non-axis geometry, YOU MUST ONLY USE A DIABLOCK with "layout": "coordinate".
-- For explicitly labeled coordinate points connected by sharp straight edges, use "shape": "point", and place their X,Y values in the "value" field like "(2,3)". Connect them linearly with edges.
-- For pure vector outlines, use "shape": "polygon" or "pencil" with a "points": "100,20 50,50" array.
-- Example Coordinate Map: {"type": "diablock", "address": "dia_1", "title": "Coordinate Sketch", "layout": "coordinate", "nodes": [{"id": "A", "value": "(2,3)", "shape": "point", "label": "Point A"}, {"id": "B", "value": "(8,3)", "shape": "point"}], "edges": [{"from": "A", "to": "B"}], "steps": []}
+MANDATORY GRAPHBLOCK RULE (IF USER ASKS TO GRAPH):
+- For charts, plots, statistics: use graphblock, NOT diablock.
+---
+type: graphblock
+address: g_1
+title: Sales Chart
+chartType: line
+labels: Q1, Q2, Q3, Q4
+>dataset
+  label: Revenue
+  data: 100, 200, 150, 300
 
-MANDATORY DIABLOCK RULE (STRICTLY DATA STRUCTURES & ALGORITHMS):
-- If the topic relates to data structures (linked list, tree, graph, stack, queue, trie) or algorithmic tracing (sorting, BFS, DFS, search, pointer), generate a standard Diablock flowchart.
-- Diablock: {"type": "diablock", "address": "dia_1", "layout": "grid|horizontal|vertical|tree", "nodes": [{"id": "n1", "value": "10", "shape": "box|circle|diamond|compound", "label": "optional"}], "edges": [{"from": "n1", "to": "n2", "type": "arrow"}], "steps": [{"description": "Action", "highlightNodes": ["n1"]}]}
-- LAYOUTS: Use "horizontal" for Linked Lists/Queues. Use "vertical" for Stacks. Use "tree" for Trees/Graphs.
+- For scatter plots: use chartType: scatter and data: {x:1,y:2}, {x:3,y:4} with showLine: true.
 
-JSON STRUCTURE RULES:
-- Block: {"type": "block", "address": "unique_id", "in-content": "Display Text", "shape": "square|circle", "explanation": "Short tooltip...", "connect": ["child_block_id", "textblock_id", ...]}
-- Textblock (MANDATORY for each block): {"type": "textblock", "address": "tb_unique_id", "title": "Sub-category Title", "content": "Detailed multi-line explanation text here..."}
-- Arrow (for EVERY connection): {"type": "arrow", "in-content": "relationship label", "first-connection": "parent_id", "next-connection": "child_id"}
+MANDATORY DRAWING RULE (IF USER ASKS TO DRAW):
+- Use diablock with layout: coordinate for geometry/shapes.
+---
+type: diablock
+address: dia_1
+title: Coordinate Sketch
+layout: coordinate
+>dianode
+  id: A
+  value: (2,3)
+  shape: point
+  label: Point A
+>dianode
+  id: B
+  value: (8,3)
+  shape: point
+>edge
+  from: A
+  to: B
+
+MANDATORY DIABLOCK RULE (DATA STRUCTURES & ALGORITHMS):
+- For linked lists, trees, graphs, stacks, queues, sorting traces:
+---
+type: diablock
+address: dia_1
+layout: horizontal
+>dianode
+  id: n1
+  value: 10
+  shape: box
+  label: Head
+>dianode
+  id: n2
+  value: 20
+  shape: box
+>edge
+  from: n1
+  to: n2
+  type: arrow
+>diastep
+  description: Start at head node
+  highlightNodes: n1
+
+- LAYOUTS: horizontal for Lists/Queues, vertical for Stacks, tree for Trees/Graphs.
+
+BLOCK STRUCTURE RULES:
+Block example:
+---
+type: block
+address: unique_id
+in-content: Display Text
+shape: square
+explanation: Short tooltip
+connect: child_id, textblock_id
+>dialog
+  topic: Topic Name
+  input:
+  output:
+  explanation: Detailed explanation at least 20 words...
+
+Textblock example:
+---
+type: textblock
+address: tb_unique_id
+title: Sub-category Title
+content: Detailed explanation text here
+>dialog
+  topic: Details
+  input:
+  output:
+  explanation: Detailed explanation at least 20 words...
+
+Arrow example:
+---
+type: arrow
+in-content: relationship label
+first-connection: parent_id
+next-connection: child_id
 
 MANDATORY VIRTUAL CURSOR DIALOGS RULE:
-- For EVERY single block generated (including coding, maths, diagram blocks, and text blocks), you MUST include a "dialogs" array inside the block JSON. This is what the AI will speak while pointing at the block.
-- IMPORTANT: The user can ask about ANY topic. Do NOT just copy the examples from data.txt. Use data.txt purely as a REFERENCE for the style, structure, and high quality of explanations.
-- ALL text in the "dialogs" array (topic, input, output, explanation) MUST be written in the following language: ${lang}.
-- The structure MUST strictly follow this exact schema: "dialogs": [ { "topic": "Name", "input": "...", "output": "...", "explanation": "Detailed explanation..." } ]
-- Ensure "explanation" always uses clear, real-world analogies (like "A queue is like a line at a ticket counter").
-- CRITICAL: The "explanation" MUST be AT LEAST 20 words long for EVERY single block. Be detailed!
+- EVERY block MUST include >dialog entries. This is what the AI speaks.
+- ALL dialog text MUST be in: ${lang}.
+- Each >dialog needs: topic, input, output, explanation (at least 20 words).
+- Use clear real-world analogies.
 
-
-CRITICAL REMINDER: If the topic has charts/metrics, use graphblock. If the topic is about data structures, use diablock. If the topic has code, include coder+visualizer+outputer. If the topic has math, include mathblock.
+CRITICAL REMINDER: Charts → graphblock. Data structures → diablock. Code → coder+visualizer+outputer. Math → mathblock.
 
 Dense and accurate.${fileContext}
-Return ONLY valid JSON array.`;
+Return ONLY valid TOON format. Start with --- for the first block.`;
 
     try {
       let url, headers, payload;
@@ -785,7 +913,7 @@ Return ONLY valid JSON array.`;
         }
         
         payload = {
-          systemInstruction: { parts: [{ text: 'Output valid JSON array ONLY representing a node graph. No markdown.' }] },
+          systemInstruction: { parts: [{ text: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' }] },
           contents: [{ role: 'user', parts: currentParts }]
         };
       } else {
@@ -803,7 +931,7 @@ Return ONLY valid JSON array.`;
         payload = {
           model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'arcee-ai/trinity-large-preview:free',
           messages: [
-            { role: 'system', content: 'Output valid JSON array ONLY representing a node graph. No markdown.' },
+            { role: 'system', content: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' },
             userMessage
           ],
           stream: true
@@ -847,49 +975,39 @@ Return ONLY valid JSON array.`;
                 setJsonStreamData(fullText);
 
                 // === LIVE BLOCK RENDERING ===
-                // Aggressive partial JSON parsing to render live nodes character-by-character
+                // Partial TOON parsing to render live nodes as blocks stream in
                 try {
-                  let clean = fullText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                  const firstBracket = clean.indexOf('[');
-                  const lastBrace = clean.lastIndexOf('}');
-                  
-                  if (firstBracket !== -1 && lastBrace > firstBracket) {
-                    // Force complete the array by slicing at the last fully closed object and adding ]
-                    const partialStr = clean.substring(firstBracket, lastBrace + 1) + ']';
-                    const partial = JSON.parse(partialStr);
-                    if (Array.isArray(partial) && partial.length > 0) {
-                      const pContent = fileContent || currentTopic;
-                      if (pContent) {
-                         const pDisp = pContent.length > 800 ? pContent.slice(0, 800) + '\n\n[...Content truncated]' : pContent;
-                         const pRoots = partial.filter(n => !partial.some(p => p.connect?.includes(n.address))).map(n => n.address);
-                         partial.unshift({
-                            address: "user_input_special",
-                            type: "special_block",
-                            title: fileContent ? (fileName || "Uploaded Document") : "Your Prompt",
-                            content: pDisp,
-                            connect: pRoots
-                         });
-                      }
-                      setSlides(partial);
-                      const frame = document.getElementById('roadmapFrame');
-                      if (frame?.contentWindow) {
-                        frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: partial, isPartial: true }, '*');
-                      }
+                  const partial = parsePartialTOON(fullText);
+                  if (Array.isArray(partial) && partial.length > 0) {
+                    const pContent = fileContent || currentTopic;
+                    if (pContent) {
+                       const pDisp = pContent.length > 800 ? pContent.slice(0, 800) + '\n\n[...Content truncated]' : pContent;
+                       const pRoots = partial.filter(n => !partial.some(p => p.connect?.includes(n.address))).map(n => n.address);
+                       partial.unshift({
+                          address: "user_input_special",
+                          type: "special_block",
+                          title: fileContent ? (fileName || "Uploaded Document") : "Your Prompt",
+                          content: pDisp,
+                          connect: pRoots
+                       });
+                    }
+                    setSlides(partial);
+                    const frame = document.getElementById('roadmapFrame');
+                    if (frame?.contentWindow) {
+                      frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: partial, isPartial: true }, '*');
                     }
                   }
-                } catch (_) { /* partial JSON not yet complete, skip */ }
+                } catch (_) { /* partial TOON not yet complete, skip */ }
               }
             } catch (_) { /* ignore partial SSE chunks */ }
           }
         }
       }
 
-      // Final parse
+      // Final parse — TOON format
       let parsed = null;
       try {
-        let clean = fullText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const match = clean.match(/\[[\s\S]*\]/);
-        if (match) parsed = JSON.parse(match[0]);
+        parsed = parseTOON(fullText);
       } catch (_) {}
 
       if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
