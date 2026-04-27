@@ -95,3 +95,35 @@ body.light-theme .msg-user-bubble {
   .msg-user-bubble { max-width: 85%; }
   .msg-actions-row { opacity: 1; }
 }
+
+/* ===== CLASSROOM TRIGGER BUTTON ===== */
+.classroom-trigger-container {
+  margin: 16px 0;
+  display: flex;
+}
+
+.classroom-trigger-btn {
+  background: linear-gradient(135deg, var(--accent-color, #0a84ff), #005bb5);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.classroom-trigger-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(10, 132, 255, 0.4);
+}
+
+.classroom-trigger-btn:active {
+  transform: translateY(0);
+}
+

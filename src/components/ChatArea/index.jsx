@@ -156,10 +156,10 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
           <div className="chat-messages" ref={chatRef} onScroll={handleScroll}>
             <div className="messages-container">
               {messages.map((msg, i) => (
-                <Message key={i} message={msg} />
+                <Message key={i} message={msg} onTeacher={onTeacher} />
               ))}
               {isStreamActive && (
-                <Message message={{ role: 'assistant', content: streamText, isStreaming: true }} streaming />
+                <Message message={{ role: 'assistant', content: streamText, isStreaming: true }} streaming onTeacher={onTeacher} />
               )}
             </div>
           </div>

@@ -25,6 +25,7 @@ const DownloadIcon = () => (
 
 function renderMarkdown(text) {
   if (!text) return '';
+  let finalHtml = '';
   try {
     if (window.marked) {
       window.marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
@@ -37,12 +38,18 @@ function renderMarkdown(text) {
         /<pre><code>(?!class)/g,
         '<pre><div class="code-actions"><button class="copy-code-btn" title="Copy code"><span class="cc-icon">copy</span></button></div><code class="hljs">'
       );
-      return html;
+      finalHtml = html;
+    } else {
+      finalHtml = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
     }
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   } catch (e) {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+    finalHtml = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   }
+
+  if (finalHtml.includes('[RENDER_CLASSROOM_BUTTON]')) {
+    finalHtml = finalHtml.replace(/\[RENDER_CLASSROOM_BUTTON\]/g, `<div class="classroom-trigger-container"><button class="classroom-trigger-btn"><i class="fas fa-chalkboard-teacher"></i> Open Mean AI Classroom</button></div>`);
+  }
+  return finalHtml;
 }
 
 function injectCursor(html) {
@@ -94,7 +101,7 @@ function DownloadButton({ text }) {
   );
 }
 
-export default function Message({ message, streaming = false }) {
+export default function Message({ message, streaming = false, onTeacher }) {
   const contentRef = useRef(null);
   const isUser = message.role === 'user';
   const displayText = message.displayContent || message.content;
@@ -106,6 +113,13 @@ export default function Message({ message, streaming = false }) {
   const handleContentClick = useCallback((e) => {
     const copyBtn = e.target.closest('.copy-code-btn');
     const dlBtn = e.target.closest('.download-code-btn');
+    const teacherBtn = e.target.closest('.classroom-trigger-btn');
+
+    if (teacherBtn) {
+      e.preventDefault();
+      if (onTeacher) onTeacher();
+      return;
+    }
 
     if (copyBtn) {
       e.preventDefault();
