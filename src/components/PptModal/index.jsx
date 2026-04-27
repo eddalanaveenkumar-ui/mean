@@ -27,7 +27,7 @@ export default function PptModal({ isOpen, onClose }) {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'arcee-ai/trinity-large-preview:free',
+          model: 'openrouter/free',
           messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: `Generate ${slideCount} slides about: ${topic}. JSON only.` }]
         })
       });

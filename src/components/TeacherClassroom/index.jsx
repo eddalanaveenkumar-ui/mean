@@ -142,7 +142,7 @@ export default function TeacherClassroom({ isOpen, onClose }) {
         for (const m of messages) {
             contents.push(m);
         }
-        payload = { model: 'arcee-ai/trinity-large-preview:free', messages: contents, max_tokens: maxTokens };
+        payload = { model: 'openrouter/free', messages: contents, max_tokens: maxTokens };
       }
 
       const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -929,7 +929,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         }
         
         payload = {
-          model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'arcee-ai/trinity-large-preview:free',
+          model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'openrouter/free',
           messages: [
             { role: 'system', content: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' },
             userMessage
@@ -1659,7 +1659,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
               
               <div style={{ marginBottom: '16px' }}>
                 <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '15px' }}><i className="fas fa-star" style={{ color: '#5e5ce6', marginRight: '8px' }}/>OpenRouter API Key</h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: '0 0 8px' }}>For Arcee Model: <span style={{ color: 'var(--text-muted)' }}>arcee-ai/trinity-large-preview:free</span></p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: '0 0 8px' }}>Auto-routes to available free models: <span style={{ color: 'var(--text-muted)' }}>openrouter/free</span></p>
                 <input
                   type="password"
                   placeholder="sk-or-v1-..."

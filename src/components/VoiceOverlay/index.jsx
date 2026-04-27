@@ -60,7 +60,7 @@ export default function VoiceOverlay({ isOpen, onClose }) {
       const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'arcee-ai/trinity-large-preview:free', messages: msgs, stream: false, max_tokens: 100 })
+        body: JSON.stringify({ model: 'openrouter/free', messages: msgs, stream: false, max_tokens: 100 })
       });
       const data = await resp.json();
       const answer = data.choices?.[0]?.message?.content?.trim() || 'Sorry, I could not process that.';
