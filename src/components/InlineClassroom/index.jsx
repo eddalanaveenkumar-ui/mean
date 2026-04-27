@@ -8,6 +8,7 @@ export default function InlineClassroom({ topic, onExpand }) {
   const [phase, setPhase] = useState('idle'); // idle, generating, done, error
   const [errorMsg, setErrorMsg] = useState('');
   const [slides, setSlides] = useState([]);
+  const [iframeHtml, setIframeHtml] = useState('');
   const frameRef = useRef(null);
   const abortRef = useRef(null);
   const hasStartedRef = useRef(false);
@@ -21,7 +22,7 @@ export default function InlineClassroom({ topic, onExpand }) {
   // Handle iframe messages
   useEffect(() => {
     const handleMessage = (e) => {
-      if (e.data?.type === 'REQUEST_DATA') {
+      if (e.data === 'READY') {
         if (frameRef.current?.contentWindow && slidesRef.current.length > 0) {
           frameRef.current.contentWindow.postMessage({
             type: 'LOAD_ROADMAP',
@@ -36,6 +37,14 @@ export default function InlineClassroom({ topic, onExpand }) {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [phase]);
+
+  // Fetch roadmap.html for srcDoc to avoid iframe origin/routing issues
+  useEffect(() => {
+    fetch(`/roadmap.html?v=${Date.now()}`)
+      .then(r => r.text())
+      .then(html => setIframeHtml(html))
+      .catch(err => console.error('Failed to load roadmap.html for inline classroom:', err));
+  }, []);
 
   // Auto-start generation on mount
   useEffect(() => {
@@ -383,7 +392,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         ) : (
           <iframe
             ref={frameRef}
-            src="/roadmap.html"
+            srcDoc={iframeHtml}
             className="ic-iframe"
             title="Inline Roadmap"
             style={{ opacity: (phase === 'generating' && slides.length === 0) ? 0 : 1 }}
