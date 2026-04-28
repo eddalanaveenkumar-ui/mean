@@ -208,7 +208,7 @@ export default function Message({ message, streaming = false, messageIndex, chat
           />
         )}
         
-        {inlineTopic && (
+        {inlineTopic && !streaming && (
           <InlineClassroom 
             topic={inlineTopic} 
             cachedSlides={message.classroomSlides}
