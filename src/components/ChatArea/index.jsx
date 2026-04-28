@@ -6,7 +6,7 @@ import InputArea from '../InputArea';
 import './ChatArea.css';
 
 export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS } = useApp();
+  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS, updateMessageData } = useApp();
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
   const [streamText, setStreamText] = useState('');
@@ -156,7 +156,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
           <div className="chat-messages" ref={chatRef} onScroll={handleScroll}>
             <div className="messages-container">
               {messages.map((msg, i) => (
-                <Message key={i} message={msg} onTeacher={onTeacher} />
+                <Message key={i} message={msg} messageIndex={i} chatId={currentChatId} updateMessageData={updateMessageData} onTeacher={onTeacher} />
               ))}
               {isStreamActive && (
                 <Message message={{ role: 'assistant', content: streamText, isStreaming: true }} streaming onTeacher={onTeacher} />

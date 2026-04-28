@@ -99,7 +99,7 @@ function DownloadButton({ text }) {
   );
 }
 
-export default function Message({ message, streaming = false, onTeacher }) {
+export default function Message({ message, streaming = false, messageIndex, chatId, updateMessageData, onTeacher }) {
   const contentRef = useRef(null);
   const isUser = message.role === 'user';
   const displayText = message.displayContent || message.content;
@@ -209,7 +209,16 @@ export default function Message({ message, streaming = false, onTeacher }) {
         )}
         
         {inlineTopic && (
-          <InlineClassroom topic={inlineTopic} onExpand={(t, slides) => { if (onTeacher) onTeacher(t, slides); }} />
+          <InlineClassroom 
+            topic={inlineTopic} 
+            cachedSlides={message.classroomSlides}
+            onSaveSlides={(slides) => {
+              if (updateMessageData && chatId && messageIndex !== undefined) {
+                updateMessageData(chatId, messageIndex, { classroomSlides: slides });
+              }
+            }}
+            onExpand={(t, slides) => { if (onTeacher) onTeacher(t, slides); }} 
+          />
         )}
         
         {renderedAfter && (

@@ -273,6 +273,26 @@ export function AppProvider({ children }) {
     });
   }, [currentChatId, persistChats]);
 
+  // Update extra data on an existing message (e.g. cached classroom slides)
+  const updateMessageData = useCallback((chatId, messageIndex, data) => {
+    setChats(prev => {
+      let targetChat = null;
+      const updated = prev.map(c => {
+        if (c.id === chatId) {
+          const newMessages = [...c.messages];
+          if (newMessages[messageIndex]) {
+            newMessages[messageIndex] = { ...newMessages[messageIndex], ...data };
+          }
+          targetChat = { ...c, messages: newMessages };
+          return targetChat;
+        }
+        return c;
+      });
+      persistChats(updated, targetChat);
+      return updated;
+    });
+  }, [persistChats]);
+
   // Generate AI title
   const generateTitle = useCallback(async (userMessage, chatId) => {
     try {
@@ -575,7 +595,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     user, apiKey, login, logout,
     chats, currentChat, currentChatId, setCurrentChatId,
     classes, setClasses, saveClass, deleteClass,
-    newChat, deleteChat, loadChat, addMessage, sendMessage,
+    newChat, deleteChat, loadChat, addMessage, updateMessageData, sendMessage,
     isStreaming, setIsStreaming,
     sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,

@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { parseTOON, parsePartialTOON } from '../../utils/toonParser';
 import './InlineClassroom.css';
 
-export default function InlineClassroom({ topic, onExpand }) {
+export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onExpand }) {
   const { apiKey, user, selectedModel } = useApp();
   const [phase, setPhase] = useState('idle'); // idle, generating, done, error
   const [errorMsg, setErrorMsg] = useState('');
@@ -61,11 +61,17 @@ export default function InlineClassroom({ topic, onExpand }) {
     return () => clearTimeout(timer);
   }, [iframeHtml, phase]);
 
-  // Auto-start generation on mount
+  // Auto-start generation or use cache on mount
   useEffect(() => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
-    generateClass();
+    
+    if (cachedSlides && cachedSlides.length > 0) {
+      setSlides(cachedSlides);
+      setPhase('done');
+    } else {
+      generateClass();
+    }
 
     return () => {
       if (abortRef.current) abortRef.current.abort();
@@ -362,6 +368,10 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
       const finalParsed = parseTOON(fullText);
       setSlides(finalParsed);
+      if (onSaveSlides) {
+        onSaveSlides(finalParsed);
+      }
+      
       if (frameRef.current?.contentWindow) {
         frameRef.current.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: finalParsed, isPartial: false }, '*');
       }

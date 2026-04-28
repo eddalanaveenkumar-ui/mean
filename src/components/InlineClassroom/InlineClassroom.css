@@ -75,6 +75,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain;
+  isolation: isolate;
 }
 
 .ic-iframe {
@@ -83,6 +85,7 @@
   border: none;
   background: transparent;
   transition: opacity 0.3s ease;
+  overscroll-behavior: contain;
 }
 
 .ic-loading, .ic-error {
