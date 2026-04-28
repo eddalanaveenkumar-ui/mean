@@ -46,6 +46,21 @@ export default function InlineClassroom({ topic, onExpand }) {
       .catch(err => console.error('Failed to load roadmap.html for inline classroom:', err));
   }, []);
 
+  // When iframe content loads, resend any accumulated slides (race condition recovery)
+  useEffect(() => {
+    if (!iframeHtml) return;
+    const timer = setTimeout(() => {
+      if (frameRef.current?.contentWindow && slidesRef.current.length > 0) {
+        frameRef.current.contentWindow.postMessage({
+          type: 'LOAD_ROADMAP',
+          payload: slidesRef.current,
+          isPartial: phase === 'generating'
+        }, '*');
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [iframeHtml, phase]);
+
   // Auto-start generation on mount
   useEffect(() => {
     if (hasStartedRef.current) return;
@@ -317,8 +332,8 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\\n');
-        buffer = lines.pop();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           const trimmed = line.trim();
