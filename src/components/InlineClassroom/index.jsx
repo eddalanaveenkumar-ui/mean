@@ -319,7 +319,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         url = 'https://openrouter.ai/api/v1/chat/completions';
         headers = { 'Authorization': `Bearer ${keyToUse}`, 'Content-Type': 'application/json' };
         payload = {
-          model: 'openrouter/free',
+          model: 'minimax/minimax-m2.5:free',
           messages: [
             { role: 'system', content: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' },
             { role: 'user', content: outlinePrompt }
