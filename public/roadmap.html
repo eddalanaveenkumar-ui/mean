@@ -1123,9 +1123,29 @@ window.addEventListener('message', (event) => {
     }
   }
   if(event.data && event.data.type === 'LOAD_ROADMAP') {
-    renderTree(event.data.payload, event.data.isPartial);
+    if (event.data.isPartial) {
+      // Throttle partial renders — at most once every 800ms to prevent shaking
+      _pendingPartialData = event.data.payload;
+      if (!_partialThrottleTimer) {
+        _partialThrottleTimer = setTimeout(() => {
+          _partialThrottleTimer = null;
+          if (_pendingPartialData) {
+            renderTree(_pendingPartialData, true);
+            _pendingPartialData = null;
+          }
+        }, 800);
+      }
+    } else {
+      // Final render — always immediate, cancel any pending throttle
+      clearTimeout(_partialThrottleTimer);
+      _partialThrottleTimer = null;
+      _pendingPartialData = null;
+      renderTree(event.data.payload, false);
+    }
   }
 });
+let _partialThrottleTimer = null;
+let _pendingPartialData = null;
 
 // Content fingerprint — used to detect if a block's content actually changed
 function blockFingerprint(b) {
@@ -1145,7 +1165,13 @@ function renderTree(data, isPartial = false){
   // Preserve palette across partial renders so block colors don't shuffle
   if (!isPartial) { palIdx=0; palMap={}; }
   
-  // Save previous node data and elements for smart diffing!
+  // Save previous node positions for stability during partial renders
+  const prevPositions = {};
+  Object.keys(nodeData).forEach(addr => {
+    const nd = nodeData[addr];
+    prevPositions[addr] = { x: nd.x, y: nd.y, w: nd.w, h: nd.h };
+  });
+  
   const prevData = nodeData;
   nodeData = {}; 
   edges=[];
@@ -1158,7 +1184,26 @@ function renderTree(data, isPartial = false){
 
   const blocks=data.filter(n=>n&& (n.type==='block' || n.type==='textblock' || n.type==='coder' || n.type==='visualizer' || n.type==='outputer' || n.type==='mathblock' || n.type==='diablock' || n.type === 'graphblock'));
   const arrowDefs=data.filter(n=>n&&n.type==='arrow');
-  if(!blocks.length)return;
+  if(!blocks.length && !isPartial) return;
+  
+  // If partial with no blocks, just show the generating placeholder
+  if(!blocks.length && isPartial) {
+    const centerX = Math.max((wrap.clientWidth / 2) - 110, 60);
+    let generatingEl = document.getElementById('gen-node');
+    if(!generatingEl) {
+      generatingEl = document.createElement('div');
+      generatingEl.id = 'gen-node';
+      generatingEl.className = 'block-node glass-new';
+      generatingEl.innerHTML = `
+        <div class="node-body" style="padding:20px 28px; display:flex; align-items:center; gap:14px; color:var(--accent); font-weight:600; font-size:14px; white-space:nowrap;">
+          <div style="width:20px;height:20px;border:2.5px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          <span>Generating Tree…</span>
+        </div>`;
+      generatingEl.style.cssText = `left:${centerX}px;top:100px;width:220px; animation: nodeIn .45s cubic-bezier(.34,1.4,.64,1) both, nodePulse 1.5s infinite alternate; border-color: var(--accent);`;
+      world.appendChild(generatingEl);
+    }
+    return;
+  }
   const blockMap={};
   blocks.forEach(b=>blockMap[b.address]=b);
   const arrowExplanationMap={};
@@ -1716,6 +1761,41 @@ function renderTree(data, isPartial = false){
     flatOrder.forEach(addr => {
         const nd = nodeData[addr];
         const tbs = tbGroups[addr] || [];
+        const prev = prevPositions[addr];
+        
+        // During partial renders, keep existing nodes at their current positions
+        if (isPartial && prev) {
+            nd.x = prev.x;
+            nd.y = prev.y;
+            nd.el.style.left = nd.x + 'px';
+            nd.el.style.top = nd.y + 'px';
+            
+            // Textblocks also keep their positions
+            tbs.forEach(tbAddr => {
+                const tb = nodeData[tbAddr];
+                const tbPrev = prevPositions[tbAddr];
+                if (tbPrev) {
+                    tb.x = tbPrev.x;
+                    tb.y = tbPrev.y;
+                    tb.el.style.left = tb.x + 'px';
+                    tb.el.style.top = tb.y + 'px';
+                }
+            });
+            
+            // Advance currentY past this existing node
+            let tbMaxH = 0;
+            if (tbs.length > 0) {
+                let lastTbBottom = nd.y;
+                tbs.forEach(tbAddr => {
+                    const tb = nodeData[tbAddr];
+                    lastTbBottom = Math.max(lastTbBottom, tb.y + tb.h);
+                });
+                tbMaxH = lastTbBottom - nd.y;
+            }
+            const rowHeight = Math.max(nd.h, tbMaxH);
+            currentY = Math.max(currentY, nd.y + rowHeight + ROW_GAP);
+            return;
+        }
         
         let tbMaxWidth = 0;
         tbs.forEach(tbAddr => { tbMaxWidth = Math.max(tbMaxWidth, nodeData[tbAddr].w); });
