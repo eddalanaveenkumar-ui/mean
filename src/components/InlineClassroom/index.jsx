@@ -85,6 +85,13 @@ export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onE
     setErrorMsg('');
     abortRef.current = new AbortController();
 
+    // Show "Generating Tree..." placeholder immediately on the canvas
+    setTimeout(() => {
+      if (frameRef.current?.contentWindow) {
+        frameRef.current.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: [], isPartial: true }, '*');
+      }
+    }, 300);
+
     const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${topic}".
 Return ONLY valid TOON format (Token-Oriented Object Notation). Current year: 2026.
 
@@ -374,6 +381,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
       
       if (frameRef.current?.contentWindow) {
         frameRef.current.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: finalParsed, isPartial: false }, '*');
+        frameRef.current.contentWindow.postMessage({ type: 'GENERATION_DONE' }, '*');
       }
       setPhase('done');
     } catch (err) {

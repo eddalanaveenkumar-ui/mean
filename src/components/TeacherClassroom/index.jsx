@@ -722,6 +722,12 @@ Ensure you strictly follow the roadmap context.`;
     setSlides([]);
     activeRef.current = true;
 
+    // Show "Generating Tree..." placeholder immediately on the canvas
+    const frame = document.getElementById('roadmapFrame');
+    if (frame?.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: [], isPartial: true }, '*');
+    }
+
     const isBase64Image = fileContent && fileContent.startsWith('data:image/');
     
     const fileContext = fileContent && !isBase64Image
@@ -1082,6 +1088,8 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
       const frame = document.getElementById('roadmapFrame');
       if (frame?.contentWindow) {
         frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
+        // Signal generation complete — stops glass shine looping in roadmap
+        frame.contentWindow.postMessage({ type: 'GENERATION_DONE' }, '*');
       }
     } catch (e) {
       if (e.name === 'AbortError') {
@@ -1490,41 +1498,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           title="Canvas" onLoad={handleIframeLoad} />
       )}
 
-      {/* Agent Log — left panel (visible when generating or error) */}
-      {(phase === 'loading' || phase === 'error') && (
-        <div style={{
-          position: 'absolute', top: '70px', left: '16px', width: isAgentLogExpanded ? '400px' : 'auto',
-          background: 'var(--card-bg)', border: '1px solid var(--border-color)',
-          borderRadius: '12px', zIndex: 10, overflow: 'hidden',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.8)' // Solid bg + shadow fixes Chromium composite flickering
-        }}>
-          <div 
-             style={{ padding: '10px 14px', borderBottom: isAgentLogExpanded ? '1px solid var(--border-color)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', gap: '16px' }}
-             onClick={() => setIsAgentLogExpanded(!isAgentLogExpanded)}
-             title={isAgentLogExpanded ? "Hide Logs" : "Show Agent Logs"}
-          >
-            <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="fas fa-terminal" style={{ color: '#10b981' }}/> Agent Log
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {phase === 'loading' && <span className="tc-loading-spinner" style={{ margin: 0, width: '14px', height: '14px', opacity: isAgentLogExpanded ? 1 : 0.6 }} />}
-              {phase === 'error' && <span style={{ color: '#ff4d4f', fontSize: '12px' }}>⚠️ Error</span>}
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIsAgentLogExpanded(!isAgentLogExpanded); }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
-              >
-                <i className={`fas fa-chevron-${isAgentLogExpanded ? 'up' : 'down'}`} />
-              </button>
-            </div>
-          </div>
-          {isAgentLogExpanded && (
-            <div style={{ padding: '14px', color: 'var(--text-secondary)', fontFamily: 'SFMono-Regular, Consolas, monospace', fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
-              {jsonStreamData || 'Waiting for generation...'}
-              {phase === 'loading' && <span className="cursor-blink" style={{ color: '#10b981', fontWeight: 'bold' }}>|</span>}
-            </div>
-          )}
-        </div>
-      )}
+
 
       {/* Bottom Floating Prompt Bar */}
       <div style={{
