@@ -27,7 +27,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
   );
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
-export default function TeacherClassroom({ isOpen, onClose }) {
+export default function TeacherClassroom({ isOpen, onClose, initialTopic, initialSlides }) {
   const { user, webSearchActive, saveClass, classes, deleteClass, theme, selectedModel } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
@@ -168,6 +168,32 @@ export default function TeacherClassroom({ isOpen, onClose }) {
       return '';
     }
   }, [localKey, openRouterKey, activeEngine]);
+
+  // ===== PRE-LOAD SLIDES FROM INLINE CLASSROOM EXPAND =====
+  // When opened via the Expand button in the chat canvas, skip generation
+  // entirely and render the already-finished slides immediately.
+  useEffect(() => {
+    if (!isOpen || !initialSlides || initialSlides.length === 0) return;
+
+    // Populate state so the canvas has something to render
+    setSlides(initialSlides);
+    setSessionTopic(initialTopic || '');
+    setSessionTitle(initialTopic || '');
+    setPhase('done');
+
+    // Give the iframe a moment to fully load its srcDoc before posting
+    const timer = setTimeout(() => {
+      const frame = document.getElementById('roadmapFrame');
+      if (frame?.contentWindow) {
+        frame.contentWindow.postMessage(
+          { type: 'LOAD_ROADMAP', payload: initialSlides, isPartial: false },
+          '*'
+        );
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, initialSlides, initialTopic]);
 
   // Fetch roadmap.html dynamically to bypass Vercel/DNS iframe security redirect blocks
   // Added Date.now() timestamp to force bypass the PWA Service Worker cache!

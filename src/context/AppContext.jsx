@@ -527,9 +527,11 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
             try {
               const parsed = JSON.parse(trimmed.slice(6));
               let delta = '';
-              if (isGeminiKey) {
+              if (useGeminiDirect) {
+                 // Calling Gemini API directly — use Gemini SSE format
                  delta = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
               } else {
+                 // Calling OpenRouter (all non-Gemini-direct models) — use OpenAI SSE format
                  delta = parsed.choices?.[0]?.delta?.content || '';
               }
               if (delta) {
@@ -542,6 +544,32 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
       }
 
       window.dispatchEvent(new CustomEvent('stream-end'));
+
+      // ── CLIENT-SIDE CLASSROOM FALLBACK ────────────────────────────────────────
+      // The AI is instructed to include [RENDER_CLASSROOM_INLINE: "topic"] but
+      // sometimes forgets. Detect clear classroom intent from the user's message
+      // and inject the marker automatically when the AI omitted it.
+      const CLASSROOM_TRIGGERS = [
+        'teach me', 'create a class', 'make a class', 'make a roadmap',
+        'create a roadmap', 'visualize this', 'visualize the', 'classroom',
+        'create classroom', 'make classroom', 'learn about', 'roadmap for',
+        'roadmap on', 'roadmap of', 'show roadmap', 'generate roadmap',
+      ];
+      const lowerUserText = text.toLowerCase();
+      const hasClassroomIntent = CLASSROOM_TRIGGERS.some(kw => lowerUserText.includes(kw));
+      const hasMarkerAlready = assistantText.includes('[RENDER_CLASSROOM_INLINE:');
+
+      if (hasClassroomIntent && !hasMarkerAlready && assistantText.trim()) {
+        // Derive a clean topic from the user's message by stripping common prefixes
+        const rawTopic = text.trim()
+          .replace(/^(teach me (about|how to|the|a|an)?|create (a |an )?(class|roadmap|classroom) (on|for|about|of)?|make (a |an )?(class|roadmap|classroom) (on|for|about|of)?|visualize (the|this)?|roadmap (for|on|of)?|learn about|generate (a |an )?(roadmap|class) (on|for|about|of)?)/i, '')
+          .trim();
+        const topicWords = rawTopic.split(/\s+/).slice(0, 5).join(' ');
+        const finalTopic = topicWords || text.trim().split(/\s+/).slice(0, 5).join(' ');
+        assistantText += `\n\n[RENDER_CLASSROOM_INLINE: "${finalTopic}"]`;
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       if (assistantText) {
         addMessage('assistant', assistantText);
       } else {

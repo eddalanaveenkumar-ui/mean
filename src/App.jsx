@@ -33,11 +33,21 @@ function DashboardLayout() {
   const [showMusic, setShowMusic] = useState(false);
   const [showTokenBank, setShowTokenBank] = useState(false);
   const [showPremiumPlans, setShowPremiumPlans] = useState(false);
+  // Holds topic+slides when expanding an InlineClassroom into the full canvas
+  const [expandedClassroom, setExpandedClassroom] = useState(null);
 
   const overlayProps = {
     onVoice: () => setShowVoice(true),
     onPpt: () => setShowPpt(true),
-    onTeacher: () => setShowTeacher(true),
+    onTeacher: (topic, slides) => {
+      // If called from InlineClassroom expand, store the pre-generated content
+      if (topic && slides && slides.length > 0) {
+        setExpandedClassroom({ topic, slides });
+      } else {
+        setExpandedClassroom(null);
+      }
+      setShowTeacher(true);
+    },
     onMusic: () => setShowMusic(true),
     onTokenBank: () => setShowTokenBank(true),
     onPremiumPlans: () => setShowPremiumPlans(true),
@@ -56,7 +66,12 @@ function DashboardLayout() {
 
       {/* Global overlays */}
       <VoiceOverlay isOpen={showVoice} onClose={() => setShowVoice(false)} />
-      <TeacherClassroom isOpen={showTeacher} onClose={() => setShowTeacher(false)} />
+      <TeacherClassroom
+        isOpen={showTeacher}
+        onClose={() => { setShowTeacher(false); setExpandedClassroom(null); }}
+        initialTopic={expandedClassroom?.topic}
+        initialSlides={expandedClassroom?.slides}
+      />
       <PptModal isOpen={showPpt} onClose={() => setShowPpt(false)} />
       <MusicPlayer isOpen={showMusic} onClose={() => setShowMusic(false)} />
       <TokenBank isOpen={showTokenBank} onClose={() => setShowTokenBank(false)} />
