@@ -233,20 +233,16 @@ body.light-theme .msg-content code {
   color: var(--text-primary);
 }
 body.light-theme .msg-content pre {
-  background: #f6f8fa;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #1e1e2e;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 body.light-theme .msg-content pre code {
   background: transparent;
-  color: #1f2328;
+  color: #e6edf3;
 }
 body.light-theme .code-lang-label {
-  background: #e8ecf0;
-  color: #57606a;
-}
-body.light-theme .copy-code-btn,
-body.light-theme .download-code-btn {
-  color: #57606a;
+  background: #2d2d3d;
+  color: #a0a0b0;
 }
 
 /* ===== TABLE STYLES ===== */
@@ -317,21 +313,27 @@ body.light-theme .msg-content tbody tr:hover {
   font-weight: 600;
   user-select: none;
 }
-.copy-code-btn, .download-code-btn {
+.code-actions {
   position: absolute;
   top: 4px; right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+.copy-code-btn, .download-code-btn {
   background: transparent;
   border: none;
   color: #8b949e;
-  font-size: 1.1rem;
-  padding: 5px 8px;
+  padding: 4px 6px;
   border-radius: 6px;
   cursor: pointer;
   opacity: 0.7;
   transition: var(--transition);
-  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.download-code-btn { right: 40px; }
 .copy-code-btn:hover, .download-code-btn:hover {
   opacity: 1;
   background: var(--accent);
@@ -341,6 +343,17 @@ body.light-theme .msg-content tbody tr:hover {
   background: var(--success);
   color: #fff;
   opacity: 1;
+}
+
+/* Light theme code actions */
+body.light-theme .copy-code-btn,
+body.light-theme .download-code-btn {
+  color: #57606a;
+}
+body.light-theme .copy-code-btn:hover,
+body.light-theme .download-code-btn:hover {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* Streaming shine */

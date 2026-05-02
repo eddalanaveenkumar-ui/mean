@@ -33,11 +33,11 @@ function renderMarkdown(text) {
       let html = window.marked.parse(text);
       html = html.replace(
         /<pre><code class="language-(\w+)">/g,
-        (_, lang) => `<pre><span class="code-lang-label">${lang}</span><div class="code-actions"><button class="copy-code-btn" title="Copy code"><span class="cc-icon">copy</span></button><button class="download-code-btn" title="Download"><span class="cc-icon">dl</span></button></div><code class="language-${lang} hljs">`
+        (_, lang) => `<pre><span class="code-lang-label">${lang}</span><div class="code-actions"><button class="copy-code-btn" title="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button><button class="download-code-btn" title="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div><code class="language-${lang} hljs">`
       );
       html = html.replace(
         /<pre><code>(?!class)/g,
-        '<pre><div class="code-actions"><button class="copy-code-btn" title="Copy code"><span class="cc-icon">copy</span></button></div><code class="hljs">'
+        '<pre><div class="code-actions"><button class="copy-code-btn" title="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button></div><code class="hljs">'
       );
       finalHtml = html;
     } else {
@@ -118,9 +118,9 @@ export default function Message({ message, streaming = false, messageIndex, chat
       const code = pre?.querySelector('code')?.textContent || '';
       navigator.clipboard.writeText(code).then(() => {
         copyBtn.classList.add('copied');
-        const iconEl = copyBtn.querySelector('.cc-icon');
-        if (iconEl) iconEl.textContent = '✓';
-        setTimeout(() => { copyBtn.classList.remove('copied'); if (iconEl) iconEl.textContent = 'copy'; }, 2000);
+        const svgEl = copyBtn.querySelector('svg');
+        if (svgEl) svgEl.outerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => { copyBtn.classList.remove('copied'); const s = copyBtn.querySelector('svg'); if (s) s.outerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>'; }, 2000);
       });
     }
 
