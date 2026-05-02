@@ -110,9 +110,29 @@ export default function Message({ message, streaming = false, messageIndex, chat
   const { openCanvas, canvasOpen } = useApp();
   const isUser = message.role === 'user';
   let displayText = message.displayContent || message.content;
+  
+  let canvasData = null;
   if (!isUser) {
-    // Strip [CANVAS_UPDATE]...[/CANVAS_UPDATE] — code goes to the canvas panel
-    displayText = displayText.replace(/\[CANVAS_UPDATE\][\s\S]*?(?:\[\/CANVAS_UPDATE\]|$)/, '\n> 🎨 **Canvas Updated** — See the code in the canvas panel →\n');
+    // Extract [CANVAS_UPDATE] block to render as a clickable card
+    const canvasRegex = /\[CANVAS_UPDATE\]([\s\S]*?)(?:\[\/CANVAS_UPDATE\]|$)/;
+    const canvasMatch = displayText.match(canvasRegex);
+    
+    if (canvasMatch) {
+      const fullMatch = canvasMatch[0];
+      let innerContent = canvasMatch[1];
+      let lang = 'text';
+      let code = innerContent.trim();
+      
+      const langMatch = innerContent.match(/^[\s]*```(\w+)?\n([\s\S]*?)(?:```|$)/);
+      if (langMatch) {
+        lang = langMatch[1] || 'text';
+        code = langMatch[2].trim();
+      }
+      
+      canvasData = { lang, code };
+      // Remove it from the text since we will render a custom card
+      displayText = displayText.replace(canvasRegex, '');
+    }
   }
 
   useEffect(() => {
@@ -258,6 +278,28 @@ export default function Message({ message, streaming = false, messageIndex, chat
             onClick={handleContentClick}
             dangerouslySetInnerHTML={{ __html: streaming ? injectCursor(renderedAfter) : renderedAfter }}
           />
+        )}
+        
+        {canvasData && (
+          <div className="canvas-card-container" onClick={() => {
+            const langTitles = { html: 'HTML Page', javascript: 'JavaScript', js: 'JavaScript', python: 'Python Script', py: 'Python Script', css: 'CSS Styles', java: 'Java Program', cpp: 'C++ Program', c: 'C Program', typescript: 'TypeScript', ts: 'TypeScript', go: 'Go Program', rust: 'Rust Program', ruby: 'Ruby Script', php: 'PHP Script', bash: 'Shell Script', sh: 'Shell Script' };
+            const title = langTitles[canvasData.lang.toLowerCase()] || canvasData.lang.toUpperCase() + ' Code';
+            openCanvas(canvasData.code, canvasData.lang, title);
+          }}>
+            <div className="canvas-card-content">
+              <div className="canvas-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div className="canvas-card-info">
+                <span className="canvas-card-title">{streaming ? 'Generating Code...' : 'Canvas Ready'}</span>
+                <span className="canvas-card-subtitle">{streaming ? `Writing ${canvasData.lang}...` : 'Click to open code canvas'}</span>
+              </div>
+            </div>
+            <div className="canvas-card-action">
+              <span>Open</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </div>
         )}
         
         {!streaming && (

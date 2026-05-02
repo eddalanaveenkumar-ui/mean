@@ -657,12 +657,9 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
         if (canvasOpen) {
           // Canvas already open — update the code
           updateCanvasCode(newCode);
-        } else {
-          // Canvas not open — auto-open it with the generated code
-          const langTitles = { html: 'HTML Page', javascript: 'JavaScript', js: 'JavaScript', python: 'Python Script', py: 'Python Script', css: 'CSS Styles', java: 'Java Program', cpp: 'C++ Program', c: 'C Program', typescript: 'TypeScript', ts: 'TypeScript', go: 'Go Program', rust: 'Rust Program', ruby: 'Ruby Script', php: 'PHP Script', bash: 'Shell Script', sh: 'Shell Script' };
-          const title = langTitles[detectedLang.toLowerCase()] || detectedLang.toUpperCase() + ' Code';
-          openCanvas(newCode, detectedLang, title);
         }
+        // If canvas is NOT open, don't auto-open.
+        // The Message component renders a clickable CanvasCard instead.
       }
       // ─────────────────────────────────────────────────────────────────────────
 
