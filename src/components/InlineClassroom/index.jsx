@@ -4,7 +4,15 @@ import { parseTOON, parsePartialTOON } from '../../utils/toonParser';
 import './InlineClassroom.css';
 
 export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onExpand }) {
-  const { apiKey, user, selectedModel } = useApp();
+  const { apiKey, user, selectedModel, theme } = useApp();
+
+  // Resolve effective theme: 'system' → actual preference
+  const getEffectiveTheme = () => {
+    if (theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return theme;
+  };
   const [phase, setPhase] = useState('idle'); // idle, generating, done, error
   const [errorMsg, setErrorMsg] = useState('');
   const [slides, setSlides] = useState([]);
@@ -23,12 +31,16 @@ export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onE
   useEffect(() => {
     const handleMessage = (e) => {
       if (e.data === 'READY') {
-        if (frameRef.current?.contentWindow && slidesRef.current.length > 0) {
-          frameRef.current.contentWindow.postMessage({
-            type: 'LOAD_ROADMAP',
-            payload: slidesRef.current,
-            isPartial: phase === 'generating'
-          }, '*');
+        if (frameRef.current?.contentWindow) {
+          // Send theme first so the canvas renders with correct colors
+          frameRef.current.contentWindow.postMessage({ type: 'SET_THEME', payload: getEffectiveTheme() }, '*');
+          if (slidesRef.current.length > 0) {
+            frameRef.current.contentWindow.postMessage({
+              type: 'LOAD_ROADMAP',
+              payload: slidesRef.current,
+              isPartial: phase === 'generating'
+            }, '*');
+          }
         }
       } else if (e.data?.type === 'SPEAK_TEXT') {
         // inline classroom doesn't auto-speak to avoid audio spam
@@ -50,16 +62,20 @@ export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onE
   useEffect(() => {
     if (!iframeHtml) return;
     const timer = setTimeout(() => {
-      if (frameRef.current?.contentWindow && slidesRef.current.length > 0) {
-        frameRef.current.contentWindow.postMessage({
-          type: 'LOAD_ROADMAP',
-          payload: slidesRef.current,
-          isPartial: phase === 'generating'
-        }, '*');
+      if (frameRef.current?.contentWindow) {
+        // Send theme on iframe content load
+        frameRef.current.contentWindow.postMessage({ type: 'SET_THEME', payload: getEffectiveTheme() }, '*');
+        if (slidesRef.current.length > 0) {
+          frameRef.current.contentWindow.postMessage({
+            type: 'LOAD_ROADMAP',
+            payload: slidesRef.current,
+            isPartial: phase === 'generating'
+          }, '*');
+        }
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [iframeHtml, phase]);
+  }, [iframeHtml, phase, theme]);
 
   // Auto-start generation or use cache on mount
   useEffect(() => {

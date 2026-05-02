@@ -77,6 +77,7 @@
   justify-content: center;
   overscroll-behavior: contain;
   isolation: isolate;
+  transition: background 0.3s;
 }
 
 .ic-iframe {
@@ -129,4 +130,20 @@
 
 @keyframes ic-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+body.light-theme .inline-classroom {
+  background: var(--surface-color, #ffffff);
+  border-color: var(--border-color, rgba(0, 0, 0, 0.1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .ic-header {
+  background: var(--surface-light, #f5f5f7);
+  border-bottom-color: var(--border-color, rgba(0, 0, 0, 0.1));
+}
+
+body.light-theme .ic-body {
+  background: #f5f5f7;
 }
