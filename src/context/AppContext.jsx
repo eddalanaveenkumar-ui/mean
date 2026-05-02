@@ -43,6 +43,51 @@ export function AppProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'system');
   const streamAbortRef = useRef(null);
 
+  // ===== CODE CANVAS STATE =====
+  const [canvasOpen, setCanvasOpen] = useState(false);
+  const [canvasCode, setCanvasCode] = useState('');
+  const [canvasLang, setCanvasLang] = useState('');
+  const [canvasTitle, setCanvasTitle] = useState('');
+  const [canvasVersions, setCanvasVersions] = useState([]);
+  const [canvasVersionIdx, setCanvasVersionIdx] = useState(-1);
+
+  const openCanvas = useCallback((code, lang, title) => {
+    const version = { code, lang, title: title || 'Code', timestamp: Date.now() };
+    setCanvasCode(code);
+    setCanvasLang(lang || 'text');
+    setCanvasTitle(title || 'Code');
+    setCanvasVersions(prev => [...prev, version]);
+    setCanvasVersionIdx(prev => prev + 1);
+    setCanvasOpen(true);
+    setSidebarCollapsed(true); // Auto-collapse sidebar
+  }, []);
+
+  const updateCanvasCode = useCallback((code) => {
+    setCanvasCode(code);
+    const version = { code, lang: canvasLang, title: canvasTitle, timestamp: Date.now() };
+    setCanvasVersions(prev => {
+      const trimmed = prev.slice(0, canvasVersionIdx + 1);
+      return [...trimmed, version];
+    });
+    setCanvasVersionIdx(prev => prev + 1);
+  }, [canvasLang, canvasTitle, canvasVersionIdx]);
+
+  const closeCanvas = useCallback(() => {
+    setCanvasOpen(false);
+  }, []);
+
+  const navigateVersion = useCallback((direction) => {
+    setCanvasVersionIdx(prev => {
+      const next = prev + direction;
+      if (next < 0 || next >= canvasVersions.length) return prev;
+      const ver = canvasVersions[next];
+      setCanvasCode(ver.code);
+      setCanvasLang(ver.lang);
+      setCanvasTitle(ver.title);
+      return next;
+    });
+  }, [canvasVersions]);
+
   // Tokens state
   const [adTokens, setAdTokens] = useState(0);
   const [adTokensLastUpdated, setAdTokensLastUpdated] = useState(null);
@@ -404,9 +449,19 @@ CLASSROOM TRIGGER:
 If the user asks to "create a class", "make a roadmap", "teach me", "visualize this code", or something similar that warrants using the Classroom feature, YOU MUST INCLUDE THIS EXACT STRING IN YOUR RESPONSE: [RENDER_CLASSROOM_INLINE: "Extract Topic Here"]
 (Replace "Extract Topic Here" with a short, 2-5 word title of what the user wants to learn).`;
 
+    // Build canvas context — always include [CANVAS_UPDATE] instructions
+    let canvasContext = '';
+    if (canvasOpen && canvasCode) {
+      // Canvas is open with code — full editing instructions
+      canvasContext = `\n\n🎨 CANVAS MODE (CRITICAL — YOU MUST FOLLOW THESE RULES):\nThe user currently has a code canvas open. Here is the code inside it:\nLanguage: ${canvasLang}\nTitle: ${canvasTitle}\n\n\`\`\`${canvasLang}\n${canvasCode}\n\`\`\`\n\nRULES YOU MUST FOLLOW EVERY TIME:\n1. When the user asks you to modify, fix, change, improve, refactor, add features to, or edit ANY part of the code above, you MUST output the COMPLETE UPDATED FILE — never a partial snippet, never just the changed lines, never a diff.\n2. You MUST wrap the complete updated code with [CANVAS_UPDATE] markers EXACTLY like this:\n\n[CANVAS_UPDATE]\n\`\`\`${canvasLang}\n<COMPLETE UPDATED CODE HERE — EVERY SINGLE LINE OF THE FILE>\n\`\`\`\n[/CANVAS_UPDATE]\n\n3. After the [/CANVAS_UPDATE] marker, write a SHORT explanation (2-3 sentences) of what you changed.\n4. NEVER skip the [CANVAS_UPDATE] markers. NEVER output partial code. The canvas ONLY works if you output the ENTIRE file inside the markers.\n5. Even for tiny one-line changes, you MUST output the complete file with the change applied.\n6. Do NOT put any other code blocks in your response — ONLY the one inside [CANVAS_UPDATE].`;
+    } else {
+      // Canvas is NOT open — instruct AI to use [CANVAS_UPDATE] when generating code
+      canvasContext = `\n\nCODE CANVAS INSTRUCTIONS:\nWhen the user asks you to create, write, build, or generate code (apps, scripts, web pages, programs, etc.), you MUST:\n1. Output the COMPLETE code wrapped with [CANVAS_UPDATE] markers like this:\n\n[CANVAS_UPDATE]\n\`\`\`<language>\n<COMPLETE CODE HERE>\n\`\`\`\n[/CANVAS_UPDATE]\n\n2. After the markers, write a brief explanation.\n3. Use the correct language tag (html, python, javascript, css, java, cpp, etc.).\n4. This opens an interactive code canvas where the user can edit and run the code.\n5. For simple code snippets in explanations (not full programs), use normal code blocks instead.`;
+    }
+
     const systemPrompt = deepdiveActive
-      ? `${PERSONA}\nYou are in Deepdive mode — hyper-analytical. Think step-by-step, consider edge cases. Be thorough and precise.\n\nFORMATTING RULES:\n- Use emojis to make responses engaging: 👉 for bullet points, 📌 for key points, 💡 for tips, ⚡ for important notes, ✅ for conclusions, 🔥 for highlights\n- Use ## headers for sections, ### for sub-topics\n- Use code blocks with language tags\n- Use **bold** for emphasis\n- Use tables when comparing things\n- Make content scannable and visually appealing`
-      : `${PERSONA}\nYou are Mean AI, a powerful and friendly assistant.\n\nFORMATTING RULES:\n- Use emojis to make responses lively and engaging\n- Use 👉 for bullet points instead of plain dashes\n- Use 📌 for key takeaways, 💡 for tips, ⚡ for important info, ✅ for steps/conclusions, 🔥 for highlights, 📝 for notes\n- Use ## headers for major sections\n- Use **bold** for emphasis on key terms\n- Use code blocks with language tags for code\n- Keep responses well-structured with clear visual hierarchy\n- Be concise but thorough`;
+      ? `${PERSONA}\nYou are in Deepdive mode — hyper-analytical. Think step-by-step, consider edge cases. Be thorough and precise.\n\nFORMATTING RULES:\n- Use emojis to make responses engaging: 👉 for bullet points, 📌 for key points, 💡 for tips, ⚡ for important notes, ✅ for conclusions, 🔥 for highlights\n- Use ## headers for sections, ### for sub-topics\n- Use code blocks with language tags\n- Use **bold** for emphasis\n- Use tables when comparing things\n- Make content scannable and visually appealing${canvasContext}`
+      : `${PERSONA}\nYou are Mean AI, a powerful and friendly assistant.\n\nFORMATTING RULES:\n- Use emojis to make responses lively and engaging\n- Use 👉 for bullet points instead of plain dashes\n- Use 📌 for key takeaways, 💡 for tips, ⚡ for important info, ✅ for steps/conclusions, 🔥 for highlights, 📝 for notes\n- Use ## headers for major sections\n- Use **bold** for emphasis on key terms\n- Use code blocks with language tags for code\n- Keep responses well-structured with clear visual hierarchy\n- Be concise but thorough${canvasContext}`;
 
     const allMsgs = chats.find(c => c.id === chatId)?.messages || [];
     const cleanedKey = apiKey ? apiKey.trim() : '';
@@ -536,6 +591,28 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
               }
               if (delta) {
                 assistantText += delta;
+
+                // ── Live-stream code into canvas ──
+                if (canvasOpen) {
+                  const startMarker = '[CANVAS_UPDATE]';
+                  const startIdx = assistantText.indexOf(startMarker);
+                  if (startIdx !== -1) {
+                    const endMarker = '[/CANVAS_UPDATE]';
+                    const endIdx = assistantText.indexOf(endMarker, startIdx);
+                    let blockContent = endIdx !== -1
+                      ? assistantText.substring(startIdx + startMarker.length, endIdx)
+                      : assistantText.substring(startIdx + startMarker.length);
+                    const codeMatch = blockContent.match(/```(?:\w+)?\n([\s\S]*)/);
+                    if (codeMatch) {
+                      let liveCode = codeMatch[1];
+                      if (liveCode.endsWith('```\n')) liveCode = liveCode.slice(0, -4);
+                      else if (liveCode.endsWith('```')) liveCode = liveCode.slice(0, -3);
+                      // Send live code to canvas via event (not state) to avoid diff animation during stream
+                      window.dispatchEvent(new CustomEvent('canvas-stream-update', { detail: { code: liveCode, done: endIdx !== -1 } }));
+                    }
+                  }
+                }
+
                 window.dispatchEvent(new CustomEvent('stream-update', { detail: { text: assistantText } }));
               }
             } catch (e) { /* ignore */ }
@@ -549,6 +626,8 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
       // The AI is instructed to include [RENDER_CLASSROOM_INLINE: "topic"] but
       // sometimes forgets. Detect clear classroom intent from the user's message
       // and inject the marker automatically when the AI omitted it.
+      // SKIP if the AI already output a [CANVAS_UPDATE] (code canvas takes priority)
+      const hasCanvasUpdate = assistantText.includes('[CANVAS_UPDATE]');
       const CLASSROOM_TRIGGERS = [
         'teach me', 'create a class', 'make a class', 'make a roadmap',
         'create a roadmap', 'visualize this', 'visualize the', 'classroom',
@@ -559,7 +638,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
       const hasClassroomIntent = CLASSROOM_TRIGGERS.some(kw => lowerUserText.includes(kw));
       const hasMarkerAlready = assistantText.includes('[RENDER_CLASSROOM_INLINE:');
 
-      if (hasClassroomIntent && !hasMarkerAlready && assistantText.trim()) {
+      if (hasClassroomIntent && !hasMarkerAlready && !hasCanvasUpdate && assistantText.trim()) {
         // Derive a clean topic from the user's message by stripping common prefixes
         const rawTopic = text.trim()
           .replace(/^(teach me (about|how to|the|a|an)?|create (a |an )?(class|roadmap|classroom) (on|for|about|of)?|make (a |an )?(class|roadmap|classroom) (on|for|about|of)?|visualize (the|this)?|roadmap (for|on|of)?|learn about|generate (a |an )?(roadmap|class) (on|for|about|of)?)/i, '')
@@ -567,6 +646,23 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
         const topicWords = rawTopic.split(/\s+/).slice(0, 5).join(' ');
         const finalTopic = topicWords || text.trim().split(/\s+/).slice(0, 5).join(' ');
         assistantText += `\n\n[RENDER_CLASSROOM_INLINE: "${finalTopic}"]`;
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
+      // ── CANVAS UPDATE DETECTION ──────────────────────────────────────────────
+      const canvasUpdateMatch = assistantText.match(/\[CANVAS_UPDATE\]\s*```(\w+)?\n([\s\S]*?)```\s*\[\/CANVAS_UPDATE\]/);
+      if (canvasUpdateMatch) {
+        const detectedLang = canvasUpdateMatch[1] || 'text';
+        const newCode = canvasUpdateMatch[2].trim();
+        if (canvasOpen) {
+          // Canvas already open — update the code
+          updateCanvasCode(newCode);
+        } else {
+          // Canvas not open — auto-open it with the generated code
+          const langTitles = { html: 'HTML Page', javascript: 'JavaScript', js: 'JavaScript', python: 'Python Script', py: 'Python Script', css: 'CSS Styles', java: 'Java Program', cpp: 'C++ Program', c: 'C Program', typescript: 'TypeScript', ts: 'TypeScript', go: 'Go Program', rust: 'Rust Program', ruby: 'Ruby Script', php: 'PHP Script', bash: 'Shell Script', sh: 'Shell Script' };
+          const title = langTitles[detectedLang.toLowerCase()] || detectedLang.toUpperCase() + ' Code';
+          openCanvas(newCode, detectedLang, title);
+        }
       }
       // ─────────────────────────────────────────────────────────────────────────
 
@@ -634,6 +730,10 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     persistChats, setChats, setApiKey,
     adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
     selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS,
+    // Code Canvas
+    canvasOpen, canvasCode, canvasLang, canvasTitle,
+    canvasVersions, canvasVersionIdx,
+    openCanvas, updateCanvasCode, closeCanvas, navigateVersion,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

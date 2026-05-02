@@ -9,6 +9,7 @@ import VoiceOverlay from './components/VoiceOverlay';
 import TeacherClassroom from './components/TeacherClassroom';
 import PptModal from './components/PptModal';
 import MusicPlayer from './components/MusicPlayer';
+import CodeCanvas from './components/CodeCanvas';
 import LandingPage from './components/LandingPage';
 import TokenBank from './components/TokenBank';
 import PremiumPlans from './components/PremiumPlans';
@@ -25,7 +26,7 @@ import './App.css';
 
 /* ── Dashboard Shell (the authenticated layout) ── */
 function DashboardLayout() {
-  const { sidebarOpen, setSidebarOpen, showProfile } = useApp();
+  const { sidebarOpen, setSidebarOpen, showProfile, canvasOpen } = useApp();
 
   const [showVoice, setShowVoice] = useState(false);
   const [showTeacher, setShowTeacher] = useState(false);
@@ -54,7 +55,7 @@ function DashboardLayout() {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${canvasOpen ? 'canvas-open' : ''}`}>
       <div
         className={`sidebar-overlay ${sidebarOpen ? 'visible' : ''}`}
         onClick={() => setSidebarOpen(false)}
@@ -63,6 +64,7 @@ function DashboardLayout() {
       <main className="main-area">
         {showProfile ? <ProfilePage /> : <ChatArea {...overlayProps} />}
       </main>
+      {canvasOpen && <CodeCanvas />}
 
       {/* Global overlays */}
       <VoiceOverlay isOpen={showVoice} onClose={() => setShowVoice(false)} />

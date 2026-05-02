@@ -36,4 +36,23 @@
   height: 100%;
   overflow: hidden;
   background: var(--bg-dark);
+  transition: flex 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* ===== CANVAS SPLIT VIEW ===== */
+.app-container.canvas-open .main-area {
+  flex: 0 0 35%;
+  min-width: 320px;
+}
+.app-container.canvas-open .code-canvas {
+  flex: 0 0 65%;
+  min-width: 400px;
+}
+
+/* Mobile: canvas is full-screen overlay, main stays 100% */
+@media (max-width: 768px) {
+  .app-container.canvas-open .main-area {
+    flex: 1;
+    min-width: 100%;
+  }
 }

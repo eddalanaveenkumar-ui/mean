@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import InlineClassroom from '../InlineClassroom';
 import './Message.css';
 
@@ -106,96 +107,17 @@ function DownloadButton({ text }) {
 
 export default function Message({ message, streaming = false, messageIndex, chatId, updateMessageData, onTeacher }) {
   const contentRef = useRef(null);
+  const { openCanvas, canvasOpen } = useApp();
   const isUser = message.role === 'user';
-  const displayText = message.displayContent || message.content;
+  let displayText = message.displayContent || message.content;
+  if (!isUser) {
+    // Strip [CANVAS_UPDATE]...[/CANVAS_UPDATE] — code goes to the canvas panel
+    displayText = displayText.replace(/\[CANVAS_UPDATE\][\s\S]*?(?:\[\/CANVAS_UPDATE\]|$)/, '\n> 🎨 **Canvas Updated** — See the code in the canvas panel →\n');
+  }
 
   useEffect(() => {
     if (contentRef.current && !isUser) highlightCode(contentRef.current);
   }, [displayText, isUser]);
-
-  // === CODE EXECUTION ENGINE ===
-  const runCodeInBrowser = useCallback((code, lang) => {
-    return new Promise((resolve) => {
-      const lLang = lang.toLowerCase();
-
-      // HTML / CSS — render in iframe
-      if (lLang === 'html' || lLang === 'css') {
-        const htmlDoc = lLang === 'css'
-          ? `<!DOCTYPE html><html><head><style>${code}</style></head><body><div class="demo">CSS Preview</div></body></html>`
-          : code;
-        resolve({ type: 'html', content: htmlDoc });
-        return;
-      }
-
-      // JavaScript / TypeScript — sandbox iframe eval
-      if (lLang === 'javascript' || lLang === 'js' || lLang === 'typescript' || lLang === 'ts') {
-        const logs = [];
-        const iframe = document.createElement('iframe');
-        iframe.sandbox = 'allow-scripts';
-        iframe.style.display = 'none';
-        const script = `
-          <script>
-            const __logs = [];
-            const __origLog = console.log;
-            console.log = (...args) => __logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
-            console.error = (...args) => __logs.push('❌ ' + args.map(a => String(a)).join(' '));
-            console.warn = (...args) => __logs.push('⚠️ ' + args.map(a => String(a)).join(' '));
-            try {
-              ${code.replace(/<\/script>/gi, '<\\/script>')}
-            } catch(e) {
-              __logs.push('❌ Error: ' + e.message);
-            }
-            parent.postMessage({ type: 'CODE_RESULT', logs: __logs }, '*');
-          <\/script>`;
-        const handler = (e) => {
-          if (e.data?.type === 'CODE_RESULT') {
-            window.removeEventListener('message', handler);
-            iframe.remove();
-            resolve({ type: 'text', content: e.data.logs.join('\n') || '(No output)' });
-          }
-        };
-        window.addEventListener('message', handler);
-        iframe.srcdoc = `<!DOCTYPE html><html><body>${script}</body></html>`;
-        document.body.appendChild(iframe);
-        // Timeout safety
-        setTimeout(() => { window.removeEventListener('message', handler); iframe.remove(); resolve({ type: 'text', content: '⏱ Execution timed out (5s)' }); }, 5000);
-        return;
-      }
-
-      // All other languages — use Piston API (free, 50+ languages)
-      const pistonLangMap = {
-        python: 'python', py: 'python', python3: 'python',
-        java: 'java', c: 'c', cpp: 'c++', 'c++': 'c++', csharp: 'csharp', 'c#': 'csharp',
-        go: 'go', golang: 'go', rust: 'rust', ruby: 'ruby', php: 'php',
-        swift: 'swift', kotlin: 'kotlin', r: 'r', perl: 'perl',
-        bash: 'bash', sh: 'bash', shell: 'bash', lua: 'lua',
-        dart: 'dart', scala: 'scala', haskell: 'haskell',
-      };
-      const pistonLang = pistonLangMap[lLang];
-      if (!pistonLang) {
-        resolve({ type: 'text', content: `⚠️ Language "${lang}" is not supported for execution.` });
-        return;
-      }
-
-      fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language: pistonLang,
-          version: '*',
-          files: [{ content: code }]
-        })
-      })
-      .then(r => r.json())
-      .then(data => {
-        const output = (data.run?.output || data.run?.stderr || '(No output)').trim();
-        resolve({ type: 'text', content: output });
-      })
-      .catch(err => {
-        resolve({ type: 'text', content: `❌ Execution error: ${err.message}` });
-      });
-    });
-  }, []);
 
   const handleContentClick = useCallback((e) => {
     const copyBtn = e.target.closest('.copy-code-btn');
@@ -241,46 +163,12 @@ export default function Message({ message, streaming = false, messageIndex, chat
       if (!pre) return;
       const code = pre.querySelector('code')?.textContent || '';
       const lang = runBtn.dataset.lang || pre.dataset.lang || 'text';
-
-      // Toggle existing output panel
-      let outputPanel = pre.nextElementSibling;
-      if (outputPanel?.classList.contains('code-output-panel') && !outputPanel.classList.contains('running')) {
-        outputPanel.remove();
-        return;
-      }
-
-      // Create output panel
-      if (!outputPanel?.classList.contains('code-output-panel')) {
-        outputPanel = document.createElement('div');
-        outputPanel.className = 'code-output-panel running';
-        pre.after(outputPanel);
-      }
-      outputPanel.className = 'code-output-panel running';
-      outputPanel.innerHTML = '<div class="code-output-header"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Output</span><button class="code-output-close" title="Close">✕</button></div><div class="code-output-body"><div class="code-output-spinner"></div><span>Running...</span></div>';
-      outputPanel.querySelector('.code-output-close')?.addEventListener('click', () => outputPanel.remove());
-
-      // Update Run button to show running state
-      const labelEl = runBtn.querySelector('span');
-      if (labelEl) labelEl.textContent = 'Running...';
-      runBtn.disabled = true;
-
-      runCodeInBrowser(code, lang).then(result => {
-        runBtn.disabled = false;
-        if (labelEl) labelEl.textContent = 'Run';
-        outputPanel.classList.remove('running');
-
-        if (result.type === 'html') {
-          outputPanel.innerHTML = '<div class="code-output-header"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Preview</span><button class="code-output-close" title="Close">✕</button></div><iframe class="code-output-iframe" sandbox="allow-scripts allow-modals"></iframe>';
-          const iframeEl = outputPanel.querySelector('iframe');
-          if (iframeEl) iframeEl.srcdoc = result.content;
-        } else {
-          const escaped = (result.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          outputPanel.innerHTML = `<div class="code-output-header"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Output</span><button class="code-output-close" title="Close">✕</button></div><pre class="code-output-body">${escaped}</pre>`;
-        }
-        outputPanel.querySelector('.code-output-close')?.addEventListener('click', () => outputPanel.remove());
-      });
+      // Derive a title from the language
+      const langTitles = { html: 'HTML Page', javascript: 'JavaScript', js: 'JavaScript', python: 'Python Script', py: 'Python Script', css: 'CSS Styles', java: 'Java Program', cpp: 'C++ Program', c: 'C Program', typescript: 'TypeScript', ts: 'TypeScript', go: 'Go Program', rust: 'Rust Program', ruby: 'Ruby Script', php: 'PHP Script', bash: 'Shell Script', sh: 'Shell Script' };
+      const title = langTitles[lang.toLowerCase()] || lang.toUpperCase() + ' Code';
+      openCanvas(code, lang, title);
     }
-  }, [runCodeInBrowser]);
+  }, [openCanvas]);
 
   if (isUser) {
     let userImgUrl = null;

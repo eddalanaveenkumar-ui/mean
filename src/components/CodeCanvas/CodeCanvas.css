@@ -1,0 +1,426 @@
+/* ===== CODE CANVAS — ChatGPT-style side panel ===== */
+
+.code-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0d1117;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  animation: canvasSlideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+}
+
+@keyframes canvasSlideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== HEADER ===== */
+.cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  gap: 4px;
+  min-height: 40px;
+  overflow: hidden;
+}
+
+.cc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #e6edf3;
+}
+
+.cc-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.cc-lang-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.12);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.cc-editing-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #f0c040;
+  animation: editPulse 1.2s ease infinite;
+}
+
+@keyframes editPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.cc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ===== VERSION NAV ===== */
+.cc-version-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding-right: 8px;
+}
+
+.cc-version-label {
+  font-size: 0.68rem;
+  color: #8b949e;
+  font-weight: 600;
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ===== ICON BUTTONS ===== */
+.cc-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #8b949e;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cc-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e6edf3;
+}
+.cc-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.cc-icon-btn.active {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+.cc-icon-btn.copied {
+  color: #3ecb8e;
+}
+
+.cc-close-btn:hover {
+  background: rgba(255, 69, 58, 0.15);
+  color: #ff453a;
+}
+
+/* ===== RUN BUTTON ===== */
+.cc-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(46, 160, 67, 0.3);
+  background: rgba(46, 160, 67, 0.15);
+  color: #3ecb8e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cc-action-btn:hover {
+  background: rgba(46, 160, 67, 0.3);
+  border-color: rgba(46, 160, 67, 0.5);
+  color: #fff;
+}
+.cc-action-btn.running {
+  background: rgba(255, 150, 30, 0.15);
+  border-color: rgba(255, 150, 30, 0.3);
+  color: #ff9a3e;
+  cursor: wait;
+}
+
+/* ===== BODY ===== */
+.cc-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== EDITOR PANE ===== */
+.cc-editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-height: 200px;
+}
+
+.cc-editor-wrap {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.cc-line-numbers {
+  flex-shrink: 0;
+  width: 42px;
+  padding: 16px 0;
+  background: #0d1117;
+  color: #484f58;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: right;
+  user-select: none;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cc-line-numbers div {
+  padding: 0 10px 0 0;
+  height: 1.6em;
+}
+
+/* ===== EDITABLE TEXTAREA (normal mode) ===== */
+.cc-editor-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.cc-editor {
+  width: 100%;
+  height: 100%;
+  padding: 16px 16px 16px 12px;
+  background: transparent;
+  color: #e6edf3;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  white-space: pre;
+  tab-size: 2;
+  caret-color: #58a6ff;
+  position: relative;
+  z-index: 2;
+}
+.cc-editor::placeholder {
+  color: #484f58;
+}
+
+/* ===== HIGHLIGHT OVERLAY (shows changed lines after AI edit) ===== */
+.cc-highlight-overlay {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cc-highlight-line {
+  height: 1.6em;
+  width: 100%;
+  border-left: 3px solid transparent;
+  transition: background 2s ease, border-color 2s ease;
+}
+
+.cc-highlight-line.highlighted {
+  background: rgba(240, 192, 64, 0.12);
+  border-left-color: #f0c040;
+  animation: highlightFade 3s ease forwards;
+}
+
+@keyframes highlightFade {
+  0% { background: rgba(240, 192, 64, 0.18); border-left-color: #f0c040; }
+  60% { background: rgba(240, 192, 64, 0.10); border-left-color: #f0c040; }
+  100% { background: transparent; border-left-color: transparent; }
+}
+
+/* ===== LIVE STREAMING VIEW ===== */
+.cc-stream-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px 16px 12px;
+  scroll-behavior: smooth;
+}
+
+.cc-stream-line {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #e6edf3;
+  white-space: pre;
+  min-height: 1.6em;
+  padding: 0 4px;
+  border-left: 3px solid transparent;
+  transition: background 0.3s ease;
+}
+
+.cc-stream-line.changed {
+  background: rgba(46, 160, 67, 0.1);
+  border-left-color: #3ecb8e;
+}
+
+/* Typing cursor at end of stream */
+.cc-stream-container > .cc-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: #58a6ff;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: cursorBlink 0.6s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Dirty indicator */
+.cc-dirty-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: rgba(255, 150, 30, 0.1);
+  border-top: 1px solid rgba(255, 150, 30, 0.2);
+  font-size: 0.7rem;
+  color: #ff9a3e;
+}
+.cc-dirty-indicator button {
+  background: rgba(255, 150, 30, 0.2);
+  border: 1px solid rgba(255, 150, 30, 0.3);
+  color: #ff9a3e;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cc-dirty-indicator button:hover {
+  background: rgba(255, 150, 30, 0.35);
+  color: #fff;
+}
+
+/* ===== PREVIEW / OUTPUT PANE ===== */
+.cc-preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cc-preview-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.cc-preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: #8b949e;
+  font-size: 0.82rem;
+}
+
+.cc-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(62, 203, 142, 0.2);
+  border-top-color: #3ecb8e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.cc-preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.cc-output-text {
+  padding: 16px;
+  margin: 0;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cc-output-text.error {
+  color: #ff7b72;
+}
+
+.cc-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #484f58;
+  font-size: 0.82rem;
+}
+
+/* ===== LIGHT THEME ===== */
+body.light-theme .code-canvas {
+  background: #1e1e2e;
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+body.light-theme .cc-header {
+  background: #2d2d3d;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+body.light-theme .cc-line-numbers {
+  background: #1e1e2e;
+}
+
+/* ===== MOBILE: Full-screen overlay ===== */
+@media (max-width: 768px) {
+  .code-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    border-left: none;
+    animation: canvasMobileSlideUp 0.3s ease;
+  }
+
+  @keyframes canvasMobileSlideUp {
+    from { opacity: 0; transform: translateY(100%); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
