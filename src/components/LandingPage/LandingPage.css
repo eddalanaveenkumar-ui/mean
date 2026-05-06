@@ -7,8 +7,8 @@
 .landing-page {
   position: fixed;
   inset: 0;
-  background: #050505;
-  color: #ececec;
+  background: #fafafa;
+  color: #333333;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
   z-index: 9999;
@@ -104,10 +104,10 @@
 }
 
 .nav-scrolled {
-  background: rgba(5, 5, 5, 0.75);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   padding: 10px 0;
 }
 
@@ -136,7 +136,7 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: #111111;
 }
 
 .accent-text {
@@ -152,7 +152,7 @@
 }
 
 .nav-link {
-  color: #999;
+  color: #555555;
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 500;
@@ -160,7 +160,7 @@
   position: relative;
 }
 
-.nav-link:hover { color: #fff; }
+.nav-link:hover { color: #111111; }
 
 .nav-link::after {
   content: '';
@@ -184,7 +184,7 @@
 .nav-btn-ghost {
   background: transparent;
   border: none;
-  color: #b4b4b4;
+  color: #666666;
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
@@ -194,12 +194,12 @@
   font-family: inherit;
 }
 
-.nav-btn-ghost:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.nav-btn-ghost:hover { color: #111111; background: rgba(0,0,0,0.06); }
 
 .nav-btn-primary {
   background: linear-gradient(135deg, #0a84ff, #0066cc);
   border: none;
-  color: #fff;
+  color: #111111;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -284,7 +284,7 @@
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.04em;
-  color: #fff;
+  color: #111111;
   margin-bottom: 24px;
   animation: appleScaleUp 1s cubic-bezier(0.25, 1, 0.5, 1) 0.1s both;
 }
@@ -305,7 +305,7 @@
 
 .hero-subtitle {
   font-size: clamp(1rem, 2vw, 1.2rem);
-  color: #888;
+  color: #666666;
   max-width: 600px;
   line-height: 1.7;
   margin-bottom: 40px;
@@ -323,7 +323,7 @@
 .hero-btn-primary {
   background: linear-gradient(135deg, #0a84ff, #0066cc);
   border: none;
-  color: #fff;
+  color: #111111;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -334,7 +334,7 @@
   gap: 8px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
-  box-shadow: 0 0 40px rgba(10, 132, 255, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 0 40px rgba(10, 132, 255, 0.25), inset 0 1px 0 rgba(0,0,0,0.15);
   position: relative;
   overflow: hidden;
 }
@@ -346,7 +346,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.15), transparent);
   transition: left 0.5s ease;
 }
 
@@ -354,13 +354,13 @@
 
 .hero-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 50px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 8px 50px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(0,0,0,0.2);
 }
 
 .hero-btn-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ccc;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #555555;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -372,7 +372,7 @@
 
 .hero-btn-secondary:hover {
   border-color: rgba(10, 132, 255, 0.3);
-  color: #fff;
+  color: #111111;
   background: rgba(10, 132, 255, 0.06);
 }
 
@@ -390,13 +390,13 @@
   display: block;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #fff;
+  color: #111111;
   letter-spacing: -0.02em;
 }
 
 .stat-label {
   font-size: 0.78rem;
-  color: #666;
+  color: #777777;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -406,18 +406,18 @@
 .stat-divider {
   width: 1px;
   height: 36px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* ── Stitched QR Code Card ── */
 .hero-qr-stitched-card {
   margin-top: 48px;
   position: relative;
-  background: rgba(15, 15, 15, 0.8);
+  background: rgba(245, 245, 245, 0.8);
   border-radius: 24px;
   padding: 8px;
   /* Outer dark border to contrast the stitch */
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   animation: appleScaleUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) 0.5s both;
   max-width: 300px;
   backdrop-filter: blur(10px);
@@ -444,7 +444,7 @@
   width: 140px;
   height: 140px;
   border-radius: 12px;
-  background: #fff;
+  background: #000;
   padding: 8px;
   object-fit: cover;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -452,7 +452,7 @@
 
 .qr-text {
   font-size: 0.9rem;
-  color: #ccc;
+  color: #555555;
   font-weight: 500;
   text-align: center;
   margin: 0;
@@ -590,12 +590,12 @@
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: #111111;
 }
 
 .section-subtitle {
   font-size: 1.05rem;
-  color: #777;
+  color: #555555;
   margin-top: 16px;
   line-height: 1.6;
 }
@@ -608,8 +608,8 @@
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 20px;
   padding: 36px 28px;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -650,14 +650,14 @@
 .feature-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #fff;
+  color: #111111;
   margin-bottom: 10px;
   letter-spacing: -0.01em;
 }
 
 .feature-desc {
   font-size: 0.9rem;
-  color: #777;
+  color: #555555;
   line-height: 1.65;
 }
 
@@ -690,13 +690,13 @@
 .step-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #fff;
+  color: #111111;
   margin-bottom: 12px;
 }
 
 .step-desc {
   font-size: 0.9rem;
-  color: #777;
+  color: #555555;
   line-height: 1.65;
 }
 
@@ -717,8 +717,8 @@
 }
 
 .testimonial-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 20px;
   padding: 32px;
   transition: all 0.3s;
@@ -726,7 +726,7 @@
 
 .testimonial-card:hover {
   border-color: rgba(10, 132, 255, 0.15);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .testimonial-stars {
@@ -738,7 +738,7 @@
 
 .testimonial-text {
   font-size: 0.95rem;
-  color: #b4b4b4;
+  color: #666666;
   line-height: 1.7;
   margin-bottom: 24px;
   font-style: italic;
@@ -760,18 +760,18 @@
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
-  color: #fff;
+  color: #111111;
 }
 
 .testimonial-name {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #fff;
+  color: #111111;
 }
 
 .testimonial-role {
   font-size: 0.78rem;
-  color: #666;
+  color: #777777;
 }
 
 /* ── CTA Section ── */
@@ -800,13 +800,13 @@
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: #111111;
   margin-bottom: 16px;
 }
 
 .cta-subtitle {
   font-size: 1.05rem;
-  color: #777;
+  color: #555555;
   margin-bottom: 36px;
   line-height: 1.6;
 }
@@ -827,7 +827,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.82rem;
-  color: #888;
+  color: #666666;
 }
 
 .cta-point svg { color: #4ade80; }
@@ -836,7 +836,7 @@
 .landing-footer {
   position: relative;
   z-index: 1;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   padding: 60px 32px 24px;
   max-width: 1200px;
   margin: 0 auto;
@@ -863,7 +863,7 @@
 .footer-logo-text {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #fff;
+  color: #111111;
 }
 
 .footer-tagline {
@@ -880,7 +880,7 @@
 .footer-col h4 {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #888;
+  color: #666666;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 16px;
@@ -889,7 +889,7 @@
 .footer-col a {
   display: block;
   font-size: 0.88rem;
-  color: #666;
+  color: #777777;
   text-decoration: none;
   margin-bottom: 10px;
   transition: color 0.2s;
@@ -900,7 +900,7 @@
 .footer-bottom {
   text-align: center;
   padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
   font-size: 0.78rem;
   color: #444;
 }
@@ -918,8 +918,8 @@
   flex: 1;
   min-width: 320px;
   max-width: 520px;
-  background: rgba(10, 10, 12, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   overflow: hidden;
   backdrop-filter: blur(20px);
@@ -930,8 +930,8 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .demo-dot {
@@ -947,7 +947,7 @@
 .demo-panel-title {
   margin-left: 8px;
   font-size: 0.82rem;
-  color: #666;
+  color: #777777;
   font-weight: 500;
 }
 
@@ -987,9 +987,9 @@
   align-items: flex-start;
   gap: 12px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   font-size: 0.92rem;
   color: #bbb;
   line-height: 1.5;

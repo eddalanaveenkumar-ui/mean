@@ -105,7 +105,7 @@ export default function LandingPage({ onGetStarted }) {
       <nav className={`landing-nav ${scrolled ? 'nav-scrolled' : ''}`}>
         <div className="nav-inner">
           <div className="nav-brand" style={{ cursor: 'pointer' }} onClick={() => document.querySelector('.landing-scroll-container').scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="Mean AI" className="nav-logo-img" />
+            <img src="/logo-light.png" alt="Mean AI" className="nav-logo-img" />
             <span className="nav-logo-text">Mean <span className="accent-text">AI</span></span>
           </div>
           <div className="nav-links">
@@ -283,7 +283,7 @@ print(result)  # Output: 5`}
         <footer className="landing-footer">
           <div className="footer-inner" style={{ flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
             <div className="footer-brand" style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src="/logo.png" alt="Mean AI" className="footer-logo-img" />
+              <img src="/logo-light.png" alt="Mean AI" className="footer-logo-img" />
               <span className="footer-logo-text">Mean <span className="accent-text">AI</span></span>
             </div>
             
