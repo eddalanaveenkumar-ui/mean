@@ -34,7 +34,7 @@ const DeepdiveIcon = () => (
   </svg>
 );
 
-export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans }) {
+export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onDSACanvas }) {
   const {
     chats, currentChatId, sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,
@@ -95,6 +95,11 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
         <button className="sc-icon" onClick={() => { onMusic?.(); }} title="Music">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </button>
+        <button className="sc-icon" onClick={() => { onDSACanvas?.(); }} title="DSA Roadmap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
           </svg>
         </button>
         <div className="sc-divider" />
@@ -166,6 +171,10 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <button className={`tool-item ${deepdiveActive ? 'active' : ''}`} onClick={() => setDeepdiveActive(!deepdiveActive)}>
             <i className="fas fa-microscope" style={{color: deepdiveActive ? 'var(--accent)' : ''}}/>
             <span style={{color: deepdiveActive ? 'var(--accent)' : '', fontWeight: deepdiveActive ? 'bold' : ''}}>Deepdive Gen {deepdiveActive && '✓'}</span>
+          </button>
+          <button className="tool-item" onClick={() => { onDSACanvas?.(); setSidebarOpen(false); }}>
+            <i className="fas fa-map-marked-alt" />
+            <span>DSA Roadmap</span>
           </button>
         </div>
 

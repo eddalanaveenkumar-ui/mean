@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "825006547235",
+    "project_id": "mean-85713",
+    "storage_bucket": "mean-85713.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:825006547235:android:16fd638c46b3198714ec96",
+        "android_client_info": {
+          "package_name": "com.meanai.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "825006547235-s8h29t9puubipsnn4at8k8vmsk107q31.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meanai.app",
+            "certificate_hash": "54ce8664b171cf98246811fd211afb449d348b15"
+          }
+        },
+        {
+          "client_id": "825006547235-vdqq1l5mqco2uidqgv9ib86q3rr08lk5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_6GZDwR3h5nOS0RNPkx_ejueO552-yF4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "825006547235-vdqq1l5mqco2uidqgv9ib86q3rr08lk5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import './Login.css';
 
 // Google icon SVG
@@ -183,6 +184,37 @@ export default function Login() {
     if (e) e.preventDefault();
     setIsLoading(true);
     setLoadingMsg('Authenticating with Google...');
+
+    // Detect Capacitor environment
+    const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+    if (isCapacitor) {
+      // Use native Google Sign-In (shows native account picker popup)
+      try {
+        const nativeResult = await FirebaseAuthentication.signInWithGoogle();
+        // Get the ID token from the native sign-in
+        const idToken = nativeResult.credential?.idToken;
+        if (idToken) {
+          // Create a Firebase credential from the native token
+          const credential = GoogleAuthProvider.credential(idToken);
+          const userCredential = await signInWithCredential(auth, credential);
+          setFirebaseUser(userCredential.user);
+          setLoadingMsg('Connecting to secure server...');
+          const firebaseIdToken = await userCredential.user.getIdToken();
+          await processBackendAuth(userCredential.user, firebaseIdToken);
+        } else {
+          throw new Error('No ID token received from native sign-in');
+        }
+      } catch (err) {
+        console.error('Native Google sign-in error:', err);
+        if (err.message && !err.message.includes('canceled')) {
+          alert('Login error: ' + (err.code || '') + ' ' + (err.message || JSON.stringify(err)));
+        }
+        setIsLoading(false);
+      }
+      return;
+    }
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
       setFirebaseUser(result.user);
@@ -195,7 +227,6 @@ export default function Login() {
           signInWithRedirect(auth, googleProvider);
           return;
       } else if (err.name === 'AbortError') {
-          // Backend timed out — skip to API key step
           setTempUser({
             email: firebaseUser?.email || 'user',
             name: firebaseUser?.displayName || 'User',

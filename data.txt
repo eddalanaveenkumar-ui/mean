@@ -1,0 +1,122 @@
+[
+  {
+    "topic": "Python Loop",
+    "input": "for i in range(3)",
+    "output": "0 1 2",
+    "explanation": "range(3) gives 3 values starting from 0 — 0, 1, 2. Think of it like counting steps: step 0, step 1, step 2, each value goes into i one by one."
+  },
+  {
+    "topic": "While Loop",
+    "input": "while i < 3",
+    "output": "depends on i",
+    "explanation": "A while loop is like a gate that keeps opening as long as the condition is true. If i starts at 0, it keeps increasing until it reaches 3, then stops."
+  },
+  {
+    "topic": "Array Indexing",
+    "input": "arr[0]",
+    "output": "first element",
+    "explanation": "Arrays start at index 0, not 1. Think of it like seat numbering starting from 0 — the first seat is always 0."
+  },
+  {
+    "topic": "Function",
+    "input": "def add(a, b)",
+    "output": "a + b",
+    "explanation": "A function is like a machine: you give inputs (a, b), it processes them, and gives output. Like a calculator adding two numbers."
+  },
+  {
+    "topic": "Recursion",
+    "input": "factorial(n)",
+    "output": "n * factorial(n-1)",
+    "explanation": "Recursion is like asking a smaller version of yourself to solve the problem. Like climbing stairs by reducing one step each time until you reach ground level."
+  },
+  {
+    "topic": "Stack",
+    "input": "push/pop",
+    "output": "LIFO",
+    "explanation": "A stack works like a pile of plates — you add plates on top and remove from the top. Last in, first out."
+  },
+  {
+    "topic": "Queue",
+    "input": "enqueue/dequeue",
+    "output": "FIFO",
+    "explanation": "A queue is like a line at a ticket counter — the first person in line gets served first."
+  },
+  {
+    "topic": "Linear Search",
+    "input": "search 5",
+    "output": "index",
+    "explanation": "Linear search is like checking each book on a shelf one by one until you find the one you need."
+  },
+  {
+    "topic": "Binary Search",
+    "input": "sorted array",
+    "output": "log n",
+    "explanation": "Binary search is like guessing a number by cutting the range in half each time — much faster than checking one by one."
+  },
+  {
+    "topic": "Time Complexity",
+    "input": "O(n)",
+    "output": "linear growth",
+    "explanation": "O(n) means work increases as input increases. Like checking every student in a class — more students, more time."
+  },
+  {
+    "topic": "Probability",
+    "input": "coin toss",
+    "output": "1/2",
+    "explanation": "Probability is chance. Like flipping a coin — two outcomes, so chance of heads is 1 out of 2."
+  },
+  {
+    "topic": "Pythagoras",
+    "input": "a² + b² = c²",
+    "output": "triangle relation",
+    "explanation": "In a right triangle, the square of the longest side equals the sum of squares of the other two — like combining two smaller squares into one bigger square."
+  },
+  {
+    "topic": "Linear Equation",
+    "input": "y = 2x + 1",
+    "output": "line",
+    "explanation": "This equation is like a straight path where every step in x increases y by 2, starting from 1."
+  },
+  {
+    "topic": "Sorting",
+    "input": "bubble sort",
+    "output": "sorted list",
+    "explanation": "Bubble sort is like repeatedly swapping neighbors until everything is in order — like arranging people by height step by step."
+  },
+  {
+    "topic": "Database",
+    "input": "table",
+    "output": "rows and columns",
+    "explanation": "A database table is like an Excel sheet — rows store records, columns store attributes."
+  },
+  {
+    "topic": "API",
+    "input": "request/response",
+    "output": "data exchange",
+    "explanation": "An API is like a waiter in a restaurant — you request food, the waiter brings it from the kitchen."
+  },
+  {
+    "topic": "Machine Learning",
+    "input": "training data",
+    "output": "model",
+    "explanation": "Machine learning is like teaching a child using examples — the more examples, the better it learns patterns."
+  },
+  {
+    "topic": "Variable",
+    "input": "x = 5",
+    "output": "store value",
+    "explanation": "A variable is like a labeled box where you store data. Here, the box named x contains 5."
+  },
+  {
+    "topic": "Condition",
+    "input": "if x > 5",
+    "output": "true/false",
+    "explanation": "A condition is like a decision point — if the rule is true, do one thing; otherwise, do something else."
+  },
+  {
+    "topic": "Graph",
+    "input": "nodes and edges",
+    "output": "connections",
+    "explanation": "A graph is like a network of cities (nodes) connected by roads (edges)."
+  }
+]

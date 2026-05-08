@@ -10,6 +10,7 @@ import TeacherClassroom from './components/TeacherClassroom';
 import PptModal from './components/PptModal';
 import MusicPlayer from './components/MusicPlayer';
 import CodeCanvas from './components/CodeCanvas';
+import DSACanvas from './components/DSACanvas';
 import LandingPage from './components/LandingPage';
 import TokenBank from './components/TokenBank';
 import PremiumPlans from './components/PremiumPlans';
@@ -34,6 +35,7 @@ function DashboardLayout() {
   const [showMusic, setShowMusic] = useState(false);
   const [showTokenBank, setShowTokenBank] = useState(false);
   const [showPremiumPlans, setShowPremiumPlans] = useState(false);
+  const [showDSACanvas, setShowDSACanvas] = useState(false);
   // Holds topic+slides when expanding an InlineClassroom into the full canvas
   const [expandedClassroom, setExpandedClassroom] = useState(null);
 
@@ -52,6 +54,7 @@ function DashboardLayout() {
     onMusic: () => setShowMusic(true),
     onTokenBank: () => setShowTokenBank(true),
     onPremiumPlans: () => setShowPremiumPlans(true),
+    onDSACanvas: () => setShowDSACanvas(true),
   };
 
   return (
@@ -78,6 +81,7 @@ function DashboardLayout() {
       <MusicPlayer isOpen={showMusic} onClose={() => setShowMusic(false)} />
       <TokenBank isOpen={showTokenBank} onClose={() => setShowTokenBank(false)} />
       <PremiumPlans isOpen={showPremiumPlans} onClose={() => setShowPremiumPlans(false)} />
+      {showDSACanvas && <DSACanvas onClose={() => setShowDSACanvas(false)} />}
     </div>
   );
 }
