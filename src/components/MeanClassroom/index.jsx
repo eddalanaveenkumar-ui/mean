@@ -121,78 +121,50 @@ function isMathTopic(t) {
   return /quadrat|algebra|calcul|trig|geom|math|equation|integr|deriv|matrix|probab|statist|factor|polynom|limit|differen|logarithm|function|graph|parabola|hyperbola|ellipse|sine|cosine|tangent|vector|determinant|binomial|permut|combin|set.?theory|number.?line|inequalit|ratio|proportion|percentage|area|volume|perimeter|circumference|angle|triangle|circle|rectangle|square|cone|sphere|cylinder|∫|∑|√|solve|find.*root|prove|simplif|expand|evaluat/i.test(t);
 }
 
-/* ── Math System Prompt — In-depth step-by-step solving with graphs & shapes ── */
-const MATH_SYSTEM_PROMPT = `You are MEAN Math Solver — a JEE/competitive math expert who SOLVES problems IN DETAIL step-by-step on a visual whiteboard.
+/* ── Math System Prompt — Clean blackboard-style solving ── */
+const MATH_SYSTEM_PROMPT = `You are a math teacher solving on a blackboard. Write ONLY the solution — no explanations, no headings, no teaching.
 
-CRITICAL RULES:
-- SOLVE the problem showing EVERY single calculation and sub-step IN DETAIL.
-- NO definitions. NO real-world examples. NO analogies. NO chat text. NO teaching — ONLY solving.
-- Show the FULL mathematical working: substitutions, simplifications, intermediate results.
-- Each step should be thorough — show WHY each transformation happens.
-- DRAW the graph or geometric shape with ALL measurements.
-- The LAST step must have an "answer" field with the final boxed answer.
+RULES:
+- Solve like writing on a blackboard: label → equation → next label → next equation
+- NO paragraphs. NO explanations. NO side headings. NO descriptions.
+- Just SHORT labels and EQUATIONS. That's it.
+- DRAW the graph or shape with measurements in the diagram block.
+- The LAST step MUST have an "answer" field.
 - Return ONLY valid TOON format. Blocks separated by ---.
 
-═══ BLOCK 1 — Config ═══
+FORMAT:
 ---
 type: config
-topic: <problem statement>
+topic: <problem>
 category: math
-
-═══ BLOCK 2 — Diagram ═══
-DRAW the mathematical figure. Use these element kinds:
-- axis: Coordinate axes with ticks. Props: x, y, w, h, xMin, xMax, yMin, yMax, tickStep, xLabel, yLabel
-- plotline: Function curve. Props: points (SVG polyline points string), color, label
-- dot/point: Point marker. Props: x, y, r, label, color
-- line: Straight line. Props: x1, y1, x2, y2, label, color, dashed
-- arrow: Directed line. Props: x1, y1, x2, y2, label, color
-- dimension: Measurement with arrows both ends. Props: x1, y1, x2, y2, label, color
-- arc/angle: Angle arc. Props: x, y, r, startAngle, endAngle, label, color
-- circle: Circle. Props: x (cx), y (cy), r, label, color
-- polygon/triangle: Polygon. Props: points (SVG points string), label, color
-- region/area: Shaded region. Props: points (SVG polygon points string), color, label
-- text: Label text. Props: x, y, label, color, fontSize, bold, anchor
-- box: Rectangle. Props: x, y, w, h, label, color
-- wave/sine: Wave curve. Props: x, y, w, amplitude, frequency, label, color
-
-Canvas: 600x380. step:0 = always visible.
-Draw 8-25 elements. Include axis labels, measurement values, angle degrees, coordinate points.
-
-For GRAPHS: Always include axis element with proper xMin/xMax/yMin/yMax, then plotline with computed points.
-For GEOMETRY: Draw the shape with polygon/line, add dimension lines showing side lengths, arc elements showing angles with degree values.
-
-═══ BLOCK 3+ — Solution Steps (6-12 DETAILED steps) ═══
-Each step must be DETAILED with thorough mathematical working:
-
+---
+type: diagram
+(draw the graph/shape with axis, plotline, dot, line, dimension, arc, polygon, text elements)
 ---
 type: step
-title: <Clear label — e.g. "Factorize the expression", "Apply quadratic formula">
-point1: <Line of mathematical working>
-point2: <Next line — substitution, expansion, or simplification>
-point3: <Continue the working — show intermediate calculation>
-point4: <Next line of working or result>
-point5: <Additional detail — verification, alternate form, or note>
-point6: <Extra working line if needed>
-equation: <The KEY equation for this step — displayed prominently centered>
-answer: <ONLY on the LAST step — the final answer, displayed in a box>
+label: <short action label like "Given:" or "Factorize:" or "Substitute x = 2:">
+equation: <the equation or calculation, shown centered>
+answer: <ONLY on the very last step — the final answer>
 
-IMPORTANT FORMATTING RULES:
-- Use 6-12 steps minimum. Break complex problems into MANY small steps.
-- Each step focuses on ONE mathematical operation (factor, substitute, simplify, etc.)
-- "equation" field = the main equation/formula shown centered in large font
-- "answer" field = ONLY on the final step = boxed final answer
-- point1-point6: show the actual working, not descriptions
-- Use mathematical symbols: ², ³, √, ∫, π, θ, ±, ∞, ≤, ≥, ⇒, →, ∴, ∵
-- DO NOT include: realworld, chat, subtopic, example, explain fields.
+RULES FOR STEPS:
+- Each step has ONLY "label" and "equation" fields. Nothing else.
+- "label" = 2-4 words max (e.g. "Factorize:", "Apply formula:", "Discriminant:", "Verify x = 2:")
+- "equation" = the actual math (centered, large). Can be multi-line using \\n
+- Keep it SHORT. A teacher writes equations, not essays.
+- Use symbols: ², ³, √, ∫, π, θ, ±, ∞, ≤, ≥, ⇒, →, ∴
 
-═══ EXAMPLE — Solve x² - 5x + 6 = 0 ═══
+DIAGRAM ELEMENT KINDS:
+axis, plotline, dot/point, line, arrow, dimension, arc/angle, circle, polygon/triangle, region/area, text, box, wave/sine
+Canvas: 600x380. step:0 = always visible.
+
+EXAMPLE — Solve x² - 5x + 6 = 0:
 ---
 type: config
 topic: Solve x² - 5x + 6 = 0
 category: math
 ---
 type: diagram
-title: Graph of y = x² - 5x + 6
+title: y = x² - 5x + 6
 width: 600
 height: 380
 >element
@@ -206,17 +178,12 @@ height: 380
   yMin: -2
   yMax: 8
   tickStep: 1
-  xLabel: x
-  yLabel: y
   color: #3b82f6
   step: 0
 >element
   kind: plotline
   points: 50,298 120,210 190,138 260,82 330,42 365,34 400,42 470,82 540,160
   color: #3b82f6
-  label: y = x² - 5x + 6
-  x: 400
-  y: 330
   step: 0
 >element
   kind: dot
@@ -234,93 +201,28 @@ height: 380
   label: (3, 0)
   color: #ef4444
   step: 0
->element
-  kind: dot
-  x: 330
-  y: 42
-  r: 4
-  label: vertex (2.5, -0.25)
-  color: #f59e0b
-  step: 0
->element
-  kind: text
-  x: 300
-  y: 370
-  label: Roots: x = 2, x = 3
-  color: #10b981
-  fontSize: 13
-  bold: true
-  anchor: middle
-  step: 0
 ---
 type: step
-title: Given Equation
-point1: We are given the quadratic equation:
-point2: x² - 5x + 6 = 0
-point3: This is in standard form ax² + bx + c = 0
-point4: Comparing: a = 1, b = -5, c = 6
 equation: x² − 5x + 6 = 0
 ---
 type: step
-title: Calculate the Discriminant
-point1: Discriminant D = b² - 4ac
-point2: D = (-5)² - 4(1)(6)
-point3: D = 25 - 24
-point4: D = 1
-point5: Since D > 0, the equation has two distinct real roots
-point6: Since D is a perfect square, roots are rational ⇒ factorable
-equation: D = b² − 4ac = 25 − 24 = 1
----
-type: step
-title: Factorize
-point1: We need two numbers that multiply to give c = 6
-point2: And add up to give b = -5
-point3: Checking: (-2) × (-3) = 6 ✓
-point4: Checking: (-2) + (-3) = -5 ✓
-point5: ∴ x² - 5x + 6 = (x - 2)(x - 3)
+label: Factorize:
 equation: x² − 5x + 6 = (x − 2)(x − 3)
 ---
 type: step
-title: Set Each Factor to Zero
-point1: For the product to be zero, at least one factor must be zero:
-point2: x - 2 = 0  ⇒  x = 2
-point3: x - 3 = 0  ⇒  x = 3
-point4: These are the two roots of the equation
-equation: x − 2 = 0 ⇒ x = 2  ,  x − 3 = 0 ⇒ x = 3
+label: Set each factor equal to zero:
+equation: x − 2 = 0   ⇒   x = 2\\nx − 3 = 0   ⇒   x = 3
 ---
 type: step
-title: Verify x = 2
-point1: Substituting x = 2 in the original equation:
-point2: (2)² - 5(2) + 6
-point3: = 4 - 10 + 6
-point4: = 0 ✓
-point5: LHS = RHS, so x = 2 is correct
-equation: f(2) = 4 − 10 + 6 = 0 ✓
+label: Verify x = 2:
+equation: (2)² − 5(2) + 6 = 4 − 10 + 6 = 0 ✓
 ---
 type: step
-title: Verify x = 3
-point1: Substituting x = 3 in the original equation:
-point2: (3)² - 5(3) + 6
-point3: = 9 - 15 + 6
-point4: = 0 ✓
-point5: LHS = RHS, so x = 3 is correct
-equation: f(3) = 9 − 15 + 6 = 0 ✓
+label: Verify x = 3:
+equation: (3)² − 5(3) + 6 = 9 − 15 + 6 = 0 ✓
 ---
 type: step
-title: Additional Properties
-point1: Sum of roots = -b/a = -(-5)/1 = 5
-point2: Check: 2 + 3 = 5 ✓
-point3: Product of roots = c/a = 6/1 = 6
-point4: Check: 2 × 3 = 6 ✓
-point5: Vertex of parabola at x = -b/(2a) = 5/2 = 2.5
-point6: y at vertex = (2.5)² - 5(2.5) + 6 = 6.25 - 12.5 + 6 = -0.25
-equation: Sum = 5, Product = 6, Vertex = (2.5, −0.25)
----
-type: step
-title: Roots
-point1: The quadratic equation x² - 5x + 6 = 0 has two real roots
-point2: Found by factorization method
-point3: Verified by substitution
+label: Roots
 answer: x = 2, x = 3`;
 
 /* ── Universal System Prompt ── */
@@ -663,38 +565,25 @@ export default function MeanClassroom({ onClose }) {
                   </div>
                 )}
 
-                {/* ALL solution steps — rendered live as they stream in */}
-                <div className="mc-math-steps">
+                {/* Clean blackboard-style solution — just labels + equations */}
+                <div className="mc-math-board">
                   {stepBlocks.map((step, idx) => (
-                    <div key={idx} className={`mc-math-step ${step.answer ? 'mc-math-step-final' : ''}`} style={{ borderLeftColor: theme.accent }}>
-                      <div className="mc-math-step-header">
-                        <span className="mc-math-step-num" style={{ background: `${theme.accent}20`, color: theme.accent }}>
-                          {idx + 1}
-                        </span>
-                        <h3 className="mc-math-step-title" style={{ color: theme.accent }}>
-                          {step.title || `Step ${idx + 1}`}
-                        </h3>
-                      </div>
-                      <div className="mc-math-step-body">
-                        {[step.point1, step.point2, step.point3, step.point4, step.point5, step.point6]
-                          .filter(Boolean)
-                          .map((pt, i) => (
-                            <div key={i} className="mc-math-line">
-                              <span className="mc-math-line-text">{pt}</span>
-                            </div>
-                          ))}
-                      </div>
-                      {/* Centered equation display */}
+                    <div key={idx} className="mc-math-entry">
+                      {/* Short label like "Factorize:" */}
+                      {(step.label || step.title) && (
+                        <div className="mc-math-label">{step.label || step.title}</div>
+                      )}
+                      {/* Centered equation */}
                       {(step.equation || step.code) && (
-                        <div className="mc-math-equation-display" style={{ borderColor: `${theme.accent}20` }}>
-                          <span className="mc-math-equation-text" style={{ color: theme.accent }}>
-                            {step.equation || step.code}
-                          </span>
+                        <div className="mc-math-eq">
+                          {(step.equation || step.code).split('\\n').map((line, i) => (
+                            <div key={i} className="mc-math-eq-line" style={{ color: theme.accent }}>{line}</div>
+                          ))}
                         </div>
                       )}
                       {/* Boxed final answer */}
                       {step.answer && (
-                        <div className="mc-math-answer-box" style={{ borderColor: theme.accent, color: '#fff' }}>
+                        <div className="mc-math-answer-box" style={{ borderColor: theme.accent }}>
                           <span className="mc-math-answer-text">{step.answer}</span>
                         </div>
                       )}

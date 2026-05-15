@@ -492,104 +492,73 @@
 }
 @keyframes mcSolvePulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
 
-/* ── Math Mode — All Steps At Once (Textbook Style) ── */
-.mc-math-steps {
-  display: flex; flex-direction: column; gap: 14px;
-  max-height: 100%; overflow-y: auto;
-  padding-bottom: 8px;
-}
-.mc-math-step {
-  padding: 18px 20px;
-  background: rgba(12,12,28,0.95);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-left: 3px solid;
-  border-radius: 0 16px 16px 0;
-  animation: mcMathStepIn 0.4s ease-out both;
-}
-.mc-math-step:nth-child(1) { animation-delay: 0s; }
-.mc-math-step:nth-child(2) { animation-delay: 0.05s; }
-.mc-math-step:nth-child(3) { animation-delay: 0.1s; }
-.mc-math-step:nth-child(4) { animation-delay: 0.15s; }
-.mc-math-step:nth-child(5) { animation-delay: 0.2s; }
-.mc-math-step:nth-child(6) { animation-delay: 0.25s; }
-.mc-math-step:nth-child(7) { animation-delay: 0.3s; }
-.mc-math-step:nth-child(8) { animation-delay: 0.35s; }
-.mc-math-step:nth-child(9) { animation-delay: 0.4s; }
-.mc-math-step:nth-child(10) { animation-delay: 0.45s; }
-.mc-math-step:nth-child(11) { animation-delay: 0.5s; }
-.mc-math-step:nth-child(12) { animation-delay: 0.55s; }
-
-/* Final answer step highlight */
-.mc-math-step-final {
-  background: rgba(16,185,129,0.04);
-  border-color: rgba(16,185,129,0.15);
+/* ── Math Mode — Clean Blackboard Style ── */
+.mc-math-board {
+  display: flex; flex-direction: column; gap: 0;
+  padding: 10px 0 16px;
 }
 
-@keyframes mcMathStepIn {
-  from { opacity: 0; transform: translateX(-14px); }
-  to { opacity: 1; transform: translateX(0); }
+/* Each entry = optional label + equation */
+.mc-math-entry {
+  padding: 8px 0;
+  animation: mcMathFadeIn 0.35s ease-out both;
+}
+.mc-math-entry:nth-child(1) { animation-delay: 0s; }
+.mc-math-entry:nth-child(2) { animation-delay: 0.05s; }
+.mc-math-entry:nth-child(3) { animation-delay: 0.1s; }
+.mc-math-entry:nth-child(4) { animation-delay: 0.15s; }
+.mc-math-entry:nth-child(5) { animation-delay: 0.2s; }
+.mc-math-entry:nth-child(6) { animation-delay: 0.25s; }
+.mc-math-entry:nth-child(7) { animation-delay: 0.3s; }
+.mc-math-entry:nth-child(8) { animation-delay: 0.35s; }
+.mc-math-entry:nth-child(9) { animation-delay: 0.4s; }
+.mc-math-entry:nth-child(10) { animation-delay: 0.45s; }
+.mc-math-entry:nth-child(11) { animation-delay: 0.5s; }
+.mc-math-entry:nth-child(12) { animation-delay: 0.55s; }
+
+@keyframes mcMathFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.mc-math-step-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
-}
-.mc-math-step-num {
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
-}
-.mc-math-step-title {
-  font-size: 0.95rem; font-weight: 700; margin: 0;
-  letter-spacing: 0.2px;
-}
-
-/* Working lines */
-.mc-math-step-body {
-  display: flex; flex-direction: column; gap: 4px;
-  padding-left: 38px; margin-bottom: 6px;
-}
-.mc-math-line {
-  display: flex; align-items: flex-start; gap: 6px;
-  padding: 2px 0;
-}
-.mc-math-line-text {
-  font-size: 0.86rem; color: #ccc; line-height: 1.6;
+/* Short label — left aligned, muted */
+.mc-math-label {
+  font-size: 0.88rem;
+  color: #999;
+  font-weight: 500;
+  padding: 6px 0 4px;
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
-/* Centered equation display — prominent like textbook */
-.mc-math-equation-display {
-  margin: 12px 0 4px;
-  padding: 14px 20px;
+/* Centered equation — prominent, large, serif */
+.mc-math-eq {
   text-align: center;
-  background: rgba(0,0,0,0.25);
-  border-bottom: 1px solid;
-  border-radius: 10px;
+  padding: 10px 16px;
 }
-.mc-math-equation-text {
+.mc-math-eq-line {
   font-family: 'Georgia', 'Times New Roman', 'Cambria', serif;
-  font-size: 1.15rem;
+  font-size: 1.18rem;
   font-weight: 600;
   letter-spacing: 0.8px;
-  line-height: 1.7;
+  line-height: 2;
 }
 
 /* Boxed final answer */
 .mc-math-answer-box {
-  margin: 16px auto 4px;
-  padding: 14px 32px;
+  margin: 20px auto 8px;
+  padding: 14px 36px;
   border: 2px solid;
-  border-radius: 10px;
+  border-radius: 8px;
   text-align: center;
-  background: rgba(16,185,129,0.06);
-  max-width: 360px;
+  max-width: 380px;
   animation: mcAnswerPulse 0.6s ease-out;
 }
 .mc-math-answer-text {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 800;
-  letter-spacing: 1px;
+  color: #fff;
+  letter-spacing: 1.2px;
 }
 @keyframes mcAnswerPulse {
   0% { transform: scale(0.92); opacity: 0; }
@@ -597,29 +566,11 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Legacy formula box (backward compat) */
-.mc-math-formula-box {
-  margin: 10px 0 0 38px;
-  padding: 10px 14px;
-  background: rgba(59,130,246,0.06);
-  border: 1px solid;
-  border-radius: 10px;
-}
-.mc-math-formula {
-  margin: 0; padding: 0;
-  font-family: 'JetBrains Mono', 'Georgia', monospace;
-  font-size: 0.88rem; font-weight: 600;
-  color: #93c5fd; white-space: pre-wrap;
-  letter-spacing: 0.3px;
-}
-
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .mc-classroom { flex-direction: column; }
   .mc-classes-right { width: 100%; height: 40%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); }
   .mc-subject-grid { grid-template-columns: repeat(2, 1fr); }
-  .mc-math-step-body { padding-left: 20px; }
-  .mc-math-formula-box { margin-left: 20px; }
-  .mc-math-equation-text { font-size: 1rem; }
-  .mc-math-answer-text { font-size: 1.05rem; }
+  .mc-math-eq-line { font-size: 1rem; }
+  .mc-math-answer-text { font-size: 1.1rem; }
 }
