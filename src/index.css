@@ -171,11 +171,16 @@ body.light-theme {
 body.light-theme .chat-header { background: rgba(255, 255, 255, 0.8); }
 body.light-theme .chat-header::after { background: linear-gradient(to bottom, var(--bg-dark), transparent); }
 
-body.light-theme .input-wrapper::before { background: linear-gradient(to top, var(--bg-dark), transparent); }
+body.light-theme .input-wrapper::before,
+body.light-theme .welcome-input-wrap::before { background: linear-gradient(to top, var(--bg-dark), transparent); }
 body.light-theme .input-main-row,
-body.light-theme .tools-dropdown { background: #ffffff !important; border-color: rgba(0,0,0,0.1) !important; }
-body.light-theme .main-input { color: #111827 !important; }
-body.light-theme .main-input::placeholder { color: #6b7280 !important; }
+body.light-theme .welcome-input-row,
+body.light-theme .tools-dropdown,
+body.light-theme .w-tools-dropdown { background: #ffffff !important; border-color: rgba(0,0,0,0.1) !important; }
+body.light-theme .main-input,
+body.light-theme .w-input { color: #111827 !important; }
+body.light-theme .main-input::placeholder,
+body.light-theme .w-input::placeholder { color: #6b7280 !important; }
 
 body.light-theme .msg-user-bubble,
 body.light-theme .canvas-card-container,

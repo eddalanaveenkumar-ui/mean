@@ -665,7 +665,7 @@ export default function MeanClassroom({ onClose }) {
             ) : loading ? (
               <div className="mc-empty-state">
                 <div className="mc-loading-avatar">🤖</div>
-                <h3 style={{ color: '#fff', margin: '8px 0 4px' }}>Generating explanation for "{topic}"...</h3>
+                <h3 style={{ color: 'var(--text-primary)', margin: '8px 0 4px' }}>Generating explanation for "{topic}"...</h3>
                 {streamText && <pre className="mc-stream-preview">{streamText.slice(-200)}</pre>}
                 <div className="mc-loading-dots"><span /><span /><span /></div>
               </div>
