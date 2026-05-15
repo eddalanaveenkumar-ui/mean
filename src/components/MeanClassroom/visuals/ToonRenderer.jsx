@@ -546,7 +546,7 @@ export default function ToonRenderer({ blocks, stepIdx, category }) {
         <svg
           viewBox={`0 0 ${svgW} ${svgH}`}
           className="mc-toon-svg"
-          style={{ width: '100%', height: 'auto', maxHeight: '400px' }}
+          style={{ width: '100%', height: 'auto', maxHeight: '280px' }}
         >
           {/* Background */}
           <rect x="0" y="0" width={svgW} height={svgH} fill="rgba(10,10,25,0.4)" rx="12" />

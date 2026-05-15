@@ -155,7 +155,14 @@ RULES FOR STEPS:
 
 DIAGRAM ELEMENT KINDS:
 axis, plotline, dot/point, line, arrow, dimension, arc/angle, circle, polygon/triangle, region/area, text, box, wave/sine
-Canvas: 600x380. step:0 = always visible.
+Canvas: 600x340. step:0 = always visible.
+
+CRITICAL DIAGRAM RULES:
+- Space elements at least 60px apart — NO overlapping text or shapes.
+- Place text labels ABOVE or BELOW elements, not on top.
+- Use fontSize 11-13 for labels.
+- Keep the diagram CLEAN and SIMPLE — fewer elements with good spacing is better than many cramped ones.
+- Maximum 10-15 elements. Do NOT overcrowd.
 
 EXAMPLE — Solve x² - 5x + 6 = 0:
 ---
@@ -166,7 +173,7 @@ category: math
 type: diagram
 title: y = x² - 5x + 6
 width: 600
-height: 380
+height: 340
 >element
   kind: axis
   x: 50
