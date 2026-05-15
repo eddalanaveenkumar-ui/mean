@@ -128,7 +128,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
         {/* Header — logo + toggle */}
         <header className="sidebar-header">
           <div className="sidebar-brand" style={{ justifyContent: 'flex-start', width: '100%' }}>
-            <img src="/logo.png" alt="Mean AI" className="sidebar-logo" />
+            <img src="/logo-space.jpeg" alt="Mean AI" className="sidebar-logo" style={{ borderRadius: '8px' }} />
           </div>
           <button className="sidebar-toggle-btn" onClick={() => { setSidebarCollapsed(true); setSidebarOpen(false); }} title="Collapse sidebar">
             <SidebarToggleIcon />
