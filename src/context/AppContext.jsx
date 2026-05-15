@@ -564,7 +564,14 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
         signal: streamAbortRef.current.signal
       });
 
-      if (!resp.ok) throw new Error(`API error ${resp.status}`);
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          throw new Error('Rate Limit Exceeded (429). You are sending too many requests too quickly (or using a free tier API key). Please wait a few moments.');
+        } else if (resp.status === 401 || resp.status === 403) {
+          throw new Error(`API Key Error (${resp.status}). Please verify your API key in Settings.`);
+        }
+        throw new Error(`API error ${resp.status}`);
+      }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
