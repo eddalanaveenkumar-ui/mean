@@ -173,12 +173,14 @@ body.light-theme .chat-header::after { background: linear-gradient(to bottom, va
 
 body.light-theme .input-wrapper::before { background: linear-gradient(to top, var(--bg-dark), transparent); }
 body.light-theme .input-main-row,
-body.light-theme .tools-dropdown { background: var(--card-bg); }
+body.light-theme .tools-dropdown { background: #ffffff !important; border-color: rgba(0,0,0,0.1) !important; }
+body.light-theme .main-input { color: #111827 !important; }
+body.light-theme .main-input::placeholder { color: #6b7280 !important; }
 
 body.light-theme .msg-user-bubble,
 body.light-theme .canvas-card-container,
 body.light-theme .login-card-ds,
-body.light-theme .ios-group { background: var(--card-bg); border-color: var(--border-color); }
+body.light-theme .ios-group { background: #ffffff !important; border-color: rgba(0,0,0,0.1) !important; }
 
 body.light-theme .msg-content pre,
 body.light-theme .code-output-panel { background: #f3f4f6; }
@@ -197,14 +199,22 @@ body.light-theme .ic-body { background: #f8fafc; }
 
 body.light-theme .tc-board-left { background: #ffffff; }
 body.light-theme .tc-board-right { background: #f8fafc; }
-body.light-theme .tc-pres-controls, 
-body.light-theme .tc-pres-header { background: #f1f5f9; border-color: var(--border-color); }
-body.light-theme .tc-progress-bar { background: #f1f5f9; }
-body.light-theme .tc-slide-body pre { background: #f3f4f6; }
-
-body.light-theme .mc-left-panel { background: rgba(255,255,255,0.8); }
-body.light-theme .mc-right-panel { background: #f8fafc; }
-body.light-theme .mc-header { background: #ffffff; }
+body.light-theme .mc-overlay { background: #f0f2f5; }
+body.light-theme .mc-topbar { background: rgba(255,255,255,0.8); }
+body.light-theme .mc-brand,
+body.light-theme .mc-hero-title,
+body.light-theme .mc-canvas-title,
+body.light-theme .mc-classes-title,
+body.light-theme .mc-prompt-input,
+body.light-theme .mc-subject-card:hover { color: #111827 !important; }
+body.light-theme .mc-topbar-btn { color: #4b5563; border-color: rgba(0,0,0,0.1); }
+body.light-theme .mc-canvas-card { background: #ffffff; border-color: rgba(0,0,0,0.1); }
+body.light-theme .mc-classes-right { background: rgba(248, 250, 252, 0.95); }
+body.light-theme .mc-class-item { background: #ffffff; border-color: rgba(0,0,0,0.05); }
+body.light-theme .mc-class-item:hover { background: #f1f5f9; border-color: rgba(0,0,0,0.1); }
+body.light-theme .mc-prompt-input { background: #ffffff; border-color: rgba(0,0,0,0.1); }
+body.light-theme .mc-subject-card { background: #ffffff; border-color: rgba(0,0,0,0.1); color: #4b5563; }
+body.light-theme .mc-subject-card:hover { background: #f1f5f9; }
 
 /* ═══════════════════════════════════════════════════
    BASE STYLES
