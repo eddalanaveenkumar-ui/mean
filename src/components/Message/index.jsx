@@ -28,18 +28,19 @@ const DownloadIcon = () => (
 /* ── Render LaTeX math with KaTeX ── */
 function renderMath(text) {
   if (!text || !window.katex) return text;
-  // Block math: $$...$$
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+  const render = (expr, display) => {
     try {
-      return window.katex.renderToString(expr.trim(), { displayMode: true, throwOnError: false });
+      return window.katex.renderToString(expr.trim(), { displayMode: display, throwOnError: false });
     } catch { return `<span class="math-error">${expr}</span>`; }
-  });
-  // Inline math: $...$  (but not $$)
-  text = text.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, (_, expr) => {
-    try {
-      return window.katex.renderToString(expr.trim(), { displayMode: false, throwOnError: false });
-    } catch { return `<span class="math-error">${expr}</span>`; }
-  });
+  };
+  // Block math: $$...$$ 
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, e) => render(e, true));
+  // Block math: \[...\]
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, e) => render(e, true));
+  // Inline math: \(...\)
+  text = text.replace(/\\\(([\s\S]+?)\\\)/g, (_, e) => render(e, false));
+  // Inline math: $...$ (but not $$)
+  text = text.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, (_, e) => render(e, false));
   return text;
 }
 
