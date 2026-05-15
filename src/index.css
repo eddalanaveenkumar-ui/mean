@@ -177,10 +177,14 @@ body.light-theme .tools-dropdown { background: var(--card-bg); }
 
 body.light-theme .msg-user-bubble,
 body.light-theme .canvas-card-container,
-body.light-theme .login-card-ds { background: var(--card-bg); border-color: var(--border-color); }
+body.light-theme .login-card-ds,
+body.light-theme .ios-group { background: var(--card-bg); border-color: var(--border-color); }
 
 body.light-theme .msg-content pre,
 body.light-theme .code-output-panel { background: #f3f4f6; }
+
+body.light-theme .profile-card-info h3 { color: var(--text-primary); }
+body.light-theme .ios-input:focus { color: var(--text-primary); }
 
 body.light-theme .code-canvas { background: #f8fafc; }
 body.light-theme .cc-header { background: #f1f5f9; }
