@@ -648,11 +648,12 @@ export default function MeanClassroom({ onClose }) {
         {/* Main Content — Theory First */}
         <div className="mc-canvas-left">
           <div className="mc-canvas-card">
-            {hasContent && isMathMode ? (
-              /* ── MATH MODE: Diagram + All Steps (No Slides) ── */
+            {(hasContent && isMathMode) || (loading && isMathMode && toonBlocks.length > 0) ? (
+              /* ── MATH MODE: Diagram + All Steps rendered LIVE (No buffering screen) ── */
               <>
                 <h2 className="mc-canvas-title" style={{ color: theme.accent }}>
                   📐 {configBlock.topic || topic}
+                  {loading && <span className="mc-math-loading-badge">solving...</span>}
                 </h2>
 
                 {/* Diagram at top — all elements visible */}
@@ -662,7 +663,7 @@ export default function MeanClassroom({ onClose }) {
                   </div>
                 )}
 
-                {/* ALL solution steps — scrollable, no slides */}
+                {/* ALL solution steps — rendered live as they stream in */}
                 <div className="mc-math-steps">
                   {stepBlocks.map((step, idx) => (
                     <div key={idx} className={`mc-math-step ${step.answer ? 'mc-math-step-final' : ''}`} style={{ borderLeftColor: theme.accent }}>
