@@ -24,11 +24,13 @@ const SUB_ITEM_MAP = {
   'dianode':  'nodes',
   'edge':     'edges',
   'diastep':  'steps',
+  'element':  'elements',
+  'annotation': 'annotations',
 };
 
 // Fields that should always be parsed as comma-separated arrays
 const ARRAY_FIELDS = new Set([
-  'connect', 'labels', 'highlightNodes',
+  'connect', 'labels', 'highlightNodes', 'points', 'values',
 ]);
 
 // ─── Type inference for scalar values ───

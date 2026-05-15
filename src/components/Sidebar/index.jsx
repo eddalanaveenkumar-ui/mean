@@ -34,7 +34,7 @@ const DeepdiveIcon = () => (
   </svg>
 );
 
-export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onDSACanvas }) {
+export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom }) {
   const {
     chats, currentChatId, sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,
@@ -97,9 +97,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
             <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
           </svg>
         </button>
-        <button className="sc-icon" onClick={() => { onDSACanvas?.(); }} title="DSA Roadmap">
+        <button className="sc-icon" onClick={() => { onMeanClassroom?.(); }} title="MEAN Classroom">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
         </button>
         <div className="sc-divider" />
@@ -172,9 +172,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
             <i className="fas fa-microscope" style={{color: deepdiveActive ? 'var(--accent)' : ''}}/>
             <span style={{color: deepdiveActive ? 'var(--accent)' : '', fontWeight: deepdiveActive ? 'bold' : ''}}>Deepdive Gen {deepdiveActive && '✓'}</span>
           </button>
-          <button className="tool-item" onClick={() => { onDSACanvas?.(); setSidebarOpen(false); }}>
-            <i className="fas fa-map-marked-alt" />
-            <span>DSA Roadmap</span>
+          <button className="tool-item" onClick={() => { onMeanClassroom?.(); setSidebarOpen(false); }}>
+            <i className="fas fa-graduation-cap" />
+            <span>MEAN Classroom</span>
           </button>
         </div>
 
