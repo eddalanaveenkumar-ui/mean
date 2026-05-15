@@ -271,6 +271,40 @@ export default function Message({ message, streaming = false, messageIndex, chat
   return (
     <div className="msg-row msg-bot">
       <div className="msg-bot-content">
+        {streaming && !renderedBefore && !renderedAfter && !inlineTopic && !canvasData && (
+          <div className="msg-buffering">
+            <div className="buf-infinity">
+              <svg viewBox="0 0 100 50" width="40" height="20">
+                <defs>
+                  <linearGradient id="inf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="var(--accent)" />
+                    <stop offset="100%" stopColor="var(--accent-warm)" />
+                  </linearGradient>
+                </defs>
+                {/* Background track */}
+                <path 
+                  d="M 50 25 C 65 5, 85 5, 85 25 C 85 45, 65 45, 50 25 C 35 5, 15 5, 15 25 C 15 45, 35 45, 50 25" 
+                  fill="none" 
+                  stroke="var(--accent)" 
+                  strokeWidth="6" 
+                  opacity="0.15"
+                />
+                {/* Glowing animated snake */}
+                <path 
+                  d="M 50 25 C 65 5, 85 5, 85 25 C 85 45, 65 45, 50 25 C 35 5, 15 5, 15 25 C 15 45, 35 45, 50 25" 
+                  fill="none" 
+                  stroke="url(#inf-grad)" 
+                  strokeWidth="6" 
+                  strokeLinecap="round" 
+                  pathLength="100"
+                  className="inf-path"
+                />
+              </svg>
+            </div>
+            <span className="buf-text">Mean AI is thinking...</span>
+          </div>
+        )}
+
         {renderedBefore && (
           <div
             className="msg-content"

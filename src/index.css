@@ -185,6 +185,7 @@ body.light-theme .w-input::placeholder { color: #6b7280 !important; }
 body.light-theme .msg-user-bubble,
 body.light-theme .canvas-card-container,
 body.light-theme .login-card-ds,
+body.light-theme .msg-buffering,
 body.light-theme .ios-group { background: #ffffff !important; border-color: rgba(0,0,0,0.1) !important; }
 
 body.light-theme .msg-content pre,
