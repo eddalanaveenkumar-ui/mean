@@ -164,6 +164,44 @@ body.light-theme {
   }
 }
 
+/* --- Component Specific Light Overrides --- */
+@media (max-width: 768px) {
+  body.light-theme .sidebar { background: rgba(255, 255, 255, 0.97); }
+}
+body.light-theme .chat-header { background: rgba(255, 255, 255, 0.8); }
+body.light-theme .chat-header::after { background: linear-gradient(to bottom, var(--bg-dark), transparent); }
+
+body.light-theme .input-wrapper::before { background: linear-gradient(to top, var(--bg-dark), transparent); }
+body.light-theme .input-main-row,
+body.light-theme .tools-dropdown { background: var(--card-bg); }
+
+body.light-theme .msg-user-bubble,
+body.light-theme .canvas-card-container,
+body.light-theme .login-card-ds { background: var(--card-bg); border-color: var(--border-color); }
+
+body.light-theme .msg-content pre,
+body.light-theme .code-output-panel { background: #f3f4f6; }
+
+body.light-theme .code-canvas { background: #f8fafc; }
+body.light-theme .cc-header { background: #f1f5f9; }
+body.light-theme .cc-line-numbers { background: #f8fafc; }
+body.light-theme .cc-editor { color: var(--text-primary); }
+
+body.light-theme .inline-classroom { background: #ffffff; }
+body.light-theme .ic-header { background: #f1f5f9; }
+body.light-theme .ic-body { background: #f8fafc; }
+
+body.light-theme .tc-board-left { background: #ffffff; }
+body.light-theme .tc-board-right { background: #f8fafc; }
+body.light-theme .tc-pres-controls, 
+body.light-theme .tc-pres-header { background: #f1f5f9; border-color: var(--border-color); }
+body.light-theme .tc-progress-bar { background: #f1f5f9; }
+body.light-theme .tc-slide-body pre { background: #f3f4f6; }
+
+body.light-theme .mc-left-panel { background: rgba(255,255,255,0.8); }
+body.light-theme .mc-right-panel { background: #f8fafc; }
+body.light-theme .mc-header { background: #ffffff; }
+
 /* ═══════════════════════════════════════════════════
    BASE STYLES
    ═══════════════════════════════════════════════════ */
