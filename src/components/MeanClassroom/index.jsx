@@ -116,6 +116,155 @@ const SUBJECT_CATEGORIES = [
   { key: 'coding',   icon: '💻', label: 'All Coding',       examples: ['OOP Principles', 'Design Patterns', 'Recursion', 'Big O Notation'] },
 ];
 
+/* ── Math topic detection ── */
+function isMathTopic(t) {
+  return /quadrat|algebra|calcul|trig|geom|math|equation|integr|deriv|matrix|probab|statist|factor|polynom|limit|differen|logarithm|function|graph|parabola|hyperbola|ellipse|sine|cosine|tangent|vector|determinant|binomial|permut|combin|set.?theory|number.?line|inequalit|ratio|proportion|percentage|area|volume|perimeter|circumference|angle|triangle|circle|rectangle|square|cone|sphere|cylinder|∫|∑|√|solve|find.*root|prove|simplif|expand|evaluat/i.test(t);
+}
+
+/* ── Math System Prompt — Step-by-step solving, graphs, shapes with measurements ── */
+const MATH_SYSTEM_PROMPT = `You are MEAN Math Solver — a JEE/competitive math expert who SOLVES problems step-by-step on a visual whiteboard.
+
+RULES:
+- SOLVE the problem. Show EVERY calculation step.
+- NO definitions. NO real-world examples. NO analogies. NO chat text.
+- ONLY: mathematical working, formulas, equations, calculations.
+- DRAW the graph or geometric shape with ALL measurements (dimensions, angles, coordinates, labels).
+- Return ONLY valid TOON format. Blocks separated by ---.
+
+═══ BLOCK 1 — Config ═══
+---
+type: config
+topic: <problem statement>
+category: math
+
+═══ BLOCK 2 — Diagram ═══
+DRAW the mathematical figure. Use these element kinds:
+- axis: Coordinate axes with ticks. Props: x, y, w, h, xMin, xMax, yMin, yMax, tickStep, xLabel, yLabel
+- plotline: Function curve. Props: points (SVG polyline points string), color, label
+- dot/point: Point marker. Props: x, y, r, label, color
+- line: Straight line. Props: x1, y1, x2, y2, label, color, dashed
+- arrow: Directed line. Props: x1, y1, x2, y2, label, color
+- dimension: Measurement with arrows both ends. Props: x1, y1, x2, y2, label, color
+- arc/angle: Angle arc. Props: x, y, r, startAngle, endAngle, label, color
+- circle: Circle. Props: x (cx), y (cy), r, label, color
+- polygon/triangle: Polygon. Props: points (SVG points string), label, color
+- region/area: Shaded region. Props: points (SVG polygon points string), color, label
+- text: Label text. Props: x, y, label, color, fontSize, bold, anchor
+- box: Rectangle. Props: x, y, w, h, label, color
+- wave/sine: Wave curve. Props: x, y, w, amplitude, frequency, label, color
+
+Canvas: 600x380. step:0 = always visible.
+Draw 8-20 elements. Include axis labels, measurement values, angle degrees, coordinate points.
+
+For GRAPHS: Always include axis element with proper xMin/xMax/yMin/yMax, then plotline with computed points.
+For GEOMETRY: Draw the shape with polygon/line, add dimension lines showing side lengths, arc elements showing angles with degree values.
+
+═══ BLOCK 3+ — Solution Steps (4-8 steps) ═══
+Each step is ONE calculation/working step:
+
+---
+type: step
+title: <What this step does — e.g. "Factor the quadratic", "Apply the formula">
+point1: <First line of working — equation or calculation>
+point2: <Next line of working — substitution or simplification>
+point3: <Result or intermediate answer>
+point4: <Note about this step — sign, domain, or verification>
+code: <Key formula or equation for this step>
+
+DO NOT include: realworld, chat, subtopic, example, explain fields.
+
+═══ EXAMPLE — Solve x² - 5x + 6 = 0 ═══
+---
+type: config
+topic: Solve x² - 5x + 6 = 0
+category: math
+---
+type: diagram
+title: Graph of y = x² - 5x + 6
+width: 600
+height: 380
+>element
+  kind: axis
+  x: 50
+  y: 10
+  w: 500
+  h: 300
+  xMin: -1
+  xMax: 6
+  yMin: -2
+  yMax: 8
+  tickStep: 1
+  xLabel: x
+  yLabel: y
+  color: #3b82f6
+  step: 0
+>element
+  kind: plotline
+  points: 50,298 120,210 190,138 260,82 330,42 365,34 400,42 470,82 540,160
+  color: #3b82f6
+  label: y = x² - 5x + 6
+  x: 400
+  y: 330
+  step: 0
+>element
+  kind: dot
+  x: 214
+  y: 310
+  r: 5
+  label: (2, 0)
+  color: #ef4444
+  step: 0
+>element
+  kind: dot
+  x: 297
+  y: 310
+  r: 5
+  label: (3, 0)
+  color: #ef4444
+  step: 0
+>element
+  kind: text
+  x: 300
+  y: 370
+  label: Roots: x = 2, x = 3
+  color: #10b981
+  fontSize: 13
+  bold: true
+  anchor: middle
+  step: 0
+---
+type: step
+title: Write in Standard Form
+point1: The equation is already in standard form: ax² + bx + c = 0
+point2: Here a = 1, b = -5, c = 6
+point3: We need to find values of x where y = 0
+point4: Sum of roots = -b/a = 5, Product of roots = c/a = 6
+code: x² - 5x + 6 = 0 → a=1, b=-5, c=6
+---
+type: step
+title: Factor the Quadratic
+point1: Find two numbers whose sum = -5 and product = 6
+point2: -2 + (-3) = -5 ✓ and (-2)×(-3) = 6 ✓
+point3: x² - 5x + 6 = (x - 2)(x - 3)
+point4: Factoring works when discriminant is a perfect square: b²-4ac = 25-24 = 1 ✓
+code: (x - 2)(x - 3) = 0
+---
+type: step
+title: Solve for x
+point1: Set each factor to zero
+point2: x - 2 = 0 → x = 2
+point3: x - 3 = 0 → x = 3
+point4: Both roots are real and distinct (D > 0)
+code: x = 2, x = 3
+---
+type: step
+title: Verify the Solution
+point1: For x=2: (2)² - 5(2) + 6 = 4 - 10 + 6 = 0 ✓
+point2: For x=3: (3)² - 5(3) + 6 = 9 - 15 + 6 = 0 ✓
+point3: Both values satisfy the original equation
+point4: The parabola crosses x-axis at x=2 and x=3 (see graph)
+code: Verified: f(2) = 0, f(3) = 0 ✓`;
+
 /* ── Universal System Prompt ── */
 const CLASSROOM_SYSTEM_PROMPT = `You are MEAN Classroom AI — a world-class visual teacher who explains ANY topic like a real human teacher on a whiteboard.
 
@@ -373,9 +522,17 @@ export default function MeanClassroom({ onClose }) {
     setStreamText('');
 
     try {
+      const isMath = isMathTopic(topic.trim());
+      const sysPrompt = isMath ? MATH_SYSTEM_PROMPT : CLASSROOM_SYSTEM_PROMPT;
+      const userMsg = isMath
+        ? `Solve this math problem step by step, showing every calculation. Draw the graph or geometric shape with all measurements, coordinates, and labels: "${topic.trim()}"`
+        : `Explain "${topic.trim()}" with detailed step-by-step theory. If this is a math/JEE problem, solve it step by step showing every calculation. Include real-world examples. If a graph or diagram is essential (math functions, data structures, chemistry molecules), draw it with >element sub-items. Detect the subject category automatically.`;
+
+      if (isMath) setDetectedCategory('math');
+
       const final = await streamAI([
-        { role: 'system', content: CLASSROOM_SYSTEM_PROMPT },
-        { role: 'user', content: `Explain "${topic.trim()}" with detailed step-by-step theory. If this is a math/JEE problem, solve it step by step showing every calculation. Include real-world examples. If a graph or diagram is essential (math functions, data structures, chemistry molecules), draw it with >element sub-items. Detect the subject category automatically.` }
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: userMsg }
       ], (partial) => {
         setStreamText(partial);
         const blocks = parseTOON(partial);
@@ -403,6 +560,7 @@ export default function MeanClassroom({ onClose }) {
   };
 
   const hasContent = stepBlocks.length > 0;
+  const isMathMode = category === 'math';
   const progress = hasContent ? ((stepIdx + 1) / stepBlocks.length) * 100 : 0;
   const hasDiagram = toonBlocks.some(b => b.type === 'diagram');
 
@@ -432,7 +590,55 @@ export default function MeanClassroom({ onClose }) {
         {/* Main Content — Theory First */}
         <div className="mc-canvas-left">
           <div className="mc-canvas-card">
-            {hasContent ? (
+            {hasContent && isMathMode ? (
+              /* ── MATH MODE: Diagram + All Steps (No Slides) ── */
+              <>
+                <h2 className="mc-canvas-title" style={{ color: theme.accent }}>
+                  📐 {configBlock.topic || topic}
+                </h2>
+
+                {/* Diagram at top — all elements visible */}
+                {hasDiagram && (
+                  <div className="mc-visual-area" style={{ marginBottom: 16 }}>
+                    <ToonRenderer blocks={toonBlocks} stepIdx={999} category={category} />
+                  </div>
+                )}
+
+                {/* ALL solution steps — scrollable, no slides */}
+                <div className="mc-math-steps">
+                  {stepBlocks.map((step, idx) => (
+                    <div key={idx} className="mc-math-step" style={{ borderLeftColor: theme.accent }}>
+                      <div className="mc-math-step-header">
+                        <span className="mc-math-step-num" style={{ background: `${theme.accent}20`, color: theme.accent }}>
+                          {idx + 1}
+                        </span>
+                        <h3 className="mc-math-step-title" style={{ color: theme.accent }}>
+                          {step.title || `Step ${idx + 1}`}
+                        </h3>
+                      </div>
+                      <div className="mc-math-step-body">
+                        {[step.point1, step.point2, step.point3, step.point4]
+                          .filter(Boolean)
+                          .map((pt, i) => (
+                            <div key={i} className="mc-math-line">
+                              <span className="mc-math-line-marker" style={{ color: theme.accent }}>
+                                {i === 0 ? '→' : '  '}
+                              </span>
+                              <span className="mc-math-line-text">{pt}</span>
+                            </div>
+                          ))}
+                      </div>
+                      {step.code && (
+                        <div className="mc-math-formula-box" style={{ borderColor: `${theme.accent}25` }}>
+                          <pre className="mc-math-formula">{step.code}</pre>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : hasContent ? (
+              /* ── NORMAL MODE: Slide-based with real-world examples ── */
               <>
                 <h2 className="mc-canvas-title" style={{ color: theme.accent }}>
                   {configBlock.topic || topic}
@@ -527,8 +733,8 @@ export default function MeanClassroom({ onClose }) {
             )}
           </div>
 
-          {/* Playback */}
-          {hasContent && (
+          {/* Playback — hidden for math mode (all steps shown at once) */}
+          {hasContent && !isMathMode && (
             <div className="mc-playback">
               <button className="mc-play-btn" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` }}
                 onClick={() => setPlaying(!playing)}>{playing ? '⏸' : '▶'}</button>

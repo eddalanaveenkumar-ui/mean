@@ -242,6 +242,244 @@ function RenderElement({ el, index, visible, animDelay }) {
         </g>
       );
 
+    /* ── Axis — Coordinate axis with tick marks and labels ── */
+    case 'axis': {
+      const axisW = Number(el.w) || 400;
+      const axisH = Number(el.h) || 300;
+      const xMin = Number(el.xMin) ?? -5;
+      const xMax = Number(el.xMax) ?? 5;
+      const yMin = Number(el.yMin) ?? -5;
+      const yMax = Number(el.yMax) ?? 5;
+      const tickStep = Number(el.tickStep) || 1;
+      const originX = x + ((0 - xMin) / (xMax - xMin)) * axisW;
+      const originY = y + axisH - ((0 - yMin) / (yMax - yMin)) * axisH;
+      const ticks = [];
+      // X ticks
+      for (let v = Math.ceil(xMin); v <= Math.floor(xMax); v += tickStep) {
+        const tx = x + ((v - xMin) / (xMax - xMin)) * axisW;
+        ticks.push(
+          <g key={`xt${v}`}>
+            <line x1={tx} y1={originY - 4} x2={tx} y2={originY + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+            {v !== 0 && <text x={tx} y={originY + 16} fill="#888" fontSize="9" textAnchor="middle">{v}</text>}
+          </g>
+        );
+      }
+      // Y ticks
+      for (let v = Math.ceil(yMin); v <= Math.floor(yMax); v += tickStep) {
+        const ty = y + axisH - ((v - yMin) / (yMax - yMin)) * axisH;
+        ticks.push(
+          <g key={`yt${v}`}>
+            <line x1={originX - 4} y1={ty} x2={originX + 4} y2={ty} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+            {v !== 0 && <text x={originX - 10} y={ty + 3} fill="#888" fontSize="9" textAnchor="end">{v}</text>}
+          </g>
+        );
+      }
+      return (
+        <g style={animStyle} key={index}>
+          {/* Grid lines */}
+          {Array.from({ length: Math.floor(xMax - xMin) + 1 }, (_, i) => xMin + i).map(v => {
+            const gx = x + ((v - xMin) / (xMax - xMin)) * axisW;
+            return <line key={`gxl${v}`} x1={gx} y1={y} x2={gx} y2={y + axisH} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
+          })}
+          {Array.from({ length: Math.floor(yMax - yMin) + 1 }, (_, i) => yMin + i).map(v => {
+            const gy = y + axisH - ((v - yMin) / (yMax - yMin)) * axisH;
+            return <line key={`gyl${v}`} x1={x} y1={gy} x2={x + axisW} y2={gy} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
+          })}
+          {/* X-axis */}
+          <line x1={x} y1={originY} x2={x + axisW} y2={originY} stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+          {/* Y-axis */}
+          <line x1={originX} y1={y} x2={originX} y2={y + axisH} stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+          {/* Arrowheads */}
+          <polygon points={`${x + axisW},${originY} ${x + axisW - 6},${originY - 3} ${x + axisW - 6},${originY + 3}`} fill="rgba(255,255,255,0.35)" />
+          <polygon points={`${originX},${y} ${originX - 3},${y + 6} ${originX + 3},${y + 6}`} fill="rgba(255,255,255,0.35)" />
+          {ticks}
+          {/* Axis labels */}
+          <text x={x + axisW - 4} y={originY - 10} fill="#aaa" fontSize="11" textAnchor="end" fontWeight="600">{el.xLabel || 'x'}</text>
+          <text x={originX + 12} y={y + 12} fill="#aaa" fontSize="11" textAnchor="start" fontWeight="600">{el.yLabel || 'y'}</text>
+          {label && <text x={x + axisW / 2} y={y + axisH + 22} fill={color} fontSize="11" textAnchor="middle" fontWeight="600">{label}</text>}
+        </g>
+      );
+    }
+
+    /* ── Plotline — Function curve from points string ── */
+    case 'plotline':
+    case 'functioncurve': {
+      const ptsStr = el.points || '';
+      return (
+        <g style={animStyle} key={index}>
+          <polyline points={ptsStr} fill="none" stroke={color} strokeWidth={strokeW} strokeLinecap="round" opacity="0.9" />
+          <polyline points={ptsStr} fill="none" stroke={color} strokeWidth={strokeW + 4} strokeLinecap="round" opacity="0.12" />
+          {label && (
+            <text x={x || 0} y={y || 0} fill={color} fontSize={fontSize} fontWeight="600" textAnchor={el.anchor || 'start'}>{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Arc — Angle arc with degree label ── */
+    case 'arc':
+    case 'angle': {
+      const arcR = Number(el.r) || 30;
+      const startAngle = (Number(el.startAngle) || 0) * (Math.PI / 180);
+      const endAngle = (Number(el.endAngle) || 90) * (Math.PI / 180);
+      const cx = x, cy = y;
+      const x1a = cx + arcR * Math.cos(-startAngle);
+      const y1a = cy + arcR * Math.sin(-startAngle);
+      const x2a = cx + arcR * Math.cos(-endAngle);
+      const y2a = cy + arcR * Math.sin(-endAngle);
+      const largeArc = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+      const midAngle = -(startAngle + endAngle) / 2;
+      const labelR = arcR + 14;
+      return (
+        <g style={{ ...animStyle, transformOrigin: `${cx}px ${cy}px` }} key={index}>
+          <path d={`M ${x1a} ${y1a} A ${arcR} ${arcR} 0 ${largeArc} 0 ${x2a} ${y2a}`}
+            fill="none" stroke={color} strokeWidth={strokeW} strokeDasharray={dashArr} />
+          {label && (
+            <text x={cx + labelR * Math.cos(midAngle)} y={cy + labelR * Math.sin(midAngle)}
+              fill={color} fontSize={fontSize - 1} textAnchor="middle" fontWeight="600">{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Dimension — Measurement line with arrows on both ends + label ── */
+    case 'dimension':
+    case 'measurement': {
+      const dx1 = Number(el.x1 ?? x);
+      const dy1 = Number(el.y1 ?? y);
+      const dx2 = Number(el.x2 ?? x + 100);
+      const dy2 = Number(el.y2 ?? y);
+      const dmid_x = (dx1 + dx2) / 2;
+      const dmid_y = (dy1 + dy2) / 2;
+      const dimId = `dim-${index}`;
+      const dimIdR = `dim-r-${index}`;
+      return (
+        <g style={animStyle} key={index}>
+          <defs>
+            <marker id={dimId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={color} />
+            </marker>
+            <marker id={dimIdR} viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 10 0 L 0 5 L 10 10 z" fill={color} />
+            </marker>
+          </defs>
+          <line x1={dx1} y1={dy1} x2={dx2} y2={dy2}
+            stroke={color} strokeWidth="1.5" strokeDasharray={dashed ? '4 3' : 'none'}
+            markerStart={`url(#${dimIdR})`} markerEnd={`url(#${dimId})`} opacity="0.7" />
+          {label && (
+            <text x={dmid_x} y={dmid_y - 8} fill={color} fontSize={fontSize - 1} textAnchor="middle" fontWeight="700"
+              style={{ background: 'rgba(10,10,25,0.8)' }}>{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Polygon — Any polygon from comma-separated points ── */
+    case 'polygon':
+    case 'triangle':
+    case 'pentagon':
+    case 'hexagon': {
+      const ptsRaw = el.points || `${x},${y + h} ${x + w / 2},${y} ${x + w},${y + h}`;
+      return (
+        <g style={animStyle} key={index}>
+          <polygon points={ptsRaw} fill={`${color}12`} stroke={color} strokeWidth={strokeW}
+            strokeLinejoin="round" strokeDasharray={dashArr} />
+          {label && (
+            <text x={x + (w || 0) / 2} y={y + (h || 0) / 2 + fontSize * 0.35} fill="#fff"
+              fontSize={fontSize} textAnchor="middle" fontWeight="600">{label}</text>
+          )}
+          {el.sublabel && (
+            <text x={x + (w || 0) / 2} y={y + (h || 0) / 2 + fontSize * 0.35 + 14} fill="#888"
+              fontSize={fontSize - 2} textAnchor="middle">{el.sublabel}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Filled Region — Shaded area under curve / between lines ── */
+    case 'region':
+    case 'filled_region':
+    case 'area': {
+      const regionPts = el.points || '';
+      return (
+        <g style={animStyle} key={index}>
+          <polygon points={regionPts} fill={`${color}15`} stroke="none" />
+          <polyline points={regionPts} fill="none" stroke={color} strokeWidth="1" opacity="0.3" />
+          {label && (
+            <text x={x} y={y} fill={color} fontSize={fontSize - 1} textAnchor="middle" fontWeight="600">{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Dot / Point marker ── */
+    case 'dot':
+    case 'point': {
+      const dotR = Number(el.r) || 4;
+      return (
+        <g style={{ ...animStyle, transformOrigin: `${x}px ${y}px` }} key={index}>
+          <circle cx={x} cy={y} r={dotR + 3} fill={`${color}30`} />
+          <circle cx={x} cy={y} r={dotR} fill={color} />
+          {label && (
+            <text x={x + dotR + 6} y={y + fontSize * 0.35} fill={color}
+              fontSize={fontSize - 1} fontWeight="600">{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Cylinder — database / container ── */
+    case 'cylinder': {
+      const cw = w, ch = h, ry = Math.min(15, h * 0.15);
+      return (
+        <g style={animStyle} key={index}>
+          <rect x={x} y={y + ry} width={cw} height={ch - 2 * ry} fill={`${color}18`} stroke={color} strokeWidth={strokeW} />
+          <ellipse cx={x + cw / 2} cy={y + ry} rx={cw / 2} ry={ry} fill={`${color}25`} stroke={color} strokeWidth={strokeW} />
+          <ellipse cx={x + cw / 2} cy={y + ch - ry} rx={cw / 2} ry={ry} fill={`${color}10`} stroke={color} strokeWidth={strokeW} />
+          {label && (
+            <text x={x + cw / 2} y={y + ch / 2 + fontSize * 0.35} fill="#fff"
+              fontSize={fontSize} textAnchor="middle" fontWeight="600">{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Parallelogram — input/output block ── */
+    case 'parallelogram': {
+      const skew = Number(el.skew) || 20;
+      const pts = `${x + skew},${y} ${x + w},${y} ${x + w - skew},${y + h} ${x},${y + h}`;
+      return (
+        <g style={animStyle} key={index}>
+          <polygon points={pts} fill={`${color}18`} stroke={color} strokeWidth={strokeW} strokeLinejoin="round" />
+          {label && (
+            <text x={x + w / 2} y={y + h / 2 + fontSize * 0.35} fill="#fff"
+              fontSize={fontSize} textAnchor="middle" fontWeight="600">{label}</text>
+          )}
+        </g>
+      );
+    }
+
+    /* ── Star — priority/highlight ── */
+    case 'star': {
+      const points_count = Number(el.pointsCount) || 5;
+      const outerR = Number(el.r) || 25;
+      const innerR = outerR * 0.45;
+      const starPts = [];
+      for (let i = 0; i < points_count * 2; i++) {
+        const angle = (Math.PI / points_count) * i - Math.PI / 2;
+        const rad = i % 2 === 0 ? outerR : innerR;
+        starPts.push(`${x + rad * Math.cos(angle)},${y + rad * Math.sin(angle)}`);
+      }
+      return (
+        <g style={{ ...animStyle, transformOrigin: `${x}px ${y}px` }} key={index}>
+          <polygon points={starPts.join(' ')} fill={`${color}20`} stroke={color} strokeWidth={strokeW} />
+          {label && (
+            <text x={x} y={y + fontSize * 0.35} fill="#fff" fontSize={fontSize} textAnchor="middle" fontWeight="700">{label}</text>
+          )}
+        </g>
+      );
+    }
+
     default:
       return (
         <g style={animStyle} key={index}>

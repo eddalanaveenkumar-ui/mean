@@ -474,10 +474,80 @@
 .mc-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
 .mc-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes mcDotBounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-10px);opacity:1} }
+/* ── Math Mode — All Steps At Once ── */
+.mc-math-steps {
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: 100%; overflow-y: auto;
+}
+.mc-math-step {
+  padding: 14px 16px;
+  background: rgba(18,18,38,0.95);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-left: 3px solid;
+  border-radius: 0 14px 14px 0;
+  animation: mcMathStepIn 0.4s ease-out both;
+}
+.mc-math-step:nth-child(1) { animation-delay: 0s; }
+.mc-math-step:nth-child(2) { animation-delay: 0.06s; }
+.mc-math-step:nth-child(3) { animation-delay: 0.12s; }
+.mc-math-step:nth-child(4) { animation-delay: 0.18s; }
+.mc-math-step:nth-child(5) { animation-delay: 0.24s; }
+.mc-math-step:nth-child(6) { animation-delay: 0.30s; }
+.mc-math-step:nth-child(7) { animation-delay: 0.36s; }
+.mc-math-step:nth-child(8) { animation-delay: 0.42s; }
+
+@keyframes mcMathStepIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.mc-math-step-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.mc-math-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
+}
+.mc-math-step-title {
+  font-size: 0.92rem; font-weight: 700; margin: 0;
+}
+.mc-math-step-body {
+  display: flex; flex-direction: column; gap: 5px;
+  padding-left: 38px;
+}
+.mc-math-line {
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.mc-math-line-marker {
+  font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  width: 16px; text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+.mc-math-line-text {
+  font-size: 0.84rem; color: #ddd; line-height: 1.55;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+.mc-math-formula-box {
+  margin: 10px 0 0 38px;
+  padding: 10px 14px;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid;
+  border-radius: 10px;
+}
+.mc-math-formula {
+  margin: 0; padding: 0;
+  font-family: 'JetBrains Mono', 'Georgia', monospace;
+  font-size: 0.88rem; font-weight: 600;
+  color: #93c5fd; white-space: pre-wrap;
+  letter-spacing: 0.3px;
+}
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .mc-classroom { flex-direction: column; }
   .mc-classes-right { width: 100%; height: 40%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); }
   .mc-subject-grid { grid-template-columns: repeat(2, 1fr); }
+  .mc-math-step-body { padding-left: 20px; }
+  .mc-math-formula-box { margin-left: 20px; }
 }
