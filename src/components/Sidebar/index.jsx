@@ -43,7 +43,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
     setShowProfile, user,
     webSearchActive, setWebSearchActive,
     deepdiveActive, setDeepdiveActive,
-    adTokens, premiumTokens, theme
+    adTokens, premiumTokens
   } = useApp();
   const [search, setSearch] = useState('');
 
@@ -128,7 +128,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
         {/* Header — logo + toggle */}
         <header className="sidebar-header">
           <div className="sidebar-brand" style={{ justifyContent: 'flex-start', width: '100%' }}>
-            <img src={theme === 'light' ? "/logo-light.png" : "/logo.png"} alt="Mean AI" className="sidebar-logo" />
+            <img src="/logo.png" alt="Mean AI" className="sidebar-logo" />
           </div>
           <button className="sidebar-toggle-btn" onClick={() => { setSidebarCollapsed(true); setSidebarOpen(false); }} title="Collapse sidebar">
             <SidebarToggleIcon />

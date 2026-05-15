@@ -40,7 +40,6 @@ export function AppProvider({ children }) {
     }
     return DEFAULT_MODEL;
   });
-  const [theme, setTheme] = useState(() => localStorage.getItem('mean_theme') || 'system');
   const streamAbortRef = useRef(null);
 
   // ===== CODE CANVAS STATE =====
@@ -130,33 +129,7 @@ export function AppProvider({ children }) {
     localStorage.setItem('mean_ad_tokens', '0');
   }, []);
 
-  // Theme application and synchronization
-  useEffect(() => {
-    localStorage.setItem('mean_theme', theme);
-    
-    const applyTheme = () => {
-      let activeTheme = theme;
-      if (theme === 'system') {
-        activeTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      }
-      
-      if (activeTheme === 'light') {
-        document.body.classList.add('light-theme');
-      } else {
-        document.body.classList.remove('light-theme');
-      }
-    };
-
-    applyTheme();
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
-    const handleChange = () => {
-      if (theme === 'system') applyTheme();
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+  // Theme is always dark now, no need to sync or apply light-theme classes
 
   // Load user on mount
   useEffect(() => {
@@ -723,7 +696,6 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     showProfile, setShowProfile,
     deepdiveActive, setDeepdiveActive,
     webSearchActive, setWebSearchActive,
-    theme, setTheme,
     persistChats, setChats, setApiKey,
     adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
     selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS,

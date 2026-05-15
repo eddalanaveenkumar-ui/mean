@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { user, apiKey, setApiKey, logout, setShowProfile, theme, setTheme, login } = useApp();
+  const { user, apiKey, setApiKey, logout, setShowProfile, login } = useApp();
   const [editApiKey, setEditApiKey] = useState(apiKey);
 
   const handleSave = () => {
@@ -57,36 +57,6 @@ export default function ProfilePage() {
               </div>
             </div>
             <p className="ios-section-footer">Your OpenRouter or Google Gemini API key used for text generation.</p>
-          </div>
-
-          {/* Appearance Section */}
-          <div className="ios-section">
-            <h4 className="ios-section-title">APPEARANCE</h4>
-            <div className="ios-group">
-              <div className="ios-row theme-row">
-                <span>Theme</span>
-                <div className="theme-switch-group">
-                  <button
-                    className={`theme-option ${theme === 'system' ? 'active' : ''}`}
-                    onClick={() => setTheme('system')}
-                  >
-                    <i className="fas fa-desktop" /> System
-                  </button>
-                  <button
-                    className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-                    onClick={() => setTheme('dark')}
-                  >
-                    <i className="fas fa-moon" /> Dark
-                  </button>
-                  <button
-                    className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-                    onClick={() => setTheme('light')}
-                  >
-                    <i className="fas fa-sun" /> Light
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Actions */}

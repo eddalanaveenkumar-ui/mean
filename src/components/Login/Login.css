@@ -7,9 +7,7 @@
   padding: 20px;
 }
 
-body.light-theme .login-wrapper {
-  background-color: #f5f5f5;
-}
+
 
 .login-card-ds {
   background: var(--sidebar-bg); /* Use box color */
@@ -22,10 +20,7 @@ body.light-theme .login-wrapper {
   flex-direction: column;
 }
 
-body.light-theme .login-card-ds {
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
+
 
 .login-brand-ds {
   display: flex;
@@ -84,9 +79,7 @@ body.light-theme .login-card-ds {
   outline: none;
 }
 
-body.light-theme .login-input-ds {
-  border: 1px solid #e0e0e0;
-}
+
 
 .login-input-ds:focus {
   border-color: var(--accent);
@@ -270,9 +263,7 @@ body.light-theme .login-input-ds {
   background-color: var(--border-color);
 }
 
-body.light-theme .ds-divider-line {
-  background-color: #e0e0e0;
-}
+
 
 .ds-divider-icon {
   display: flex;
@@ -292,9 +283,7 @@ body.light-theme .ds-divider-line {
   transition: background 0.2s;
 }
 
-body.light-theme .ds-social-circle {
-  border: 1px solid #e0e0e0;
-}
+
 
 .ds-social-circle:hover {
   background: var(--hover-bg);

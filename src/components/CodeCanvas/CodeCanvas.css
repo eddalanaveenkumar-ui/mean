@@ -393,18 +393,7 @@
   font-size: 0.82rem;
 }
 
-/* ===== LIGHT THEME ===== */
-body.light-theme .code-canvas {
-  background: #1e1e2e;
-  border-left-color: rgba(0, 0, 0, 0.1);
-}
-body.light-theme .cc-header {
-  background: #2d2d3d;
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
-body.light-theme .cc-line-numbers {
-  background: #1e1e2e;
-}
+
 
 /* ===== MOBILE: Full-screen overlay ===== */
 @media (max-width: 768px) {
