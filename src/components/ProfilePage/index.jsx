@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { user, apiKey, setApiKey, logout, setShowProfile, login } = useApp();
+  const { user, apiKey, setApiKey, logout, setShowProfile, login, theme, setTheme } = useApp();
   const [editApiKey, setEditApiKey] = useState(apiKey);
 
   const handleSave = () => {
@@ -37,6 +37,36 @@ export default function ProfilePage() {
                   <h3>{user?.name || 'User'}</h3>
                   <p>ID: {user?.id || '—'}</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance Section */}
+          <div className="ios-section">
+            <h4 className="ios-section-title">APPEARANCE</h4>
+            <div className="ios-group">
+              <div className="ios-row theme-row">
+                <button
+                  className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+                  onClick={() => setTheme('light')}
+                >
+                  <i className="fas fa-sun" />
+                  <span>Light</span>
+                </button>
+                <button
+                  className={`theme-btn ${theme === 'system' ? 'active' : ''}`}
+                  onClick={() => setTheme('system')}
+                >
+                  <i className="fas fa-desktop" />
+                  <span>System</span>
+                </button>
+                <button
+                  className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                >
+                  <i className="fas fa-moon" />
+                  <span>Dark</span>
+                </button>
               </div>
             </div>
           </div>

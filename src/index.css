@@ -124,6 +124,47 @@
 }
 
 /* ═══════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ═══════════════════════════════════════════════════ */
+body.light-theme {
+  --bg-deep: #f0f2f5;
+  --bg-dark: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --sidebar-bg: rgba(255, 255, 255, 0.95);
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+  
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --hover-bg: rgba(0, 0, 0, 0.05);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-strong: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shine: rgba(255, 255, 255, 0.5);
+
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.1);
+  --shadow-elevated: 0 10px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0,0,0,0.02);
+
+  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+  --gradient-surface: linear-gradient(180deg, var(--bg-surface), #f3f4f6);
+}
+
+@media (min-width: 769px) {
+  body.light-theme {
+    --bg-dark: #f3f4f6;
+    --sidebar-bg: rgba(249, 250, 251, 0.95);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
    BASE STYLES
    ═══════════════════════════════════════════════════ */
 body, html {

@@ -31,6 +31,9 @@ export function AppProvider({ children }) {
   const [showProfile, setShowProfile] = useState(false);
   const [deepdiveActive, setDeepdiveActive] = useState(false);
   const [webSearchActive, setWebSearchActive] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('mean_theme') || 'system';
+  });
   const [selectedModel, setSelectedModel] = useState(() => {
     const stored = localStorage.getItem('mean_selected_model');
     if (stored) {
@@ -129,7 +132,32 @@ export function AppProvider({ children }) {
     localStorage.setItem('mean_ad_tokens', '0');
   }, []);
 
-  // Theme is always dark now, no need to sync or apply light-theme classes
+  // Theme management
+  useEffect(() => {
+    localStorage.setItem('mean_theme', theme);
+    const applyTheme = (t) => {
+      if (t === 'light') {
+        document.body.classList.add('light-theme');
+      } else if (t === 'dark') {
+        document.body.classList.remove('light-theme');
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) document.body.classList.remove('light-theme');
+        else document.body.classList.add('light-theme');
+      }
+    };
+    applyTheme(theme);
+    
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (e) => {
+        if (e.matches) document.body.classList.remove('light-theme');
+        else document.body.classList.add('light-theme');
+      };
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+  }, [theme]);
 
   // Load user on mount
   useEffect(() => {
@@ -696,6 +724,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     showProfile, setShowProfile,
     deepdiveActive, setDeepdiveActive,
     webSearchActive, setWebSearchActive,
+    theme, setTheme,
     persistChats, setChats, setApiKey,
     adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
     selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS,
