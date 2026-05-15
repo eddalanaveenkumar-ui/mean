@@ -99,7 +99,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
   };
 
   const messages = currentChat?.messages || [];
-  const isEmpty = messages.length === 0 && !isStreamActive;
+  const isEmpty = messages.length === 0 && !isStreaming;
 
   const overlayProps = { onVoice, onPpt, onTeacher, onMusic };
 
@@ -158,7 +158,7 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
               {messages.map((msg, i) => (
                 <Message key={i} message={msg} messageIndex={i} chatId={currentChatId} updateMessageData={updateMessageData} onTeacher={onTeacher} />
               ))}
-              {isStreamActive && (
+              {isStreaming && (
                 <Message message={{ role: 'assistant', content: streamText, isStreaming: true }} streaming onTeacher={onTeacher} />
               )}
             </div>
