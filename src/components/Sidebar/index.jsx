@@ -33,8 +33,13 @@ const DeepdiveIcon = () => (
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
   </svg>
 );
+const TerminalIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line>
+  </svg>
+);
 
-export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom }) {
+export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom, onFreebuffAgent }) {
   const {
     chats, currentChatId, sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,
@@ -101,6 +106,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
+        </button>
+        <button className="sc-icon" onClick={() => { onFreebuffAgent?.(); }} title="AI Agent">
+          <TerminalIcon />
         </button>
         <div className="sc-divider" />
         <button className={`sc-icon ${webSearchActive ? 'active' : ''}`} onClick={() => setWebSearchActive(!webSearchActive)} title="Live Search">
@@ -175,6 +183,10 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <button className="tool-item" onClick={() => { onMeanClassroom?.(); setSidebarOpen(false); }}>
             <i className="fas fa-graduation-cap" />
             <span>MEAN Classroom</span>
+          </button>
+          <button className="tool-item" onClick={() => { onFreebuffAgent?.(); setSidebarOpen(false); }}>
+            <i className="fas fa-terminal" />
+            <span>AI Agent</span>
           </button>
         </div>
 

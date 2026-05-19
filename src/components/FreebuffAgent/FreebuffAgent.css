@@ -1,0 +1,129 @@
+.fb-agent-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.fb-agent-container {
+  width: 100%;
+  max-width: 900px;
+  height: 80vh;
+  background: #0f111a;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.fb-agent-header {
+  height: 40px;
+  background: #1a1d27;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.fb-agent-title {
+  color: #a0aabf;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-agent-close {
+  background: none;
+  border: none;
+  color: #a0aabf;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.fb-agent-close:hover {
+  color: #ff5c5c;
+}
+
+.fb-agent-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #0f111a;
+}
+
+.fb-agent-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-line {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-line.system {
+  color: #8892b0;
+}
+
+.log-line.user {
+  color: #56b6c2;
+  font-weight: bold;
+}
+
+.log-line.error {
+  color: #e06c75;
+}
+
+.log-line.agent {
+  color: #c9d1d9;
+}
+
+.blink {
+  animation: fb-blink 1s infinite;
+}
+
+@keyframes fb-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.fb-agent-footer {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  background: #1a1d27;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.fb-agent-prompt {
+  color: #98c379;
+  margin-right: 12px;
+  font-weight: bold;
+}
+
+.fb-agent-footer input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #c9d1d9;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.fb-agent-footer input::placeholder {
+  color: #5c6370;
+}

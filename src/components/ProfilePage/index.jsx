@@ -5,6 +5,23 @@ import './ProfilePage.css';
 export default function ProfilePage() {
   const { user, apiKey, setApiKey, logout, setShowProfile, login, theme, setTheme } = useApp();
   const [editApiKey, setEditApiKey] = useState(apiKey);
+  
+  const [meanAiKeys, setMeanAiKeys] = useState(() => {
+    const saved = localStorage.getItem('meanai_cli_keys');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const generateMeanAiKey = () => {
+    const newKey = 'sk-meanai-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const updated = [newKey, ...meanAiKeys];
+    setMeanAiKeys(updated);
+    localStorage.setItem('meanai_cli_keys', JSON.stringify(updated));
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('API Key copied to clipboard!');
+  };
 
   const handleSave = () => {
     if (editApiKey.trim() && editApiKey !== apiKey) {
@@ -87,6 +104,33 @@ export default function ProfilePage() {
               </div>
             </div>
             <p className="ios-section-footer">Your OpenRouter or Google Gemini API key used for text generation.</p>
+          </div>
+
+          {/* MeanAI CLI API Keys Section */}
+          <div className="ios-section">
+            <h4 className="ios-section-title">MEANAI CODER CLI KEYS</h4>
+            <div className="ios-group">
+              <div className="ios-row" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '16px' }}>
+                {meanAiKeys.length === 0 && (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '12px', textAlign: 'center' }}>
+                    No keys generated yet.
+                  </p>
+                )}
+                {meanAiKeys.map(k => (
+                  <div key={k} className="api-key-display">
+                    <span className="api-key-text">{k}</span>
+                    <button className="copy-btn" onClick={() => copyToClipboard(k)} title="Copy API Key">
+                      <i className="fas fa-copy" />
+                    </button>
+                  </div>
+                ))}
+                <button className="generate-key-btn" onClick={generateMeanAiKey}>
+                  <i className="fas fa-plus" style={{ marginRight: '8px' }} />
+                  Generate New CLI Key
+                </button>
+              </div>
+            </div>
+            <p className="ios-section-footer">Use these keys to authenticate your local MeanAI Coder terminal application.</p>
           </div>
 
           {/* Actions */}
