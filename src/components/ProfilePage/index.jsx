@@ -12,10 +12,27 @@ export default function ProfilePage() {
   });
 
   const generateMeanAiKey = () => {
-    const newKey = 'sk-meanai-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const updated = [newKey, ...meanAiKeys];
+    const keyName = prompt("Enter a name for this API Key (e.g. My Macbook):");
+    if (!keyName) return;
+
+    const newKeyObj = {
+      id: Date.now().toString(),
+      name: keyName.trim(),
+      key: 'sk-meanai-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+      createdAt: new Date().toLocaleDateString()
+    };
+    
+    const updated = [newKeyObj, ...meanAiKeys];
     setMeanAiKeys(updated);
     localStorage.setItem('meanai_cli_keys', JSON.stringify(updated));
+  };
+
+  const deleteMeanAiKey = (id) => {
+    if (window.confirm("Are you sure you want to delete this key? Any CLI using it will be disconnected.")) {
+      const updated = meanAiKeys.filter(k => k.id !== id);
+      setMeanAiKeys(updated);
+      localStorage.setItem('meanai_cli_keys', JSON.stringify(updated));
+    }
   };
 
   const copyToClipboard = (text) => {
@@ -116,12 +133,21 @@ export default function ProfilePage() {
                     No keys generated yet.
                   </p>
                 )}
-                {meanAiKeys.map(k => (
-                  <div key={k} className="api-key-display">
-                    <span className="api-key-text">{k}</span>
-                    <button className="copy-btn" onClick={() => copyToClipboard(k)} title="Copy API Key">
-                      <i className="fas fa-copy" />
-                    </button>
+                {meanAiKeys.map(kObj => (
+                  <div key={kObj.id} className="api-key-display">
+                    <div className="api-key-info">
+                      <span className="api-key-name">{kObj.name}</span>
+                      <span className="api-key-date">Created: {kObj.createdAt}</span>
+                    </div>
+                    <span className="api-key-text">{typeof kObj === 'string' ? kObj : kObj.key}</span>
+                    <div className="api-key-actions">
+                      <button className="copy-btn" onClick={() => copyToClipboard(typeof kObj === 'string' ? kObj : kObj.key)} title="Copy API Key">
+                        <i className="fas fa-copy" />
+                      </button>
+                      <button className="delete-btn" onClick={() => deleteMeanAiKey(kObj.id)} title="Delete API Key">
+                        <i className="fas fa-trash" />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <button className="generate-key-btn" onClick={generateMeanAiKey}>

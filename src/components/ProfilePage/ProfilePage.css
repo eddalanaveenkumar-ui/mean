@@ -303,6 +303,36 @@ body.light-theme .theme-btn.active {
 .copy-btn:hover {
   color: #fff;
 }
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 4px;
+}
+.delete-btn:hover {
+  color: #ef4444;
+}
+.api-key-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.api-key-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.api-key-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+.api-key-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
 .generate-key-btn {
   background: rgba(99, 102, 241, 0.1);
   color: var(--accent-light);
