@@ -1,34 +1,42 @@
 /* ═══════════════════════════════════════════════════════
    MEAN AI — CINEMATIC SAAS LANDING PAGE DESIGN SYSTEM
+   All tokens scoped under .landing-page to prevent
+   global light-theme overrides from leaking in.
    ═══════════════════════════════════════════════════════ */
 
-:root {
+/* ── Base Reset & Scoped Design Tokens ── */
+.landing-page {
+  /* ── Scoped Dark Tokens (immune to global light-theme) ── */
   --bg-dark: #030307;
   --bg-card: rgba(10, 10, 18, 0.6);
   --bg-glass: rgba(10, 10, 18, 0.45);
   --border-glass: rgba(255, 255, 255, 0.045);
   --border-glow: rgba(99, 102, 241, 0.25);
-  
+
   --color-indigo: #6366f1;
   --color-purple: #a855f7;
   --color-cyan: #22d3ee;
   --color-blue: #3b82f6;
   --color-green: #10b981;
-  
+
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: all 0.2s ease;
-}
 
-/* ── Base Reset ── */
-.landing-page {
+  /* ── Layout ── */
   position: fixed;
   inset: 0;
-  background: var(--bg-dark);
-  color: #f0f0f5;
+  background: #030307 !important;
+  color: #f0f0f5 !important;
   font-family: var(--font-primary);
   overflow: hidden;
   z-index: 9999;
+}
+
+/* Force dark mode on .landing-page even when body has .light-theme */
+body.light-theme .landing-page {
+  background: #030307 !important;
+  color: #f0f0f5 !important;
 }
 
 .landing-scroll-container {
