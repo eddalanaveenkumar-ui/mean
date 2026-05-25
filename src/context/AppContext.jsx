@@ -32,7 +32,7 @@ export function AppProvider({ children }) {
   const [deepdiveActive, setDeepdiveActive] = useState(false);
   const [webSearchActive, setWebSearchActive] = useState(false);
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('mean_theme') || 'system';
+    return localStorage.getItem('mean_theme') || 'light';
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const stored = localStorage.getItem('mean_selected_model');
