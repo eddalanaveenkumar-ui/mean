@@ -384,12 +384,12 @@ body.light-theme .landing-page {
 .hero-container {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  gap: 40px;
+  gap: 48px;
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 120px 32px 60px;
+  padding: 140px 32px 80px;
   position: relative;
   z-index: 2;
 }
@@ -408,9 +408,9 @@ body.light-theme .landing-page {
   gap: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 100px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   backdrop-filter: blur(8px);
   animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -450,12 +450,12 @@ body.light-theme .landing-page {
 }
 
 .hero-main-title {
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.04em;
   color: #fff;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -477,16 +477,16 @@ body.light-theme .landing-page {
 .hero-description {
   font-size: 1.1rem;
   color: #94a3b8;
-  line-height: 1.6;
-  margin-bottom: 28px;
+  line-height: 1.65;
+  margin-bottom: 36px;
   max-width: 540px;
   animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
 }
 
 .hero-cta-buttons {
   display: flex;
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 32px;
   animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
@@ -622,7 +622,7 @@ body.light-theme .landing-page {
   display: flex;
   align-items: center;
   gap: 0;
-  margin-top: 28px;
+  margin-top: 36px;
   padding: 14px 24px;
   background: rgba(255, 255, 255, 0.015);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -1161,7 +1161,7 @@ body.light-theme .landing-page {
 
 /* ── Live Real-time Activity Feed ── */
 .activity-feed-section {
-  padding: 40px 32px 10px;
+  padding: 60px 32px 20px;
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
@@ -1258,11 +1258,11 @@ body.light-theme .landing-page {
 /* ── Shared Section Headers ── */
 .section-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .section-header .section-badge:hover {
@@ -1308,7 +1308,7 @@ body.light-theme .landing-page {
 .features-section {
   position: relative;
   z-index: 2;
-  padding: 60px 32px;
+  padding: 100px 32px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -1316,15 +1316,15 @@ body.light-theme .landing-page {
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: minmax(160px, auto);
-  gap: 16px;
+  grid-auto-rows: minmax(180px, auto);
+  gap: 20px;
 }
 
 .bento-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: 24px;
-  padding: 28px;
+  padding: 32px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(14px);
@@ -1498,7 +1498,7 @@ body.light-theme .landing-page {
 
 /* ── Interactive Classroom Node Graph ── */
 .roadmap-visualization-section {
-  padding: 60px 32px;
+  padding: 100px 32px;
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
@@ -1509,7 +1509,7 @@ body.light-theme .landing-page {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: 28px;
-  padding: 32px;
+  padding: 40px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.6);
   backdrop-filter: blur(14px);
   display: grid;
@@ -1522,7 +1522,7 @@ body.light-theme .landing-page {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 280px;
+  min-height: 320px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 20px;
   border: 1px dashed rgba(255, 255, 255, 0.03);
@@ -1684,7 +1684,7 @@ body.light-theme .landing-page {
 
 /* ── How It Works Scroll Neon Timeline ── */
 .how-it-works-section {
-  padding: 60px 32px;
+  padding: 100px 32px;
   max-width: 1000px;
   margin: 0 auto;
   position: relative;
@@ -1693,10 +1693,10 @@ body.light-theme .landing-page {
 
 .timeline-box {
   position: relative;
-  margin-top: 40px;
+  margin-top: 60px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 60px;
 }
 
 /* Vertical line track */
@@ -1744,7 +1744,7 @@ body.light-theme .landing-page {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: 20px;
-  padding: 24px;
+  padding: 30px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   backdrop-filter: blur(12px);
   transition: var(--transition-smooth);
@@ -2171,7 +2171,7 @@ body.light-theme .landing-page {
 .testimonials-section {
   position: relative;
   z-index: 2;
-  padding: 60px 0;
+  padding: 100px 0;
   overflow: hidden;
 }
 
@@ -2302,7 +2302,7 @@ body.light-theme .landing-page {
 
 /* ── Final Premium CTA Section ── */
 .premium-cta-section {
-  padding: 60px 32px;
+  padding: 120px 32px;
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
@@ -2313,7 +2313,7 @@ body.light-theme .landing-page {
   background: linear-gradient(135deg, rgba(15, 15, 27, 0.85), rgba(8, 8, 14, 0.95));
   border: 1px solid var(--border-glass);
   border-radius: 36px;
-  padding: 60px 40px;
+  padding: 80px 40px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -2390,9 +2390,9 @@ body.light-theme .landing-page {
 .cta-trust-proof {
   display: flex;
   gap: 24px;
-  margin-top: 28px;
+  margin-top: 40px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 20px;
+  padding-top: 28px;
   width: 100%;
   justify-content: center;
 }
@@ -2423,7 +2423,7 @@ body.light-theme .landing-page {
   position: relative;
   z-index: 2;
   border-top: 1px solid rgba(255, 255, 255, 0.02);
-  padding: 40px 32px 24px;
+  padding: 60px 32px 30px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -2432,7 +2432,7 @@ body.light-theme .landing-page {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
+  margin-bottom: 48px;
   flex-wrap: wrap;
   gap: 40px;
 }
