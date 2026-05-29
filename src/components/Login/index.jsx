@@ -140,37 +140,46 @@ export default function Login() {
     }
   }, []);
 
-  // Wake up the backend (Render free tier spins down after inactivity)
-  const warmupBackend = async (retries = 2) => {
-      for (let i = 0; i < retries; i++) {
-          try {
-              const res = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/', {}, 20000);
-              if (res.ok) return true;
-          } catch (e) {
-              console.warn(`Backend warmup attempt ${i + 1}/${retries} failed:`, e.message);
-          }
-          if (i < retries - 1) await new Promise(r => setTimeout(r, 3000));
-      }
-      return false;
-  };
-
   // Reusable backend linkage
   const processBackendAuth = async (user, idToken, overrideName = null) => {
-      setLoadingMsg('Waking up secure server...');
-
-      // Warmup: ping health endpoint to wake Render from sleep
-      await warmupBackend();
-
       setLoadingMsg('Connecting to secure server...');
 
-      // Step 1: Send Firebase token to Backend (with timeout)
-      const response = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/google-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: idToken })
-      });
+      // Step 1: Retry loop — Render free tier spins down, first attempt wakes it up
+      let response = null;
+      let lastError = null;
+      const maxAttempts = 3;
 
-      if (!response.ok) throw new Error('Backend failed to authenticate token.');
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+              if (attempt > 1) {
+                  setLoadingMsg(`Waking up server... (attempt ${attempt}/${maxAttempts})`);
+              }
+
+              const res = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/google-login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ token: idToken })
+              }, attempt === 1 ? 10000 : 45000); // short timeout first time (503 comes fast)
+
+              if (!res.ok) throw new Error(`Server returned ${res.status}`);
+              response = res;
+              break; // Success!
+
+          } catch (err) {
+              lastError = err;
+              console.warn(`Backend attempt ${attempt}/${maxAttempts} failed:`, err.message);
+
+              if (attempt < maxAttempts) {
+                  // Render free tier needs 5-15s (sometimes 30s) to wake up
+                  await new Promise(r => setTimeout(r, 12000));
+              }
+          }
+      }
+
+      if (!response) {
+          throw lastError || new Error('Unable to reach backend server.');
+      }
+
       const data = await response.json();
       const backendJwt = data.access_token;
       
