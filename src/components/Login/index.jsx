@@ -106,7 +106,7 @@ export default function Login() {
             if (savedTemp && savedTemp !== 'null') {
                 const u = JSON.parse(savedTemp);
                 if (u.jwt) {
-                  fetchWithTimeout('https://mean-backend-zg5d.onrender.com/update-api-key', {
+                  fetchWithTimeout('https://mean-backend-nine.vercel.app/update-api-key', {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
@@ -155,7 +155,7 @@ export default function Login() {
                   setLoadingMsg(`Waking up server... (attempt ${attempt}/${maxAttempts})`);
               }
 
-              const res = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/google-login', {
+              const res = await fetchWithTimeout('https://mean-backend-nine.vercel.app/google-login', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ token: idToken })
@@ -186,7 +186,7 @@ export default function Login() {
       setLoadingMsg('Checking your account...');
 
       // Step 2: Check if OpenRouter API is linked
-      const meResponse = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/me', {
+      const meResponse = await fetchWithTimeout('https://mean-backend-nine.vercel.app/me', {
          method: 'GET',
          headers: { 'Authorization': `Bearer ${backendJwt}` }
       });
@@ -196,7 +196,7 @@ export default function Login() {
 
       if (meData.has_api_key) {
          // Log them in entirely.
-         const keyResp = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/me/api_key', {
+         const keyResp = await fetchWithTimeout('https://mean-backend-nine.vercel.app/me/api_key', {
             headers: { 'Authorization': `Bearer ${backendJwt}` }
          });
          const keyData = await keyResp.json();
@@ -309,7 +309,7 @@ Error: ${err.message}`);
         // Try to connect to backend if we have a JWT
         if (tempUser?.jwt) {
           try {
-            const response = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/update-api-key', {
+            const response = await fetchWithTimeout('https://mean-backend-nine.vercel.app/update-api-key', {
               method: 'POST',
               headers: { 
                  'Content-Type': 'application/json',

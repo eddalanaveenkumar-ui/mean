@@ -181,7 +181,7 @@ export function AppProvider({ children }) {
     // Attempt DB sync if user is present
     const loadFromDB = async (jwt) => {
        try {
-          const r = await fetch('https://mean-backend-zg5d.onrender.com/chats', { headers: { 'Authorization': `Bearer ${jwt}` } });
+          const r = await fetch('https://mean-backend-nine.vercel.app/chats', { headers: { 'Authorization': `Bearer ${jwt}` } });
           const dbChats = await r.json();
           if (dbChats?.chats && dbChats.chats.length > 0) {
              const merged = [freshChat, ...dbChats.chats.map(c => ({ id: c.chat_id, title: c.title, messages: c.messages }))];
@@ -200,7 +200,7 @@ export function AppProvider({ children }) {
        }
        
        try {
-           const cResp = await fetch('https://mean-backend-zg5d.onrender.com/classes', { headers: { 'Authorization': `Bearer ${jwt}` } });
+           const cResp = await fetch('https://mean-backend-nine.vercel.app/classes', { headers: { 'Authorization': `Bearer ${jwt}` } });
            const dbClasses = await cResp.json();
            if (dbClasses?.classes) setClasses(dbClasses.classes);
        } catch(e) {}
@@ -228,7 +228,7 @@ export function AppProvider({ children }) {
     
     // Sync specifically modified chat to DB
     if (specificChat && specificChat.id && user?.jwt && specificChat.messages.length > 0) {
-        fetch('https://mean-backend-zg5d.onrender.com/chats', {
+        fetch('https://mean-backend-nine.vercel.app/chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.jwt}` },
             body: JSON.stringify({ chat_id: specificChat.id, title: specificChat.title, messages: specificChat.messages })
@@ -694,7 +694,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
   const saveClass = useCallback(async (name, slides) => {
     if (!user || !user.jwt) return null;
     try {
-      const resp = await fetch('https://mean-backend-zg5d.onrender.com/classes', {
+      const resp = await fetch('https://mean-backend-nine.vercel.app/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.jwt}` },
         body: JSON.stringify({ name, description: `Generated Classroom for ${name}`, slides })
@@ -712,7 +712,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
   const deleteClass = useCallback(async (classId) => {
     if (!user || !user.jwt) return;
     try {
-      await fetch(`https://mean-backend-zg5d.onrender.com/classes/${classId}`, {
+      await fetch(`https://mean-backend-nine.vercel.app/classes/${classId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${user.jwt}` }
       });
