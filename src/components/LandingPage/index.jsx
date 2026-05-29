@@ -208,6 +208,35 @@ export default function LandingPage({ onGetStarted }) {
   const timelineRef = useRef(null);
   const [timelineProgressHeight, setTimelineProgressHeight] = useState(0);
 
+  // ── Intersection Observer for Scroll-Reveal Animations ──
+  const revealRefs = useRef([]);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    
+    revealRefs.current.forEach(ref => {
+      if (ref) observer.observe(ref);
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  const addRevealRef = (el) => {
+    if (el && !revealRefs.current.includes(el)) {
+      revealRefs.current.push(el);
+    }
+  };
+
   useEffect(() => {
     const container = document.querySelector('.landing-scroll-container');
     const handleTimelineScroll = () => {
@@ -558,7 +587,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── TRUSTED BY SECTION (Logos marquee) ── */}
-        <section className="marquee-section">
+        <section ref={addRevealRef} className="marquee-section reveal">
           <h3 className="marquee-title">Trusted by developers at leading organizations</h3>
           <div className="marquee-container">
             <div className="marquee-track">
@@ -591,7 +620,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── REAL-TIME AI ACTIVITY SECTION ── */}
-        <section className="activity-feed-section">
+        <section ref={addRevealRef} className="activity-feed-section reveal">
           <div className="activity-feed-card">
             <div className="activity-left">
               <div className="activity-pulse-circle">
@@ -615,7 +644,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── FEATURES SECTION (Bento Grid) ── */}
-        <section id="features" className="features-section">
+        <section ref={addRevealRef} id="features" className="features-section reveal">
           <div className="section-header">
             <span className="section-badge">Features Bento</span>
             <h2 className="section-title">Everything You Need To Master Code</h2>
@@ -627,7 +656,7 @@ export default function LandingPage({ onGetStarted }) {
           <div className="bento-grid">
             
             {/* Card 1: AI Classroom (Large) */}
-            <div className="bento-card bento-large" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-large reveal reveal-delay-1" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -661,7 +690,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Card 2: Instant Code Breakdowns (Medium) */}
-            <div className="bento-card bento-medium" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-medium reveal reveal-delay-2" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -687,7 +716,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Card 3: Ambient Music Player (Normal) */}
-            <div className="bento-card bento-normal" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-normal reveal reveal-delay-3" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -719,7 +748,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Card 4: Slide Decks Presentation (Normal) */}
-            <div className="bento-card bento-normal" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-normal reveal reveal-delay-4" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -741,7 +770,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Card 5: Local keys security (Normal) */}
-            <div className="bento-card bento-normal" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-normal reveal reveal-delay-3" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -761,7 +790,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Card 6: Dashboard preview (Medium) */}
-            <div className="bento-card bento-medium" onMouseMove={handleCardMouseMove}>
+            <div ref={addRevealRef} className="bento-card bento-medium reveal reveal-delay-5" onMouseMove={handleCardMouseMove}>
               <div className="card-spotlight" />
               <div className="bento-content">
                 <div className="bento-card-top">
@@ -794,7 +823,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── AI CLASSROOM GRAPH VISUALIZATION ── */}
-        <section id="roadmap" className="roadmap-visualization-section">
+        <section ref={addRevealRef} id="roadmap" className="roadmap-visualization-section reveal">
           <div className="section-header">
             <span className="section-badge">Visual Classroom Graph</span>
             <h2 className="section-title">Explore Connected Learning Paths</h2>
@@ -803,7 +832,7 @@ export default function LandingPage({ onGetStarted }) {
             </p>
           </div>
 
-          <div className="node-graph-box">
+          <div className="node-graph-box reveal reveal-delay-2">
             
             {/* Left Graph Node canvas */}
             <div className="node-graph-canvas-wrap">
@@ -881,7 +910,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── HOW IT WORKS SCROLL TIMELINE ── */}
-        <section id="how-it-works" className="how-it-works-section" ref={timelineRef}>
+        <section id="how-it-works" className="how-it-works-section reveal" ref={timelineRef}>
           <div className="section-header">
             <span className="section-badge">Simple Pipeline</span>
             <h2 className="section-title">How Mean AI Teaches</h2>
@@ -900,7 +929,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Step 1 */}
-            <div className={`timeline-step-row ${activeTimelineStep >= 1 ? 'active-step' : ''}`}>
+            <div className={`timeline-step-row reveal reveal-delay-1 ${activeTimelineStep >= 1 ? 'active-step' : ''}`}>
               <div className="timeline-card-wrap">
                 <div className="timeline-step-card">
                   <div className="timeline-step-header">
@@ -921,7 +950,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Step 2 */}
-            <div className={`timeline-step-row ${activeTimelineStep >= 2 ? 'active-step' : ''}`}>
+            <div className={`timeline-step-row reveal reveal-delay-2 ${activeTimelineStep >= 2 ? 'active-step' : ''}`}>
               <div className="timeline-card-wrap">
                 <div className="timeline-step-card">
                   <div className="timeline-step-header">
@@ -942,7 +971,7 @@ export default function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Step 3 */}
-            <div className={`timeline-step-row ${activeTimelineStep >= 3 ? 'active-step' : ''}`}>
+            <div className={`timeline-step-row reveal reveal-delay-3 ${activeTimelineStep >= 3 ? 'active-step' : ''}`}>
               <div className="timeline-card-wrap">
                 <div className="timeline-step-card">
                   <div className="timeline-step-header">
@@ -966,7 +995,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── TESTIMONIALS SECTION (Marquees loop) ── */}
-        <section id="testimonials" className="testimonials-section">
+        <section ref={addRevealRef} id="testimonials" className="testimonials-section reveal">
           <div className="section-header">
             <span className="section-badge">Student Reviews</span>
             <h2 className="section-title">Loved by engineers global</h2>
@@ -1041,7 +1070,7 @@ export default function LandingPage({ onGetStarted }) {
         </section>
 
         {/* ── FINAL PREMIUM CTA SECTION ── */}
-        <section className="premium-cta-section">
+        <section ref={addRevealRef} className="premium-cta-section reveal">
           <div className="cta-glass-box">
             <div className="cta-glowing-backdrop" />
             
