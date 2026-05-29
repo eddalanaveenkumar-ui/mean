@@ -52,7 +52,7 @@ Example:
       let url, headers, body;
 
       if (selectedModel.id === 'gemini' && isGeminiKey) {
-         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
+         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
          headers = { 'Content-Type': 'application/json' };
          body = JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },

@@ -347,7 +347,7 @@ export function AppProvider({ children }) {
       
       let title = '';
       if (isGeminiKey) {
-          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanedKey}`;
+          const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
           const g_resp = await fetch(g_url, {
              method: 'POST', headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
@@ -508,7 +508,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
 
     const useGeminiDirect = selectedModel.id === 'gemini' && isGeminiKey;
     if (useGeminiDirect) {
-       url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
+       url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
        headers = { 'Content-Type': 'application/json' };
        let contents = [];
        apiMessages.forEach(m => {
