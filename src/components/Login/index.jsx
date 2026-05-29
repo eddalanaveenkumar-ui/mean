@@ -222,7 +222,7 @@ export default function Login() {
       const idToken = await result.user.getIdToken();
       await processBackendAuth(result.user, idToken);
     } catch (err) {
-      console.error(err);
+      console.error('Google login error:', err);
       if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
           signInWithRedirect(auth, googleProvider);
           return;
@@ -234,8 +234,19 @@ export default function Login() {
             photoURL: firebaseUser?.photoURL
           });
           setStep(2);
+      } else if (err.code === 'auth/internal-error') {
+          // Internal error often indicates network/DNS issues reaching Firebase servers
+          alert(`Login failed due to a network error. This may happen if your browser cannot reach Firebase's authentication servers.
+
+Troubleshooting tips:
+1. Check your internet connection
+2. Disable VPN or ad-blocker temporarily
+3. Try using a different browser
+4. If the issue persists, the Firebase project may need domain authorization updates
+
+Error: ${err.message}`);
       } else if (err.code !== 'auth/popup-closed-by-user') {
-          alert('Login failed. Please try again.');
+          alert(`Login failed: ${err.message || 'Please try again.'}`);
       }
     } finally {
       setIsLoading(false);

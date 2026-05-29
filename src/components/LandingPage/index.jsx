@@ -824,14 +824,6 @@ export default function LandingPage({ onGetStarted }) {
 
         {/* ── AI CLASSROOM GRAPH VISUALIZATION ── */}
         <section ref={addRevealRef} id="roadmap" className="roadmap-visualization-section reveal">
-          <div className="section-header">
-            <span className="section-badge">Visual Classroom Graph</span>
-            <h2 className="section-title">Explore Connected Learning Paths</h2>
-            <p className="section-subtitle">
-              Click node units in our connected AI Classroom map to see interactive advice & topics.
-            </p>
-          </div>
-
           <div className="node-graph-box reveal reveal-delay-2">
             
             {/* Left Graph Node canvas */}
