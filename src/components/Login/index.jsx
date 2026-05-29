@@ -140,8 +140,27 @@ export default function Login() {
     }
   }, []);
 
+  // Wake up the backend (Render free tier spins down after inactivity)
+  const warmupBackend = async (retries = 2) => {
+      for (let i = 0; i < retries; i++) {
+          try {
+              const res = await fetchWithTimeout('https://mean-backend-zg5d.onrender.com/', {}, 20000);
+              if (res.ok) return true;
+          } catch (e) {
+              console.warn(`Backend warmup attempt ${i + 1}/${retries} failed:`, e.message);
+          }
+          if (i < retries - 1) await new Promise(r => setTimeout(r, 3000));
+      }
+      return false;
+  };
+
   // Reusable backend linkage
   const processBackendAuth = async (user, idToken, overrideName = null) => {
+      setLoadingMsg('Waking up secure server...');
+
+      // Warmup: ping health endpoint to wake Render from sleep
+      await warmupBackend();
+
       setLoadingMsg('Connecting to secure server...');
 
       // Step 1: Send Firebase token to Backend (with timeout)
