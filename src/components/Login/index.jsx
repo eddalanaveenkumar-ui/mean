@@ -220,10 +220,23 @@ export default function Login() {
       setFirebaseUser(result.user);
       setLoadingMsg('Connecting to secure server...');
       const idToken = await result.user.getIdToken();
-      await processBackendAuth(result.user, idToken);
+      try {
+        await processBackendAuth(result.user, idToken);
+      } catch (backendErr) {
+        // Backend is unreachable (CORS, network, or server down) — fall through to Step 2
+        console.warn('Backend unreachable, continuing with local login:', backendErr);
+        setTempUser({
+          email: result.user.email,
+          name: result.user.displayName || result.user.email?.split('@')[0] || 'User',
+          jwt: null,
+          photoURL: result.user.photoURL
+        });
+        setStep(2);
+      }
     } catch (err) {
       console.error('Google login error:', err);
       if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+          // COOP policy may block popup — try redirect instead
           signInWithRedirect(auth, googleProvider);
           return;
       } else if (err.name === 'AbortError') {
@@ -235,16 +248,20 @@ export default function Login() {
           });
           setStep(2);
       } else if (err.code === 'auth/internal-error') {
-          // Internal error often indicates network/DNS issues reaching Firebase servers
-          alert(`Login failed due to a network error. This may happen if your browser cannot reach Firebase's authentication servers.
+          // Attempt redirect as fallback for COOP/network issues
+          console.warn('Sign-in popup failed (internal-error), trying redirect...');
+          try {
+            await signInWithRedirect(auth, googleProvider);
+          } catch (redirectErr) {
+            console.error('Redirect also failed:', redirectErr);
+            alert(`Login failed. This could be due to:
 
-Troubleshooting tips:
-1. Check your internet connection
-2. Disable VPN or ad-blocker temporarily
-3. Try using a different browser
-4. If the issue persists, the Firebase project may need domain authorization updates
+1. Your browser blocking the sign-in popup — allow popups for this site
+2. A network issue reaching Firebase servers — check your internet connection
+3. An ad-blocker or VPN interfering — try disabling it temporarily
 
 Error: ${err.message}`);
+          }
       } else if (err.code !== 'auth/popup-closed-by-user') {
           alert(`Login failed: ${err.message || 'Please try again.'}`);
       }
