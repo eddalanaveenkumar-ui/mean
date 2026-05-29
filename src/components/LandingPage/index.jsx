@@ -14,18 +14,11 @@ import {
   SkipForward, 
   Terminal, 
   ArrowRight, 
-  ChevronRight, 
-  TrendingUp, 
-  User, 
   CheckCircle2, 
-  Map, 
   Activity, 
-  Award, 
-  BarChart3, 
   Database, 
   Lock, 
   Laptop, 
-  FileText, 
   Sparkles,
   GitBranch,
   Volume2
@@ -386,46 +379,21 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </div>
 
-            {/* Floating Mini Widgets */}
-            <div className="floating-widgets-container">
-              <div className="mini-widget" style={{ transform: 'rotate(-1deg)' }}>
-                <div className="widget-icon-wrap" style={{ background: 'rgba(34, 211, 238, 0.1)', color: 'var(--color-cyan)' }}>
-                  <User size={16} />
-                </div>
-                <div className="widget-text">
-                  <span className="widget-value">12.8K</span>
-                  <span className="widget-label">Students Active</span>
-                </div>
+            {/* Sleek Stats Bar */}
+            <div className="hero-stats-bar">
+              <div className="hero-stat-item">
+                <span className="hero-stat-number">12.5K+</span>
+                <span className="hero-stat-label">Active Students</span>
               </div>
-
-              <div className="mini-widget" style={{ transform: 'rotate(1deg)' }}>
-                <div className="widget-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-green)' }}>
-                  <TrendingUp size={16} />
-                </div>
-                <div className="widget-text">
-                  <span className="widget-value">98.4%</span>
-                  <span className="widget-label">Concept Clarity</span>
-                </div>
+              <div className="hero-stat-divider" />
+              <div className="hero-stat-item">
+                <span className="hero-stat-number">1.2M+</span>
+                <span className="hero-stat-label">Explanations</span>
               </div>
-
-              <div className="mini-widget" style={{ transform: 'rotate(-2deg)' }}>
-                <div className="widget-icon-wrap" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--color-indigo)' }}>
-                  <Brain size={16} />
-                </div>
-                <div className="widget-text">
-                  <span className="widget-value">24/7</span>
-                  <span className="widget-label">AI Tutor Online</span>
-                </div>
-              </div>
-
-              <div className="mini-widget" style={{ transform: 'rotate(2deg)' }}>
-                <div className="widget-icon-wrap" style={{ background: 'rgba(168, 85, 247, 0.1)', color: 'var(--color-purple)' }}>
-                  <Award size={16} />
-                </div>
-                <div className="widget-text">
-                  <span className="widget-value">1.2M+</span>
-                  <span className="widget-label">Traces Rendered</span>
-                </div>
+              <div className="hero-stat-divider" />
+              <div className="hero-stat-item">
+                <span className="hero-stat-number">4.9/5</span>
+                <span className="hero-stat-label">Satisfaction</span>
               </div>
             </div>
           </div>
@@ -578,13 +546,13 @@ export default function LandingPage({ onGetStarted }) {
               </div>
             </div>
 
-            {/* AI Explanation Banner bubble */}
-            <div className="tutor-speech-bubble">
-              <div className="tutor-avatar-circle">M</div>
-              <div className="tutor-bubble-content">
-                <span className="tutor-bubble-title">Mean AI Classroom Assistant</span>
-                <p className="tutor-bubble-text">{recursionSteps[demoStepIndex].explanation}</p>
+            {/* AI Explanation snippet integrated below IDE */}
+            <div className="hero-explanation-bar">
+              <div className="explanation-icon">
+                <Brain size={16} />
               </div>
+              <p className="explanation-text">{recursionSteps[demoStepIndex].explanation}</p>
+              <span className="explanation-step-badge">Step {demoStepIndex + 1}/{recursionSteps.length}</span>
             </div>
           </div>
         </section>
