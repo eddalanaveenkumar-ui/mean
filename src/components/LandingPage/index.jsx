@@ -106,7 +106,7 @@ export default function LandingPage({ onGetStarted }) {
 
           {/* Interactive 3D Graphic Canvas area */}
           <div className="hero-graphic-visual-wrapper">
-            <div className="3d-scene-container-box">
+            <div className="scene-container-3d-box">
               <img 
                 src="/hero-3d.png" 
                 alt="3D Interactive Neural Network & UI Mockup" 

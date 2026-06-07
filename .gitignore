@@ -28,3 +28,6 @@ dist-ssr
 stitch-call.mjs
 copy-hero.mjs
 git-push.mjs
+
+# Windows reserved device file
+nul
