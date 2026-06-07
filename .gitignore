@@ -24,5 +24,7 @@ dist-ssr
 *.sw?
 .env
 
-# MCP / Stitch script with API key
+# One-off utility scripts (local machine only)
 stitch-call.mjs
+copy-hero.mjs
+git-push.mjs
