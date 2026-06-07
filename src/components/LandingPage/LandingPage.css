@@ -125,26 +125,27 @@
   gap: 12px;
 }
 
-.logo-atom-icon {
+.logo-square-blue {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.2), transparent 80%);
-  border: 1.5px solid var(--color-cyan);
+  border-radius: 6px;
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
 }
 
-.logo-dot-center {
-  width: 6px;
-  height: 6px;
-  background-color: var(--color-cyan);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--color-cyan);
+.logo-atom-svg {
+  color: #ffffff;
+  animation: logo-spin 20s linear infinite;
 }
+
+@keyframes logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 
 .brand-logo-text {
   font-size: 1.15rem;
@@ -345,7 +346,7 @@
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background-color: rgba(6, 6, 10, 0.6);
-  padding: 24px;
+  padding: 0;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
   position: relative;
   overflow: visible;
@@ -355,9 +356,10 @@
 .hero-3d-scene-img {
   width: 100%;
   height: auto;
-  border-radius: 16px;
+  border-radius: 24px;
   display: block;
 }
+
 
 .fallback-graphic-active {
   min-height: 400px;
@@ -453,15 +455,16 @@
 
 .left-vars-card {
   left: -40px;
-  bottom: 40px;
+  top: 22%;
   width: 230px;
 }
 
 .right-stack-card {
   right: -40px;
-  bottom: 60px;
+  top: 38%;
   width: 250px;
 }
+
 
 /* responsive shifts for absolute cards */
 @media (max-width: 900px) {
@@ -926,3 +929,14 @@
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
+
+.invite-watermark-icon {
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  color: rgba(255, 255, 255, 0.025);
+  transform: rotate(15deg);
+  pointer-events: none;
+  z-index: 1;
+}
+

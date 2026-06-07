@@ -8,7 +8,8 @@ import {
   Lock, 
   Globe, 
   GraduationCap,
-  Play
+  Atom,
+  Wand2
 } from 'lucide-react';
 import './LandingPage.css';
 
@@ -56,8 +57,8 @@ export default function LandingPage({ onGetStarted }) {
       <nav className={`landing-nav-bar ${scrolled ? 'scrolled' : ''}`}>
         <div className="nav-content-wrap">
           <div className="nav-left-brand">
-            <div className="logo-atom-icon">
-              <span className="logo-dot-center" />
+            <div className="logo-square-blue">
+              <Atom size={16} className="logo-atom-svg" />
             </div>
             <span className="brand-logo-text">Mean AI</span>
           </div>
@@ -107,12 +108,12 @@ export default function LandingPage({ onGetStarted }) {
           {/* Interactive 3D Graphic Canvas area */}
           <div className="hero-graphic-visual-wrapper">
             <div className="scene-container-3d-box">
+
               <img 
                 src="/hero-3d.png" 
                 alt="3D Interactive Neural Network & UI Mockup" 
                 className="hero-3d-scene-img" 
                 onError={(e) => {
-                  // Fallback if the image doesn't exist
                   e.target.style.display = 'none';
                   e.target.parentNode.classList.add('fallback-graphic-active');
                 }}
@@ -234,6 +235,7 @@ export default function LandingPage({ onGetStarted }) {
       <section className="evolve-invite-section">
         <div className="glass-invite-card-container">
           <div className="invite-glow-backing" />
+          <Wand2 className="invite-watermark-icon" size={140} />
           <div className="invite-card-content">
             <h2 className="invite-main-title">Ready to evolve your intelligence?</h2>
             <p className="invite-subtext-desc">
@@ -257,8 +259,8 @@ export default function LandingPage({ onGetStarted }) {
         <div className="footer-top-columns">
           <div className="footer-brand-column">
             <div className="nav-left-brand">
-              <div className="logo-atom-icon">
-                <span className="logo-dot-center" />
+              <div className="logo-square-blue">
+                <Atom size={16} className="logo-atom-svg" />
               </div>
               <span className="brand-logo-text">Mean AI</span>
             </div>
