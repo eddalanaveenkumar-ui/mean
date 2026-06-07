@@ -467,16 +467,87 @@
 
 
 /* responsive shifts for absolute cards */
-@media (max-width: 900px) {
+@media (max-width: 900px) and (min-width: 769px) {
   .left-vars-card {
-    left: 20px;
-    bottom: -20px;
+    left: 16px;
+    top: auto;
+    bottom: 16px;
+    width: 210px;
   }
   .right-stack-card {
-    right: 20px;
-    bottom: -40px;
+    right: 16px;
+    top: auto;
+    bottom: 16px;
+    width: 220px;
   }
 }
+
+@media (max-width: 768px) {
+  .nav-center-menu {
+    display: none;
+  }
+  
+  .hero-viewport-section {
+    padding-top: 100px;
+    padding-bottom: 40px;
+  }
+  
+  .scene-container-3d-box {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background-color: rgba(6, 6, 10, 0.85);
+    border-radius: 20px;
+    gap: 16px;
+  }
+
+  .hero-3d-scene-img {
+    border-radius: 12px;
+    width: 100%;
+  }
+
+  .left-vars-card, .right-stack-card {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.01) !important;
+  }
+  
+  .hero-action-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .btn-primary-start, .btn-secondary-demo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .glass-invite-card-container {
+    padding: 40px 20px;
+    border-radius: 20px;
+  }
+
+  .invite-action-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .btn-invite-request, .btn-curriculum-view {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 
 .card-header-row {
   display: flex;
