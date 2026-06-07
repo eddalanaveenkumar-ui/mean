@@ -25,11 +25,12 @@
 }
 
 .landing-page-container {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--color-bg-dark);
   color: var(--color-text-main);
   font-family: var(--font-sans);
-  overflow-x: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
