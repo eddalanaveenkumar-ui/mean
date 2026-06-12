@@ -164,13 +164,15 @@ export function AppProvider({ children }) {
     const stored = localStorage.getItem('mean_user');
     const searchParams = new URLSearchParams(window.location.search);
     const sharedData = searchParams.get('shared_class');
+    const chatId = searchParams.get('chat_id');
+    const userId = searchParams.get('user_id');
     
     let u = null;
     if (stored) {
       try {
         u = JSON.parse(stored);
       } catch (e) { /* ignore */ }
-    } else if (sharedData) {
+    } else if (sharedData || (chatId && userId)) {
       u = { id: 'guest-' + Math.random().toString(36).substring(2, 9), name: 'Guest Friend', email: 'guest@mean.ai', jwt: '', apiKey: '' };
       localStorage.setItem('mean_user', JSON.stringify(u));
     }

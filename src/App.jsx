@@ -44,23 +44,97 @@ function DashboardLayout() {
   React.useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const sharedClass = searchParams.get('shared_class');
-    if (sharedClass) {
-      try {
-        const decodedStr = decodeURIComponent(atob(sharedClass).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const parsed = JSON.parse(decodedStr);
-        if (parsed && parsed.slides) {
-          setExpandedClassroom({ topic: parsed.topic || '', slides: parsed.slides });
-          setShowTeacher(true);
+    const chatId = searchParams.get('chat_id');
+    const userId = searchParams.get('user_id');
+
+    if (chatId && userId) {
+      (async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_SERVER_URL || 'https://mean-backend-nine.vercel.app';
+          const resp = await fetch(`${baseUrl}/shares?chat_id=${chatId}&user_id=${userId}`);
+          if (resp.ok) {
+            const parsed = await resp.json();
+            if (parsed && parsed.slides) {
+              setExpandedClassroom({ topic: parsed.topic || '', slides: parsed.slides });
+              setShowTeacher(true);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch shared classroom:', e);
         }
-      } catch (e) {
-        console.error('Failed to parse shared classroom:', e);
-      }
-      searchParams.delete('shared_class');
-      const newQuery = searchParams.toString();
-      const newPath = window.location.pathname + (newQuery ? '?' + newQuery : '');
-      window.history.replaceState(null, '', newPath);
+        searchParams.delete('chat_id');
+        searchParams.delete('user_id');
+        const newQuery = searchParams.toString();
+        const newPath = window.location.pathname + (newQuery ? '?' + newQuery : '');
+        window.history.replaceState(null, '', newPath);
+      })();
+    } else if (sharedClass) {
+      (async () => {
+        try {
+          let parsed = null;
+          try {
+            const binaryString = atob(sharedClass);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const stream = new Blob([bytes]).stream();
+            const decompressedStream = stream.pipeThrough(new DecompressionStream("deflate"));
+            const response = new Response(decompressedStream);
+            const text = await response.text();
+            parsed = JSON.parse(text);
+          } catch (decompressErr) {
+            // Fallback to old base64 decoding
+            const decodedStr = decodeURIComponent(atob(sharedClass).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            parsed = JSON.parse(decodedStr);
+          }
+          if (parsed) {
+            // Handle new minified format (short keys: tp, s) or legacy full format (topic, slides)
+            let finalTopic = '';
+            let finalSlides = [];
+            
+            if (parsed.s && Array.isArray(parsed.s)) {
+              // New minified format — expand short keys back to full slide objects
+              finalTopic = parsed.tp || '';
+              finalSlides = parsed.s.map(m => {
+                const slide = { address: m.a, type: m.t || 'block' };
+                if (m.ti) slide.title = m.ti;
+                if (m.ic) slide.inContent = m.ic;
+                if (m.sh) slide.shape = m.sh;
+                if (m.c) slide.connect = m.c;
+                if (m.fc) slide.firstConnection = m.fc;
+                if (m.nc) slide.nextConnection = m.nc;
+                if (m.ct) slide.content = m.ct;
+                if (m.d && Array.isArray(m.d)) {
+                  slide.dialogs = m.d.map(d => ({
+                    topic: d.t || '', input: '', output: '',
+                    explanation: d.e || ''
+                  }));
+                }
+                return slide;
+              });
+            } else if (parsed.slides) {
+              // Legacy full format
+              finalTopic = parsed.topic || '';
+              finalSlides = parsed.slides;
+            }
+            
+            if (finalSlides.length > 0) {
+              setExpandedClassroom({ topic: finalTopic, slides: finalSlides });
+              setShowTeacher(true);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse shared classroom:', e);
+        }
+        searchParams.delete('shared_class');
+        const newQuery = searchParams.toString();
+        const newPath = window.location.pathname + (newQuery ? '?' + newQuery : '');
+        window.history.replaceState(null, '', newPath);
+      })();
     }
   }, []);
 

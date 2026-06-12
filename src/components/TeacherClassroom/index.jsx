@@ -14,6 +14,57 @@ class SlideCache {
   has(key) { return this.map.has(key); }
 }
 
+function reconstructTOON(slidesList) {
+  if (!slidesList || !Array.isArray(slidesList)) return '';
+  const list = slidesList.filter(s => s.address !== "user_input_special");
+  
+  return list.map(slide => {
+    let parts = [];
+    parts.push(`type: ${slide.type || 'block'}`);
+    parts.push(`address: ${slide.address || ''}`);
+    if (slide.title) parts.push(`title: ${slide.title}`);
+    if (slide.content) parts.push(`content: ${slide.content}`);
+    if (slide.inContent) parts.push(`in-content: ${slide.inContent}`);
+    if (slide.shape) parts.push(`shape: ${slide.shape}`);
+    if (slide.explanation) parts.push(`explanation: ${slide.explanation}`);
+    if (slide.connect && Array.isArray(slide.connect) && slide.connect.length > 0) {
+      parts.push(`connect: ${slide.connect.join(', ')}`);
+    }
+    if (slide.firstConnection) parts.push(`first-connection: ${slide.firstConnection}`);
+    if (slide.nextConnection) parts.push(`next-connection: ${slide.nextConnection}`);
+    
+    let blockStr = '---\n' + parts.join('\n') + '\n';
+    
+    if (slide.dialogs && Array.isArray(slide.dialogs)) {
+      slide.dialogs.forEach(dlg => {
+        blockStr += `>dialog\n  topic: ${dlg.topic || ''}\n  input: ${dlg.input || ''}\n  output: ${dlg.output || ''}\n  explanation: ${dlg.explanation || ''}\n`;
+      });
+    }
+    
+    if (slide.type === 'diablock') {
+      if (Array.isArray(slide.nodes)) {
+        slide.nodes.forEach(dn => {
+          blockStr += `>dianode\n  id: ${dn.id || ''}\n  value: ${dn.value || ''}\n  shape: ${dn.shape || ''}\n  label: ${dn.label || ''}\n`;
+        });
+      }
+      if (Array.isArray(slide.edges)) {
+        slide.edges.forEach(de => {
+          blockStr += `>edge\n  from: ${de.from || ''}\n  to: ${de.to || ''}\n  type: ${de.type || ''}\n`;
+        });
+      }
+      if (Array.isArray(slide.steps)) {
+        slide.steps.forEach(ds => {
+          blockStr += `>diastep\n  description: ${ds.description || ''}\n`;
+          if (ds.highlightNodes) {
+            blockStr += `  highlightNodes: ${Array.isArray(ds.highlightNodes) ? ds.highlightNodes.join(', ') : ds.highlightNodes}\n`;
+          }
+        });
+      }
+    }
+    return blockStr;
+  }).join('\n');
+}
+
 // Completely block React from re-reconciling the interior DOM tree while text is speaking
 // Without this, parent state updates (like real-time countdown timer) obliterate our `.tc-hw` word spans!
 const StaticSlideBody = React.memo(({ html, innerRef }) => {
@@ -26,9 +77,9 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
     </div>
   );
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
-
 export default function TeacherClassroom({ isOpen, onClose, initialTopic, initialSlides }) {
   const { user, webSearchActive, saveClass, classes, deleteClass, theme, selectedModel, apiKey } = useApp();
+  const isGuest = user?.id?.startsWith('guest-') || false;
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
   const [sessionTitle, setSessionTitle] = useState('');
@@ -115,6 +166,10 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copiedShare, setCopiedShare] = useState(false);
+  const [agentLogsEnabled, setAgentLogsEnabled] = useState(() => localStorage.getItem('mean_agent_logs') === 'true');
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [copiedLogs, setCopiedLogs] = useState(false);
+  const [rawToonText, setRawToonText] = useState('');
 
   // Right panel — YouTube videos & images
   const [mediaItems, setMediaItems] = useState([]);
@@ -192,8 +247,8 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   useEffect(() => {
     if (!isOpen || !initialSlides || initialSlides.length === 0) return;
 
-    // Populate state so the canvas has something to render
     setSlides(initialSlides);
+    setRawToonText(reconstructTOON(initialSlides));
     setSessionTopic(initialTopic || '');
     setSessionTitle(initialTopic || '');
     setPhase('done');
@@ -1109,6 +1164,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
       }
 
       setSlides(parsed);
+      setRawToonText(fullText);
       setPhase('done');
       saveClass(currentTopic, parsed); // Save automatically to DB
 
@@ -1353,28 +1409,82 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
     setTimeout(() => printWindow.print(), 800);
   };
 
-  // ===== SHARE ROADMAP =====
-  const handleShareClick = () => {
+  const handleShareClick = async () => {
     try {
-      const shareData = {
+      const payload = {
         topic: sessionTopic || topic,
-        slides: slides
+        slides: slides.filter(s => s.address !== "user_input_special")
       };
+      
+      const baseUrl = import.meta.env.VITE_SERVER_URL || 'https://mean-backend-nine.vercel.app';
+      try {
+        const resp = await fetch(`${baseUrl}/shares`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.chat_id && data.user_id) {
+            const url = new URL(window.location.origin + window.location.pathname);
+            url.searchParams.set('chat_id', data.chat_id);
+            url.searchParams.set('user_id', data.user_id);
+            setShareLink(url.toString());
+            setCopiedShare(false);
+            setShowShareModal(true);
+            return;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Database sharing failed, falling back to URL compression:', dbErr);
+      }
+      
+      // Fallback to client-side URL compression
+      const minSlides = slides
+        .filter(s => s.address !== "user_input_special")
+        .map(s => {
+          const m = { a: s.address, t: s.type || 'block' };
+          if (s.title) m.ti = s.title.slice(0, 40);
+          if (s.inContent || s['in-content']) m.ic = (s.inContent || s['in-content']).slice(0, 40);
+          if (s.shape) m.sh = s.shape;
+          if (s.connect && s.connect.length) m.c = s.connect;
+          if (s.firstConnection) m.fc = s.firstConnection;
+          if (s.nextConnection) m.nc = s.nextConnection;
+          return m;
+        });
+      
+      const shareData = { tp: sessionTopic || topic, s: minSlides };
       const jsonStr = JSON.stringify(shareData);
-      const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-        return String.fromCharCode('0x' + p1);
-      }));
-      const url = new URL(window.location.href);
+      
+      let base64 = '';
+      try {
+        const stream = new Blob([jsonStr]).stream();
+        const compressedStream = stream.pipeThrough(new CompressionStream("deflate"));
+        const response = new Response(compressedStream);
+        const blob = await response.blob();
+        
+        base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+      } catch (compressErr) {
+        base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+          return String.fromCharCode('0x' + p1);
+        }));
+      }
+      
+      const url = new URL(window.location.origin + window.location.pathname);
       url.searchParams.set('shared_class', base64);
       setShareLink(url.toString());
       setCopiedShare(false);
       setShowShareModal(true);
     } catch (e) {
       console.error('Failed to generate share link:', e);
-      alert('Failed to generate share link.');
+      alert('Failed to generate share link. Please try again.');
     }
   };
-
   const copyShareLink = () => {
     navigator.clipboard.writeText(shareLink);
     setCopiedShare(true);
@@ -1470,6 +1580,15 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '15px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {sessionTitle || 'Mean AI • Canvas'}
           </span>
+          {agentLogsEnabled && (
+            <button 
+              onClick={() => setShowLogsModal(!showLogsModal)}
+              style={{ background: showLogsModal ? 'rgba(255,204,0,0.15)' : 'var(--hover-bg)', border: showLogsModal ? '1px solid rgba(255,204,0,0.3)' : 'none', borderRadius: '8px', padding: '5px 10px', color: showLogsModal ? '#ffcc00' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
+              title="Toggle Agent Logs"
+            >
+              <i className="fas fa-terminal" style={{ fontSize: '10px' }} /> Logs
+            </button>
+          )}
           <button 
             onClick={() => setShowClassList(!showClassList)} 
             style={{ marginLeft: '10px', background: showClassList ? 'var(--text-primary)' : 'var(--hover-bg)', color: showClassList ? 'var(--bg-dark)' : 'var(--text-primary)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -1498,16 +1617,20 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                  <i className="fas fa-share-alt" style={{ color: 'var(--accent-color, #0a84ff)' }} /> Share
                </button>
             )}
-            <button 
-              onClick={handleNewSession}
-              style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-              title="New session"
-            >
-              <i className="fas fa-plus" /> New
-            </button>
-            <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
-              <i className="fas fa-cog" />
-            </button>
+            {!isGuest && (
+              <>
+                <button 
+                  onClick={handleNewSession}
+                  style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                  title="New session"
+                >
+                  <i className="fas fa-plus" /> New
+                </button>
+                <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
+                  <i className="fas fa-cog" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile 3-dots dropdown (visible on mobile only) */}
@@ -1543,23 +1666,73 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                     <i className="fas fa-share-alt" style={{ color: 'var(--accent-color, #0a84ff)' }} /> Share
                   </button>
                 )}
-                <button 
-                  onClick={() => { handleNewSession(); setShowDropdown(false); }}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <i className="fas fa-plus" /> New Session
-                </button>
-                <button 
-                  onClick={() => { setShowSettings(true); setShowDropdown(false); }}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <i className="fas fa-cog" /> Settings
-                </button>
+                {agentLogsEnabled && (
+                  <button 
+                    onClick={() => { setShowLogsModal(!showLogsModal); setShowDropdown(false); }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <i className="fas fa-terminal" style={{ color: '#ffcc00' }} /> {showLogsModal ? 'Hide' : 'Show'} Logs
+                  </button>
+                )}
+             {!isGuest && (
+                  <>
+                    <button 
+                      onClick={() => { handleNewSession(); setShowDropdown(false); }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <i className="fas fa-plus" /> New Session
+                    </button>
+                    <button 
+                      onClick={() => { setShowSettings(true); setShowDropdown(false); }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <i className="fas fa-cog" /> Settings
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* Inline Agent Logs Panel — shows live TOON text below header */}
+      {agentLogsEnabled && showLogsModal && (
+        <div style={{
+          position: 'absolute', top: '60px', left: '20px', right: '20px', zIndex: 12,
+          background: 'rgba(13, 17, 23, 0.95)', border: '1px solid rgba(255,204,0,0.2)',
+          borderRadius: '12px', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)', maxHeight: '45vh', display: 'flex', flexDirection: 'column',
+          overflow: 'hidden'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid rgba(255,204,0,0.1)' }}>
+            <span style={{ color: '#ffcc00', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <i className="fas fa-terminal" style={{ fontSize: '10px' }} /> Agent Logs {loading && <span style={{ color: '#34c759', fontSize: '10px', fontWeight: 500 }}>● LIVE</span>}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => { const t = loading ? jsonStreamData : rawToonText; if (t) { navigator.clipboard.writeText(t); setCopiedLogs(true); setTimeout(() => setCopiedLogs(false), 2000); } }}
+                style={{ background: copiedLogs ? '#34c759' : 'rgba(255,255,255,0.08)', color: copiedLogs ? '#fff' : '#c9d1d9', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                {copiedLogs ? <><i className="fas fa-check" /> Copied</> : <><i className="fas fa-copy" /> Copy</>}
+              </button>
+              <button
+                onClick={() => setShowLogsModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#7d8590', cursor: 'pointer', fontSize: '14px', padding: '2px 4px' }}
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+          </div>
+          <pre style={{
+            margin: 0, padding: '12px 14px', color: '#c9d1d9', fontSize: '11px',
+            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+            lineHeight: 1.5, overflowY: 'auto', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', flex: 1
+          }}>
+            {loading ? (jsonStreamData || 'Waiting for AI response...') : (rawToonText || 'No TOON data — generate a classroom first.')}
+          </pre>
+        </div>
+      )}
 
       {/* Class Collection Side Panel */}
       {showClassList && (
@@ -1594,6 +1767,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                 onClick={() => {
                    if (cls.slides && Array.isArray(cls.slides)) {
                       setSlides(cls.slides);
+                      setRawToonText(reconstructTOON(cls.slides));
                       setPhase('done');
                       const frame = document.getElementById('roadmapFrame');
                       if (frame && frame.contentWindow) {
@@ -1629,8 +1803,9 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
 
       {/* Bottom Floating Prompt Bar */}
-      <div style={{
-        position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+      {!isGuest && (
+        <div style={{
+          position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
         width: '90%', maxWidth: '720px', background: 'var(--input-bg)',
         border: '1px solid var(--border-color)', borderRadius: '32px', zIndex: 10,
         padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '10px',
@@ -1762,6 +1937,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           </div>
         </div>
       </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (
@@ -1805,6 +1981,42 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                      <option key={l} value={l}>{l}</option>
                    ))}
                 </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 16px', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                Developer Options
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div>
+                  <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '14px' }}>Show Agent Logs</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '11px', margin: 0 }}>Display raw TOON structures and backup code blocks.</p>
+                </div>
+                <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={agentLogsEnabled} 
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      setAgentLogsEnabled(checked);
+                      localStorage.setItem('mean_agent_logs', checked ? 'true' : 'false');
+                    }}
+                    style={{ opacity: 0, width: 0, height: 0 }} 
+                  />
+                  <span style={{
+                    position: 'absolute', cursor: 'pointer', inset: 0,
+                    backgroundColor: agentLogsEnabled ? 'var(--accent-color, #0a84ff)' : '#3f3f46',
+                    transition: 'all 0.3s', borderRadius: '24px'
+                  }}>
+                    <span style={{
+                      position: 'absolute', content: '""', height: '18px', width: '18px',
+                      left: agentLogsEnabled ? '22px' : '4px', bottom: '3px',
+                      backgroundColor: 'white', transition: 'all 0.3s', borderRadius: '50%',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }} />
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -1919,6 +2131,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           </div>
         </div>
       )}
+
 
     </div>
   );
