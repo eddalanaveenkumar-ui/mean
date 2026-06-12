@@ -41,6 +41,29 @@ function DashboardLayout() {
   // Holds topic+slides when expanding an InlineClassroom into the full canvas
   const [expandedClassroom, setExpandedClassroom] = useState(null);
 
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const sharedClass = searchParams.get('shared_class');
+    if (sharedClass) {
+      try {
+        const decodedStr = decodeURIComponent(atob(sharedClass).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const parsed = JSON.parse(decodedStr);
+        if (parsed && parsed.slides) {
+          setExpandedClassroom({ topic: parsed.topic || '', slides: parsed.slides });
+          setShowTeacher(true);
+        }
+      } catch (e) {
+        console.error('Failed to parse shared classroom:', e);
+      }
+      searchParams.delete('shared_class');
+      const newQuery = searchParams.toString();
+      const newPath = window.location.pathname + (newQuery ? '?' + newQuery : '');
+      window.history.replaceState(null, '', newPath);
+    }
+  }, []);
+
   const overlayProps = {
     onVoice: () => setShowVoice(true),
     onPpt: () => setShowPpt(true),

@@ -1319,3 +1319,22 @@
     touch-action: pan-y;
   }
 }
+
+/* ===== MOBILE ACTIONS AND CONTROLS ===== */
+.tc-mobile-actions {
+  display: none !important;
+}
+
+@media (max-width: 680px) {
+  .tc-desktop-actions {
+    display: none !important;
+  }
+  .tc-mobile-actions {
+    display: block !important;
+  }
+  .tc-engine-toggle,
+  .tc-voice-select,
+  .tc-lang-select {
+    display: none !important;
+  }
+}

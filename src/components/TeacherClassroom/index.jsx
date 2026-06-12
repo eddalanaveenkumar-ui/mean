@@ -28,7 +28,7 @@ const StaticSlideBody = React.memo(({ html, innerRef }) => {
 }, (prevProps, nextProps) => prevProps.html === nextProps.html);
 
 export default function TeacherClassroom({ isOpen, onClose, initialTopic, initialSlides }) {
-  const { user, webSearchActive, saveClass, classes, deleteClass, theme, selectedModel } = useApp();
+  const { user, webSearchActive, saveClass, classes, deleteClass, theme, selectedModel, apiKey } = useApp();
   const [phase, setPhase] = useState('idle');
   const [topic, setTopic] = useState('');
   const [sessionTitle, setSessionTitle] = useState('');
@@ -72,7 +72,19 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   const saveActiveVoiceAPI = (v) => { setActiveVoiceAPI(v); localStorage.setItem('meanai_voice_api', v); };
 
   // Model Selection
-  const [activeEngine, setActiveEngine] = useState('openrouter'); // Default to openrouter for users without Gemini quota
+  const [activeEngine, setActiveEngine] = useState(() => {
+    const localGemini = localStorage.getItem('meanai_gemini_key') || '';
+    const globalKey = localStorage.getItem('mean_user') ? JSON.parse(localStorage.getItem('mean_user'))?.apiKey : '';
+    const bestGemini = localGemini.trim() || (globalKey && globalKey.trim().includes('AIza') ? globalKey.trim() : '');
+    if (bestGemini.startsWith('AIza')) {
+      return 'gemini';
+    }
+    const storedModel = localStorage.getItem('mean_selected_model');
+    if (storedModel === 'gemini') {
+      return 'gemini';
+    }
+    return 'openrouter';
+  });
 
   // File upload state
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -99,6 +111,10 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   const [showDoubt, setShowDoubt] = useState(false);
   const [doubtText, setDoubtText] = useState('');
   const [doubtAnswer, setDoubtAnswer] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [copiedShare, setCopiedShare] = useState(false);
 
   // Right panel — YouTube videos & images
   const [mediaItems, setMediaItems] = useState([]);
@@ -124,7 +140,7 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       let url, headers, payload;
 
       if (activeEngine === 'gemini') {
-        const cleanedKey = localKey ? localKey.trim() : '';
+        const cleanedKey = localKey ? localKey.trim() : (apiKey && apiKey.trim().includes('AIza') ? apiKey.trim() : '');
         if (!cleanedKey) return '';
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
         headers = { 'Content-Type': 'application/json' };
@@ -135,14 +151,15 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
         payload = { contents };
         if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
       } else {
-        const cleanedKey = openRouterKey ? openRouterKey.trim() : '';
+        const cleanedKey = openRouterKey ? openRouterKey.trim() : (apiKey && !apiKey.trim().includes('AIza') ? apiKey.trim() : '');
         if (!cleanedKey) return '';
         url = 'https://openrouter.ai/api/v1/chat/completions';
         headers = { 'Authorization': `Bearer ${cleanedKey}`, 'Content-Type': 'application/json' };
         for (const m of messages) {
-            contents.push(m);
+              contents.push(m);
         }
-        payload = { model: 'openrouter/free', messages: contents, max_tokens: maxTokens };
+        const targetModel = (selectedModel && selectedModel.provider === 'openrouter') ? selectedModel.id : 'openrouter/free';
+        payload = { model: targetModel, messages: contents, max_tokens: maxTokens };
       }
 
       const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -167,7 +184,7 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       }
       return '';
     }
-  }, [localKey, openRouterKey, activeEngine]);
+  }, [localKey, openRouterKey, activeEngine, apiKey, selectedModel]);
 
   // ===== PRE-LOAD SLIDES FROM INLINE CLASSROOM EXPAND =====
   // When opened via the Expand button in the chat canvas, skip generation
@@ -703,7 +720,18 @@ Ensure you strictly follow the roadmap context.`;
 
   const startClass = async () => {
     if (!topic.trim()) return;
-    const key = activeEngine === 'gemini' ? localKey.trim() : openRouterKey.trim();
+    const getActiveKey = () => {
+      if (activeEngine === 'gemini') {
+        if (localKey.trim()) return localKey.trim();
+        if (apiKey && apiKey.trim().includes('AIza')) return apiKey.trim();
+        return '';
+      } else {
+        if (openRouterKey.trim()) return openRouterKey.trim();
+        if (apiKey && !apiKey.trim().includes('AIza')) return apiKey.trim();
+        return '';
+      }
+    };
+    const key = getActiveKey();
     if (!key) { setShowSettings(true); return; }
 
     if (abortControllerRef.current) {
@@ -960,8 +988,9 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
            ];
         }
         
+        const targetModel = (selectedModel && selectedModel.provider === 'openrouter') ? selectedModel.id : 'openrouter/free';
         payload = {
-          model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : 'openrouter/free',
+          model: isBase64Image ? 'google/gemini-2.0-flash-lite-preview-02-05:free' : targetModel,
           messages: [
             { role: 'system', content: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' },
             userMessage
@@ -977,6 +1006,10 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         throw new Error(`API Error (${resp.status}): ${errText.slice(0, 300)}`);
       }
 
+      let activityTimeout = setTimeout(() => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+      }, 15000);
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
@@ -984,7 +1017,12 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
       while (true) {
         const { done, value } = await reader.read();
+        clearTimeout(activityTimeout);
         if (done) break;
+
+        activityTimeout = setTimeout(() => {
+          if (abortControllerRef.current) abortControllerRef.current.abort();
+        }, 15000);
 
         buffer += decoder.decode(value, { stream: true });
         let lines = buffer.split('\n');
@@ -1035,6 +1073,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           }
         }
       }
+      clearTimeout(activityTimeout);
 
       // Final parse — TOON format
       let parsed = null;
@@ -1314,6 +1353,34 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
     setTimeout(() => printWindow.print(), 800);
   };
 
+  // ===== SHARE ROADMAP =====
+  const handleShareClick = () => {
+    try {
+      const shareData = {
+        topic: sessionTopic || topic,
+        slides: slides
+      };
+      const jsonStr = JSON.stringify(shareData);
+      const base64 = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+      }));
+      const url = new URL(window.location.href);
+      url.searchParams.set('shared_class', base64);
+      setShareLink(url.toString());
+      setCopiedShare(false);
+      setShowShareModal(true);
+    } catch (e) {
+      console.error('Failed to generate share link:', e);
+      alert('Failed to generate share link.');
+    }
+  };
+
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
+  };
+
   // ===== END CLASS =====
   const endClass = () => {
     activeRef.current = false;
@@ -1411,25 +1478,86 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {slides.length > 0 && (
-             <button 
-               onClick={explainWithAI}
-               style={{ background: 'var(--accent-color, #0a84ff)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 0 12px rgba(10,132,255,0.4)' }}
-               title="Explain with AI"
-             >
-               <i className="fas fa-magic" /> Explain
-             </button>
-          )}
-          <button 
-            onClick={handleNewSession}
-            style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-            title="New session"
-          >
-            <i className="fas fa-plus" /> New
-          </button>
-          <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
-            <i className="fas fa-cog" />
-          </button>
+          {/* Desktop buttons (visible on desktop only) */}
+          <div className="tc-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {slides.length > 0 && (
+               <button 
+                 onClick={explainWithAI}
+                 style={{ background: 'var(--accent-color, #0a84ff)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 0 12px rgba(10,132,255,0.4)' }}
+                 title="Explain with AI"
+               >
+                 <i className="fas fa-magic" /> Explain
+               </button>
+            )}
+            {slides.length > 0 && (
+               <button 
+                 onClick={handleShareClick}
+                 style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                 title="Share Class Roadmap"
+               >
+                 <i className="fas fa-share-alt" style={{ color: 'var(--accent-color, #0a84ff)' }} /> Share
+               </button>
+            )}
+            <button 
+              onClick={handleNewSession}
+              style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+              title="New session"
+            >
+              <i className="fas fa-plus" /> New
+            </button>
+            <button onClick={() => setShowSettings(true)} style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>
+              <i className="fas fa-cog" />
+            </button>
+          </div>
+
+          {/* Mobile 3-dots dropdown (visible on mobile only) */}
+          <div className="tc-mobile-actions" style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowDropdown(!showDropdown)} 
+              style={{ background: 'var(--hover-bg)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <i className="fas fa-ellipsis-v" />
+            </button>
+            {showDropdown && (
+              <div 
+                style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                  background: 'var(--card-bg, #1e1e24)', border: '1px solid var(--border-color)',
+                  borderRadius: '10px', padding: '6px 0', zIndex: 100, minWidth: '150px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+                }}
+              >
+                {slides.length > 0 && (
+                  <button 
+                    onClick={() => { explainWithAI(); setShowDropdown(false); }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <i className="fas fa-magic" style={{ color: 'var(--accent-color, #0a84ff)' }} /> Explain
+                  </button>
+                )}
+                {slides.length > 0 && (
+                  <button 
+                    onClick={() => { handleShareClick(); setShowDropdown(false); }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <i className="fas fa-share-alt" style={{ color: 'var(--accent-color, #0a84ff)' }} /> Share
+                  </button>
+                )}
+                <button 
+                  onClick={() => { handleNewSession(); setShowDropdown(false); }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <i className="fas fa-plus" /> New Session
+                </button>
+                <button 
+                  onClick={() => { setShowSettings(true); setShowDropdown(false); }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 16px', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <i className="fas fa-cog" /> Settings
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1561,7 +1689,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
             </label>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+            <div className="tc-engine-toggle" style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
               <button 
                 onClick={() => setActiveEngine('gemini')}
                 style={{ background: activeEngine === 'gemini' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'gemini' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'gemini' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
@@ -1581,6 +1709,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                value={activeVoiceAPI}
                onChange={e => saveActiveVoiceAPI(e.target.value)}
                disabled={phase === 'loading'}
+               className="tc-voice-select"
                style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px 12px', fontSize: '13px', outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: '24px' }}
             >
                <option value="browser">Computer Voice</option>
@@ -1593,6 +1722,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                value={lang}
                onChange={e => saveLang(e.target.value)}
                disabled={phase === 'loading'}
+               className="tc-lang-select"
                style={{ background: 'var(--card-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px 12px', fontSize: '13px', outline: 'none', cursor: 'pointer', appearance: 'none', paddingRight: '24px' }}
             >
                {Object.keys(LANGUAGES).map(l => (
@@ -1641,6 +1771,43 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '28px', width: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={e => e.stopPropagation()}
           >
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ color: 'var(--text-primary)', margin: '0 0 16px', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                AI Model & Language
+              </h3>
+              
+              <div style={{ marginBottom: '14px' }}>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '14px' }}>Active AI Engine</h4>
+                <div style={{ display: 'flex', background: 'var(--input-bg)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                  <button 
+                    onClick={() => setActiveEngine('gemini')}
+                    style={{ flex: 1, background: activeEngine === 'gemini' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'gemini' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '8px 10px', fontSize: '13px', fontWeight: activeEngine === 'gemini' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    <i className="fas fa-gem" style={{ color: '#0A84FF', marginRight: '6px' }}/> Gemini
+                  </button>
+                  <button 
+                    onClick={() => setActiveEngine('openrouter')}
+                    style={{ flex: 1, background: activeEngine === 'openrouter' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'openrouter' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '8px 10px', fontSize: '13px', fontWeight: activeEngine === 'openrouter' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    <i className="fas fa-network-wired" style={{ color: '#5E5CE6', marginRight: '6px' }}/> OpenRouter
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '14px' }}>Classroom Language</h4>
+                <select
+                   value={lang}
+                   onChange={e => saveLang(e.target.value)}
+                   style={{ width: '100%', background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}
+                >
+                   {Object.keys(LANGUAGES).map(l => (
+                     <option key={l} value={l}>{l}</option>
+                   ))}
+                </select>
+              </div>
+            </div>
+
             <div style={{ marginBottom: '24px' }}>
               <h3 style={{ color: 'var(--text-primary)', margin: '0 0 16px', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                 Text API Options
@@ -1712,6 +1879,42 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '10px' }}>
               <button onClick={() => setShowSettings(false)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg, var(--accent-color, #0a84ff), #005bb5)', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}>Save & Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Share Modal */}
+      {showShareModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10001, background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(8px)' }}
+          onClick={() => setShowShareModal(false)}
+        >
+          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '32px', width: '90%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '20px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '20px', fontWeight: 700 }}>
+                Share Class Roadmap
+              </h3>
+              <button onClick={() => setShowShareModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '18px' }}>
+                <i className="fas fa-times" />
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+              Share this link with your friends! They can open this roadmap, play AI explanations, ask doubts, and download PDF notes immediately without requiring a login.
+            </p>
+            <div style={{ display: 'flex', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 6px 6px 16px', alignItems: 'center', gap: '10px' }}>
+              <input 
+                type="text" 
+                readOnly 
+                value={shareLink} 
+                style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+              />
+              <button 
+                onClick={copyShareLink} 
+                style={{ background: copiedShare ? '#34c759' : 'var(--accent-color, #0a84ff)', color: '#fff', border: 'none', borderRadius: '12px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                {copiedShare ? <><i className="fas fa-check" /> Copied</> : <><i className="fas fa-copy" /> Copy</>}
+              </button>
             </div>
           </div>
         </div>
