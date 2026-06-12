@@ -195,11 +195,12 @@
 /* ── Topic Input Form ── */
 .mc-topic-form { display: flex; gap: 10px; padding: 16px 0 0; }
 .mc-prompt-input {
-  flex: 1; padding: 14px 20px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
-  color: #fff; font-size: 0.95rem; font-family: inherit; outline: none;
+  flex: 1 !important; padding: 14px 20px;
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 14px;
+  color: #fff !important; font-size: 0.95rem; font-family: inherit; outline: none !important;
   transition: all 0.3s;
+  box-shadow: none !important;
 }
 .mc-prompt-input:focus {
   border-color: var(--accent);

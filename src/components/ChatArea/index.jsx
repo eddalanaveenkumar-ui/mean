@@ -6,7 +6,7 @@ import InputArea from '../InputArea';
 import './ChatArea.css';
 
 export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS, updateMessageData } = useApp();
+  const { currentChat, currentChatId, chats, isStreaming, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, newChat, theme, setTheme, selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS, updateMessageData, user, setShowProfile } = useApp();
   const chatRef = useRef(null);
   const shouldAutoScroll = useRef(true);
   const [streamText, setStreamText] = useState('');
@@ -17,6 +17,10 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
     setSelectedModel(model);
     localStorage.setItem('mean_selected_model', model.id);
     setShowModelPicker(false);
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
   // Close dropdown on outside click
@@ -103,49 +107,106 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
 
   const overlayProps = { onVoice, onPpt, onTeacher, onMusic };
 
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   return (
     <div className="chat-area">
-      <header className="chat-header">
-        <div className="chat-header-left">
-          <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <i className="fas fa-bars" />
-          </button>
-          <div className="model-picker-wrap">
-            <button className="model-picker-btn" onClick={(e) => { e.stopPropagation(); setShowModelPicker(!showModelPicker); }}>
+      {/* ===== HEADER ===== */}
+      {isEmpty ? (
+        /* Dashboard-style top bar for welcome screen */
+        <header className="chat-header dashboard-header">
+          <div className="chat-header-left">
+            <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <i className="fas fa-bars" />
+            </button>
+            <div className="header-tabs">
+              <button className="header-tab active">Dashboard</button>
+              <button className="header-tab" onClick={() => onTeacher?.()}>Tools</button>
+            </div>
+            <div className="mobile-header-brand">
               <span className="hb-mean">Mean</span>
               <span className="hb-ai">AI</span>
-              <span className="model-picker-current">{selectedModel.icon} {selectedModel.name}</span>
-              <i className={`fas fa-chevron-down model-picker-arrow ${showModelPicker ? 'open' : ''}`} />
-            </button>
-            {showModelPicker && (
-              <div className="model-picker-dropdown">
-                <div className="mpd-group-label">Free Models</div>
-                {FREE_MODELS.map(m => (
-                  <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
-                    <span className="mpd-icon">{m.icon}</span>
-                    <span className="mpd-name">{m.name}</span>
-                    {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
-                  </button>
-                ))}
-                <div className="mpd-group-label premium">Premium Models <i className="fas fa-crown" style={{ color: '#ec4899', fontSize: 10 }} /></div>
-                {PAID_MODELS.map(m => (
-                  <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
-                    <span className="mpd-icon">{m.icon}</span>
-                    <span className="mpd-name">{m.name}</span>
-                    <span className="mpd-badge">PRO</span>
-                    {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-        <div className="chat-header-right">
-          <button className="header-icon-btn" onClick={newChat} title="New Chat">
-            <i className="fas fa-pen-to-square" />
-          </button>
-        </div>
-      </header>
+          <div className="chat-header-right">
+            <button className="share-pill-btn">
+              <span>Share</span>
+            </button>
+            <button className="header-icon-btn" title="Notifications">
+              <i className="fas fa-bell" />
+            </button>
+            <button className="header-icon-btn" onClick={toggleTheme} title="Toggle theme">
+              <i className={`fas ${isDark ? 'fa-moon' : 'fa-sun'}`} />
+            </button>
+            <button className="header-avatar-btn" onClick={() => setShowProfile(true)} style={{ padding: user?.photoURL ? 0 : undefined }}>
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                user?.name?.charAt(0)?.toUpperCase() || 'U'
+              )}
+            </button>
+          </div>
+        </header>
+      ) : (
+        /* Model picker header for active chat */
+        <header className="chat-header">
+          <div className="chat-header-left">
+            <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <i className="fas fa-bars" />
+            </button>
+            <div className="model-picker-wrap">
+              <button className="model-picker-btn" onClick={(e) => { e.stopPropagation(); setShowModelPicker(!showModelPicker); }}>
+                <span className="hb-mean">Mean</span>
+                <span className="hb-ai">AI</span>
+                <span className="model-picker-current">{selectedModel.icon} {selectedModel.name}</span>
+                <i className={`fas fa-chevron-down model-picker-arrow ${showModelPicker ? 'open' : ''}`} />
+              </button>
+              {showModelPicker && (
+                <div className="model-picker-dropdown">
+                  <div className="mpd-group-label">Free Models</div>
+                  {FREE_MODELS.map(m => (
+                    <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                      <span className="mpd-icon">{m.icon}</span>
+                      <span className="mpd-name">{m.name}</span>
+                      {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
+                    </button>
+                  ))}
+                  <div className="mpd-group-label premium">Premium Models <i className="fas fa-crown" style={{ color: '#ec4899', fontSize: 10 }} /></div>
+                  {PAID_MODELS.map(m => (
+                    <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                      <span className="mpd-icon">{m.icon}</span>
+                      <span className="mpd-name">{m.name}</span>
+                      <span className="mpd-badge">PRO</span>
+                      {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="chat-header-right">
+            <button className="share-pill-btn">
+              <span>Share</span>
+            </button>
+            <button className="header-icon-btn" title="Notifications">
+              <i className="fas fa-bell" />
+            </button>
+            <button className="header-icon-btn" onClick={toggleTheme} title="Toggle theme">
+              <i className={`fas ${isDark ? 'fa-moon' : 'fa-sun'}`} />
+            </button>
+            <button className="header-icon-btn" onClick={newChat} title="New Chat">
+              <i className="fas fa-pen-to-square" />
+            </button>
+            <button className="header-avatar-btn" onClick={() => setShowProfile(true)} style={{ padding: user?.photoURL ? 0 : undefined }}>
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                user?.name?.charAt(0)?.toUpperCase() || 'U'
+              )}
+            </button>
+          </div>
+        </header>
+      )}
 
       {isEmpty ? (
         <div className="welcome-centered">

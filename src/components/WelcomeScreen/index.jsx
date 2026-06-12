@@ -3,10 +3,23 @@ import { useApp } from '../../context/AppContext';
 import { extractFileContent } from '../../utils/fileExtractor';
 import './WelcomeScreen.css';
 
+const SUGGESTION_PILLS = [
+  '💻 Help me debug code',
+  '📄 Summarize a PDF',
+  '📊 Create a presentation',
+  '🧠 Teach me Python',
+  '🚀 Build a website',
+];
+
 export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
-  const { user, sendMessage, isStreaming, deepdiveActive, setDeepdiveActive, webSearchActive, setWebSearchActive } = useApp();
+  const {
+    user, sendMessage, isStreaming,
+    deepdiveActive, setDeepdiveActive,
+    webSearchActive, setWebSearchActive,
+    chats, loadChat
+  } = useApp();
+
   const [text, setText] = useState('');
-  const [showTools, setShowTools] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [attachedContent, setAttachedContent] = useState('');
   const [extractStatus, setExtractStatus] = useState('');
@@ -24,7 +37,10 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -52,37 +68,109 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
     }
   };
 
+  const handleSuggestionClick = (suggestion) => {
+    // Strip leading emoji and spaces from suggestion
+    const cleanPrompt = suggestion.replace(/^([^\w\s\d]+)\s*/u, '').trim();
+    setText(cleanPrompt);
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   const hasInput = text.trim().length > 0 || attachedFile;
   const firstName = user?.name?.split(' ')[0] || 'there';
+  const filteredChats = chats.filter(c => c.messages && c.messages.length > 0);
 
   return (
     <div className="welcome-block">
-      {/* Centered greeting + actions */}
-      <div className="welcome-center">
+      {/* ===== Scrollable Content ===== */}
+      <div className="welcome-scroll">
+        {/* Greeting */}
         <h1 className="welcome-greeting">
-          <span className="greeting-hi">Hi {firstName},</span>
-          <span className="greeting-sub">what's on your mind?</span>
+          <span className="greeting-line">
+            {getGreeting()}, <span className="greeting-name">{firstName}</span> 👋
+          </span>
         </h1>
+        <p className="welcome-subtitle">
+          How can Mean AI help today?
+        </p>
+        <p className="welcome-personality">
+          Your AI tutor, researcher and creator.
+        </p>
 
-        {/* Action rows — vertical list like ChatGPT */}
-        <div className="welcome-actions">
-          <button className="w-action-row" onClick={() => onTeacher?.()}>
-            <div className="w-action-icon"><i className="fas fa-chalkboard-teacher" /></div>
-            <span className="w-action-text">AI Classroom</span>
-          </button>
-          <button className="w-action-row" onClick={() => onPpt?.()}>
-            <div className="w-action-icon"><i className="fas fa-file-powerpoint" /></div>
-            <span className="w-action-text">Create presentation</span>
-          </button>
-          <button className="w-action-row" onClick={() => setWebSearchActive(!webSearchActive)}>
-            <div className="w-action-icon"><i className="fas fa-globe" /></div>
-            <span className="w-action-text">{webSearchActive ? 'Web search is ON ✓' : 'Look something up'}</span>
-          </button>
+        {/* Cards Grid — Symmetrical 33% columns */}
+        <div className="welcome-cards-grid">
+          {/* Card 1 — Learn */}
+          <div className="wc-side-card" onClick={() => onTeacher?.()}>
+            <div className="wc-side-icon" style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#a855f7' }}>
+              <i className="fas fa-graduation-cap" />
+            </div>
+            <div className="wc-side-title">Learn</div>
+            <div className="wc-side-desc">Interactive AI Classroom sessions.</div>
+          </div>
+
+          {/* Card 2 — Research */}
+          <div className={`wc-side-card ${webSearchActive ? 'active' : ''}`} onClick={() => setWebSearchActive(!webSearchActive)}>
+            <div className="wc-side-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6' }}>
+              <i className="fas fa-search" />
+            </div>
+            <div className="wc-side-title">Research</div>
+            <div className="wc-side-desc">Instant, fact-checked answers from the web.</div>
+            {webSearchActive && (
+              <div className="wc-search-status">
+                <i className="fas fa-check-circle" /> Web search ON
+              </div>
+            )}
+          </div>
+
+          {/* Card 3 — Create */}
+          <div className="wc-side-card" onClick={() => onPpt?.()}>
+            <div className="wc-side-icon" style={{ background: 'rgba(236, 72, 153, 0.12)', color: '#ec4899' }}>
+              <i className="fas fa-file-powerpoint" />
+            </div>
+            <div className="wc-side-title">Create</div>
+            <div className="wc-side-desc">Structure narratives and generate presentations.</div>
+          </div>
+        </div>
+
+        {/* Recent Chats Section */}
+        {filteredChats && filteredChats.length > 0 && (
+          <div className="recent-chats-wrap">
+            <h4 className="recent-chats-title">Recent Chats</h4>
+            <div className="recent-chats-list">
+              {filteredChats.slice(0, 3).map(chat => (
+                <button key={chat.id} className="recent-chat-btn" onClick={() => loadChat(chat.id)}>
+                  <i className="far fa-comment-dots" />
+                  <span className="recent-chat-title">{chat.title || 'Untitled Chat'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ===== Suggestion Pills ===== */}
+      <div className="welcome-suggestions">
+        <div className="suggestions-track">
+          {SUGGESTION_PILLS.map((pill, i) => (
+            <button key={`orig-${i}`} className="ws-pill" onClick={() => handleSuggestionClick(pill)}>
+              {pill}
+            </button>
+          ))}
+          {SUGGESTION_PILLS.map((pill, i) => (
+            <button key={`dup-${i}`} className="ws-pill" onClick={() => handleSuggestionClick(pill)}>
+              {pill}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Bottom-fixed input bar */}
-      <div className="welcome-input-wrap">
+      {/* ===== Bottom Input Container ===== */}
+      <div className="welcome-input-container">
         {attachedFile && (
           <div className="w-attach-bar" style={attachedFile.type?.startsWith('image/') ? { padding: '12px', background: 'transparent', border: 'none' } : {}}>
             {attachedFile.type?.startsWith('image/') ? (
@@ -101,63 +189,42 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
             )}
           </div>
         )}
-        <div className="welcome-input-row">
-          <button className="w-plus-btn" onClick={() => setShowTools(!showTools)}>
-            <i className={`fas ${showTools ? 'fa-times' : 'fa-plus'}`} />
-          </button>
 
-          <input
-            type="text"
-            className="w-input"
-            placeholder={isExtracting ? extractStatus || "Extracting file..." : "Ask anything"}
+        <div className="premium-input-box">
+          <textarea
+            className="w-textarea-input"
+            placeholder={isExtracting ? extractStatus || "Extracting file..." : "Ask Mean AI anything..."}
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             disabled={isStreaming || isExtracting}
+            rows={1}
             autoFocus
           />
 
-          <div className="w-right-btns">
-            {hasInput ? (
-              <button className="w-send-btn" onClick={handleSend}>
+          <div className="w-input-toolbar">
+            <div className="w-toolbar-left">
+              <button className="w-tool-btn" onClick={() => fileRef.current?.click()} title="Upload file">
+                <i className="fas fa-paperclip" />
+              </button>
+              <button className={`w-tool-btn ${webSearchActive ? 'active' : ''}`} onClick={() => setWebSearchActive(!webSearchActive)} title="Toggle Web Search">
+                <i className="fas fa-globe" />
+              </button>
+              <button className={`w-tool-btn ${deepdiveActive ? 'active' : ''}`} onClick={() => setDeepdiveActive(!deepdiveActive)} title="Toggle Deepdive">
+                <i className="fas fa-microscope" />
+              </button>
+            </div>
+            <div className="w-toolbar-right">
+              <button className="w-tool-btn" onClick={onVoice} title="Voice Input">
+                <i className="fas fa-microphone" />
+              </button>
+              <button className={`w-premium-send-btn ${hasInput ? 'has-input' : ''}`} onClick={handleSend} disabled={!hasInput}>
                 <i className="fas fa-arrow-up" />
               </button>
-            ) : (
-              <>
-                <button className="w-mic-btn" onClick={onVoice}><i className="fas fa-microphone" /></button>
-                <button className="w-voice-btn" onClick={onVoice}>
-                  <div className="w-wave-bars"><span /><span /><span /><span /></div>
-                </button>
-              </>
-            )}
+            </div>
           </div>
         </div>
-
-        {/* Tools dropdown */}
-        {showTools && (
-          <div className="w-tools-dropdown">
-            <button onClick={() => { fileRef.current?.click(); setShowTools(false); }}>
-              <i className="fas fa-paperclip" /> Attach file
-            </button>
-            <button onClick={() => { onPpt?.(); setShowTools(false); }}>
-              <i className="fas fa-file-powerpoint" /> Create presentation
-            </button>
-            <button onClick={() => { onTeacher?.(); setShowTools(false); }}>
-              <i className="fas fa-chalkboard-teacher" /> AI Classroom
-            </button>
-            <button onClick={() => { onMusic?.(); setShowTools(false); }}>
-              <i className="fas fa-music" /> Music player
-            </button>
-            <div className="w-tools-divider" />
-            <button className={deepdiveActive ? 'active' : ''} onClick={() => setDeepdiveActive(!deepdiveActive)}>
-              <i className="fas fa-microscope" /> Deepdive {deepdiveActive && '✓'}
-            </button>
-            <button className={webSearchActive ? 'active' : ''} onClick={() => setWebSearchActive(!webSearchActive)}>
-              <i className="fas fa-globe" /> Web search {webSearchActive && '✓'}
-            </button>
-          </div>
-        )}
 
         {extractStatus && isExtracting && (
            <div style={{ position: 'absolute', bottom: '100%', left: '16px', marginBottom: '8px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>

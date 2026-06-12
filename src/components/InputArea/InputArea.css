@@ -95,19 +95,20 @@
 
 /* Text input */
 .main-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-primary) !important;
   font-size: 1rem;
   font-weight: 500;
   font-family: inherit;
   padding: 8px 12px;
   resize: none;
-  outline: none;
+  outline: none !important;
   max-height: 120px;
   min-height: 24px;
   line-height: 1.5;
+  box-shadow: none !important;
 }
 .main-input::placeholder { color: var(--text-muted); font-weight: 400; }
 .main-input:disabled { opacity: 0.5; }
