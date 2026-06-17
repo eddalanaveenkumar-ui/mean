@@ -11,12 +11,14 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 // Prevent the page from scrolling up when the virtual keyboard opens
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => {
+    if (document.body.classList.contains('landing-active')) return;
     // Force scroll to top so the header never moves off-screen
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   });
   window.visualViewport.addEventListener('scroll', () => {
+    if (document.body.classList.contains('landing-active')) return;
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
