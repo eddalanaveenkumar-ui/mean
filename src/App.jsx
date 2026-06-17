@@ -16,6 +16,7 @@ import TokenBank from './components/TokenBank';
 import PremiumPlans from './components/PremiumPlans';
 import FreebuffAgent from './components/FreebuffAgent';
 import ProtectedRoute from './components/ProtectedRoute';
+import VideoEditor from './components/VideoEditor';
 
 // Public static pages
 import AboutPage from './components/pages/AboutPage';
@@ -38,6 +39,7 @@ function DashboardLayout() {
   const [showPremiumPlans, setShowPremiumPlans] = useState(false);
   const [showMeanClassroom, setShowMeanClassroom] = useState(false);
   const [showFreebuffAgent, setShowFreebuffAgent] = useState(false);
+  const [showOptics, setShowOptics] = useState(false);
   // Holds topic+slides when expanding an InlineClassroom into the full canvas
   const [expandedClassroom, setExpandedClassroom] = useState(null);
 
@@ -155,6 +157,7 @@ function DashboardLayout() {
     onPremiumPlans: () => setShowPremiumPlans(true),
     onMeanClassroom: () => setShowMeanClassroom(true),
     onFreebuffAgent: () => setShowFreebuffAgent(true),
+    onOptics: () => setShowOptics(true),
   };
 
   return (
@@ -183,6 +186,7 @@ function DashboardLayout() {
       <PremiumPlans isOpen={showPremiumPlans} onClose={() => setShowPremiumPlans(false)} />
       {showMeanClassroom && <MeanClassroom onClose={() => setShowMeanClassroom(false)} />}
       <FreebuffAgent isOpen={showFreebuffAgent} onClose={() => setShowFreebuffAgent(false)} />
+      <VideoEditor isOpen={showOptics} onClose={() => setShowOptics(false)} />
     </div>
   );
 }

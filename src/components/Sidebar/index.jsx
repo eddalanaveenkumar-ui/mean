@@ -8,7 +8,7 @@ const SidebarToggleIcon = () => (
   </svg>
 );
 
-export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom, onFreebuffAgent }) {
+export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom, onFreebuffAgent, onOptics }) {
   const {
     chats, currentChatId, sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,
@@ -62,6 +62,12 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="3"/>
             <path d="M9 22V2M2 12h20"/>
+          </svg>
+        </button>
+        <button className="sc-icon" onClick={() => { onOptics?.(); }} title="AI Video Editor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
           </svg>
         </button>
         <div className="sc-divider" />
@@ -122,6 +128,10 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <button className="sb-nav-item" onClick={() => { onPpt?.(); setSidebarOpen(false); }}>
             <i className="fas fa-file-powerpoint" />
             <span>Presentations</span>
+          </button>
+          <button className="sb-nav-item" onClick={() => { onOptics?.(); setSidebarOpen(false); }}>
+            <i className="fas fa-video" />
+            <span>AI Video Editor</span>
           </button>
           <button className="sb-nav-item" onClick={() => { setShowProfile(true); setSidebarOpen(false); }}>
             <i className="fas fa-gear" />
