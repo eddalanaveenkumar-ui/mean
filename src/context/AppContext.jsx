@@ -371,10 +371,14 @@ export function AppProvider({ children }) {
           const data = await g_resp.json();
           title = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
       } else {
-          const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          const isOpenAiKey = cleanedKey.startsWith('sk-') && !cleanedKey.startsWith('sk-or-');
+          const url = isOpenAiKey ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+          const modelId = isOpenAiKey ? 'gpt-4o-mini' : (typeof MODEL !== 'undefined' ? MODEL : 'openrouter/free');
+
+          const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.' }, { role: 'user', content: userMessage.slice(0, 300) }], max_tokens: 15, stream: false })
+            body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.' }, { role: 'user', content: userMessage.slice(0, 300) }], max_tokens: 15, stream: false })
           });
           if (!resp.ok) throw new Error('err');
           const data = await resp.json();
@@ -546,25 +550,44 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
        }
        body = JSON.stringify(geminiPayload);
     } else {
-       url = 'https://openrouter.ai/api/v1/chat/completions';
-       headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
-       let modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'openrouter/free';
-       
-       if (isBase64Image && (modelId.includes('arcee') || modelId.includes('llama') || modelId.includes('deepseek') || modelId.includes('qwen'))) {
-           modelId = 'google/gemini-2.0-flash-lite-preview-02-05:free';
-       }
-       
-       let finalOrMessage = { role: 'user', content: finalUserContent };
-       if (isBase64Image) {
-          finalOrMessage.content = [
-             { type: "text", text: finalUserContent },
-             { type: "image_url", image_url: { url: fileContent } }
-          ];
-       } else {
-          finalOrMessage.content = finalUserContent;
-       }
+        const isOpenAiKey = cleanedKey.startsWith('sk-') && !cleanedKey.startsWith('sk-or-');
+        if (isOpenAiKey) {
+            url = 'https://api.openai.com/v1/chat/completions';
+            headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
+            let modelId = selectedModel.id.includes('gpt-4o') ? 'gpt-4o' : 'gpt-4o-mini';
 
-       body = JSON.stringify({ model: modelId, messages: [...apiMessages, finalOrMessage], stream: true });
+            let finalOaMessage = { role: 'user', content: finalUserContent };
+            if (isBase64Image) {
+               finalOaMessage.content = [
+                  { type: "text", text: finalUserContent },
+                  { type: "image_url", image_url: { url: fileContent } }
+               ];
+            } else {
+               finalOaMessage.content = finalUserContent;
+            }
+
+            body = JSON.stringify({ model: modelId, messages: [...apiMessages, finalOaMessage], stream: true });
+        } else {
+            url = 'https://openrouter.ai/api/v1/chat/completions';
+            headers = { 'Authorization': 'Bearer ' + cleanedKey, 'Content-Type': 'application/json' };
+            let modelId = selectedModel.provider === 'openrouter' ? selectedModel.id : 'openrouter/free';
+
+            if (isBase64Image && (modelId.includes('arcee') || modelId.includes('llama') || modelId.includes('deepseek') || modelId.includes('qwen'))) {
+                modelId = 'google/gemini-2.0-flash-lite-preview-02-05:free';
+            }
+
+            let finalOrMessage = { role: 'user', content: finalUserContent };
+            if (isBase64Image) {
+               finalOrMessage.content = [
+                  { type: "text", text: finalUserContent },
+                  { type: "image_url", image_url: { url: fileContent } }
+               ];
+            } else {
+               finalOrMessage.content = finalUserContent;
+            }
+
+            body = JSON.stringify({ model: modelId, messages: [...apiMessages, finalOrMessage], stream: true });
+        }
     }
 
     let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";

@@ -208,13 +208,25 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       } else {
         const cleanedKey = openRouterKey ? openRouterKey.trim() : (apiKey && !apiKey.trim().includes('AIza') ? apiKey.trim() : '');
         if (!cleanedKey) return '';
-        url = 'https://openrouter.ai/api/v1/chat/completions';
-        headers = { 'Authorization': `Bearer ${cleanedKey}`, 'Content-Type': 'application/json' };
-        for (const m of messages) {
-              contents.push(m);
+        
+        const isOpenAi = cleanedKey.startsWith('sk-') && !cleanedKey.startsWith('sk-or-');
+        if (isOpenAi) {
+          url = 'https://api.openai.com/v1/chat/completions';
+          headers = { 'Authorization': `Bearer ${cleanedKey}`, 'Content-Type': 'application/json' };
+          let targetModel = 'gpt-4o-mini';
+          if (selectedModel && selectedModel.id.includes('gpt-4o')) {
+            targetModel = 'gpt-4o';
+          }
+          payload = { model: targetModel, messages: messages, max_tokens: maxTokens };
+        } else {
+          url = 'https://openrouter.ai/api/v1/chat/completions';
+          headers = { 'Authorization': `Bearer ${cleanedKey}`, 'Content-Type': 'application/json' };
+          for (const m of messages) {
+                contents.push(m);
+          }
+          const targetModel = (selectedModel && selectedModel.provider === 'openrouter') ? selectedModel.id : 'openrouter/free';
+          payload = { model: targetModel, messages: contents, max_tokens: maxTokens };
         }
-        const targetModel = (selectedModel && selectedModel.provider === 'openrouter') ? selectedModel.id : 'openrouter/free';
-        payload = { model: targetModel, messages: contents, max_tokens: maxTokens };
       }
 
       const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });

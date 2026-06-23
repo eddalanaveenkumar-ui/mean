@@ -11,17 +11,30 @@ function resolveKey(appKey) {
   const cleaned = (appKey || '').trim();
   if (cleaned) {
     const isGemini = cleaned.includes('AIza');
-    return { or: isGemini ? '' : cleaned, g: isGemini ? cleaned : '' };
+    const isOpenAi = cleaned.startsWith('sk-') && !cleaned.startsWith('sk-or-');
+    return { 
+      or: !isGemini && !isOpenAi ? cleaned : '', 
+      g: isGemini ? cleaned : '',
+      oa: isOpenAi ? cleaned : ''
+    };
   }
   // Fallback to TeacherClassroom localStorage keys
   return {
     or: (localStorage.getItem('meanai_openrouter_key') || '').trim(),
     g: (localStorage.getItem('meanai_gemini_key') || '').trim(),
+    oa: (localStorage.getItem('meanai_openai_key') || '').trim(),
   };
 }
 
 async function fetchAI(messages, appKey, maxTokens = 3000) {
-  const { or: orKey, g: gKey } = resolveKey(appKey);
+  const { or: orKey, g: gKey, oa: oaKey } = resolveKey(appKey);
+  if (oaKey) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Authorization': `Bearer ${oaKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: maxTokens })
+    });
+    const d = await r.json(); return d.choices?.[0]?.message?.content || '';
+  }
   if (orKey) {
     const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', headers: { 'Authorization': `Bearer ${orKey}`, 'Content-Type': 'application/json' },
@@ -46,8 +59,31 @@ async function fetchAI(messages, appKey, maxTokens = 3000) {
 }
 
 async function streamAI(messages, onChunk, appKey, maxTokens = 3000) {
-  const { or: orKey, g: gKey } = resolveKey(appKey);
+  const { or: orKey, g: gKey, oa: oaKey } = resolveKey(appKey);
   let full = '';
+
+  if (oaKey) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Authorization': `Bearer ${oaKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: maxTokens, stream: true })
+    });
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+        try {
+          const j = JSON.parse(line.slice(6));
+          const t = j.choices?.[0]?.delta?.content || '';
+          if (t) { full += t; onChunk(full); }
+        } catch {}
+      }
+    }
+    return full;
+  }
 
   if (gKey) {
     const contents = []; let sys = '';

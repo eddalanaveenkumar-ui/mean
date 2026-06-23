@@ -115,12 +115,12 @@ export default function ProfilePage() {
                   type="password"
                   value={editApiKey}
                   onChange={e => setEditApiKey(e.target.value)}
-                  placeholder="sk-or-... or AIzaSy..."
+                  placeholder="sk-... (OpenAI) or sk-or-... (OpenRouter) or AIzaSy..."
                   className="ios-input"
                 />
               </div>
             </div>
-            <p className="ios-section-footer">Your OpenRouter or Google Gemini API key used for text generation.</p>
+            <p className="ios-section-footer">Your OpenAI (ChatGPT), OpenRouter, or Google Gemini API key used for text generation.</p>
           </div>
 
           {/* MeanAI CLI API Keys Section */}
