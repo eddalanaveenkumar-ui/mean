@@ -203,6 +203,27 @@ export default function ProfilePage() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: '1.4' }}>
                       🟢 **Mean AI Classroom API Active**. Paste this configuration in your Claude/ChatGPT desktop settings:
                     </p>
+
+                    {!isLocal && (
+                      <div style={{
+                        background: 'rgba(0,0,0,0.04)', border: '1px dashed var(--rule, #C8BFB0)', borderRadius: '6px',
+                        padding: '10px', marginBottom: '12px', fontSize: '0.8rem',
+                        lineHeight: '1.4', color: 'var(--text-secondary)'
+                      }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--text-primary)', display: 'block', marginBottom: '6px' }}>
+                          🛠️ Setup MCP Server Locally:
+                        </span>
+                        1. Clone the project repository:
+                        <pre style={{ background: 'var(--ink, #1A1612)', color: '#f59e0b', padding: '6px', borderRadius: '4px', margin: '4px 0', overflowX: 'auto', fontFamily: 'monospace' }}>
+                          git clone https://github.com/eddalanaveenkumar-ui/mean.git
+                        </pre>
+                        2. Install dependencies:
+                        <pre style={{ background: 'var(--ink, #1A1612)', color: '#f59e0b', padding: '6px', borderRadius: '4px', margin: '4px 0', overflowX: 'auto', fontFamily: 'monospace' }}>
+                          cd mean/mean-classroom-mcp && npm install
+                        </pre>
+                        3. Use the config below, replacing <code style={{color: '#8b5cf6', fontWeight: 'bold'}}>[YOUR_PROJECT_PATH]</code> with the folder path where you cloned the repository.
+                      </div>
+                    )}
                     
                     <div style={{ position: 'relative', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>

@@ -477,6 +477,9 @@ export default function MeanClassroom({ onClose }) {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detectedCategory, setDetectedCategory] = useState('default');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [pastedToon, setPastedToon] = useState('');
   const timerRef = useRef(null);
 
   // Saved classes
@@ -534,6 +537,100 @@ export default function MeanClassroom({ onClose }) {
     return () => clearInterval(timerRef.current);
   }, [playing, stepBlocks.length]);
 
+  // Drag & Drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        const blocks = parseTOON(content);
+        if (blocks.length > 0) {
+          setToonBlocks(blocks);
+          setStepIdx(0);
+          const config = blocks.find(b => b.type === 'config') || {};
+          if (config.topic) setTopic(config.topic);
+          if (config.category) setDetectedCategory(config.category);
+          alert(`Successfully loaded lesson: "${config.topic || 'Classroom Lesson'}"`);
+        } else {
+          alert('Error: No valid TOON blocks found in dropped file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // Generate combined prompt
+  const getCombinedPrompt = () => {
+    const isMath = isMathTopic(topic.trim() || 'General Learning Topic');
+    const sysPrompt = isMath ? MATH_SYSTEM_PROMPT : CLASSROOM_SYSTEM_PROMPT;
+    const finalTopic = topic.trim() || 'Your Learning Topic';
+    const categoryName = isMath ? 'math' : 'general';
+    return `${sysPrompt}\n\nNow, generate a complete and valid TOON code format class for the topic: "${finalTopic}" under the category: "${categoryName}". Do not output explanations outside the TOON code.`;
+  };
+
+  // Copy prompt to clipboard
+  const handleCopyPrompt = () => {
+    const promptText = getCombinedPrompt();
+    navigator.clipboard.writeText(promptText);
+    alert('Prompt copied to clipboard! Paste it into ChatGPT or Claude.');
+  };
+
+  // Download prompt as a .txt file
+  const handleDownloadPromptFile = () => {
+    const promptText = getCombinedPrompt();
+    const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mean_classroom_prompt_${(topic.trim() || 'lesson').replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Render pasted TOON code
+  const handleRenderPastedToon = () => {
+    if (!pastedToon.trim()) return;
+    const blocks = parseTOON(pastedToon);
+    if (blocks.length > 0) {
+      setToonBlocks(blocks);
+      setStepIdx(0);
+      const config = blocks.find(b => b.type === 'config') || {};
+      if (config.topic) setTopic(config.topic);
+      if (config.category) setDetectedCategory(config.category);
+      setShowCreateModal(false);
+      setPastedToon('');
+      alert(`Whiteboard updated with: "${config.topic || 'Custom Lesson'}"`);
+    } else {
+      alert('Error: Failed to parse TOON code. Please check the format.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!topic.trim()) return;
@@ -586,7 +683,23 @@ export default function MeanClassroom({ onClose }) {
   const hasDiagram = toonBlocks.some(b => b.type === 'diagram');
 
   return (
-    <div className="mc-overlay">
+    <div className="mc-overlay"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+    >
+      {isDragging && (
+        <div className="mc-drag-overlay"
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <div className="mc-drag-box">
+            <span className="mc-drag-icon">📥</span>
+            <span className="mc-drag-text">Drop TOON File Here</span>
+            <span className="mc-drag-sub">Supports .txt or .toon files</span>
+          </div>
+        </div>
+      )}
       {/* ── Top Bar ── */}
       <div className="mc-topbar" style={{ borderBottomColor: `${theme.accent}20` }}>
         <div className="mc-topbar-left">
@@ -768,6 +881,9 @@ export default function MeanClassroom({ onClose }) {
             <input className="mc-prompt-input" value={topic} onChange={e => setTopic(e.target.value)}
               placeholder='Ask anything — "Quadratic Equations", "Solve ∫x²dx", "Binary Search Tree"...'
               disabled={loading} />
+            <button className="mc-create-btn" type="button" onClick={() => setShowCreateModal(true)} disabled={loading}>
+              Create
+            </button>
             <button className="mc-prompt-submit" type="submit" disabled={loading || !topic.trim()}
               style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` }}>
               {loading ? '⏳' : '→'}
@@ -812,6 +928,62 @@ export default function MeanClassroom({ onClose }) {
           </div>
         </div>
       </div>
+
+      {/* ── Create Lesson Modal Popup ── */}
+      {showCreateModal && (
+        <div className="mc-modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="mc-modal-card" onClick={e => e.stopPropagation()}>
+            <header className="mc-modal-header">
+              <span className="mc-modal-title">🛠️ Create Classroom Lesson via External AI</span>
+              <button className="mc-modal-close" onClick={() => setShowCreateModal(false)}>✕</button>
+            </header>
+            <div className="mc-modal-body">
+              <div className="mc-modal-section">
+                <span className="mc-modal-step-title">1️⃣ Download Tool / Prompt File</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>
+                  Download the tool prompt guidelines. You can drop this text file directly into Claude/ChatGPT to teach it how to write lesson whiteboards.
+                </p>
+                <div className="mc-modal-btn-row">
+                  <button className="mc-modal-btn" onClick={handleDownloadPromptFile}>
+                    📥 Download Tool File
+                  </button>
+                  <button className="mc-modal-btn" onClick={handleCopyPrompt}>
+                    📋 Copy Prompt Text
+                  </button>
+                </div>
+              </div>
+
+              <div className="mc-modal-section">
+                <span className="mc-modal-step-title">2️⃣ Generate TOON Code</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Upload/paste the file in ChatGPT or Claude, and ask it to write the TOON code for: <strong>"{topic.trim() || 'your topic'}"</strong>.
+                </p>
+              </div>
+
+              <div className="mc-modal-section" style={{ marginTop: '4px' }}>
+                <span className="mc-modal-step-title">3️⃣ Render on Whiteboard</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
+                  Paste the generated TOON code block below, or drag & drop the saved `.txt`/`.toon` file anywhere on the main whiteboard screen.
+                </p>
+                <textarea
+                  className="mc-modal-textarea"
+                  placeholder="Paste TOON code starting with:&#10;---&#10;type: config&#10;topic: ...&#10;category: ...&#10;---"
+                  value={pastedToon}
+                  onChange={e => setPastedToon(e.target.value)}
+                />
+                <button
+                  className="mc-modal-btn primary"
+                  style={{ marginTop: '4px' }}
+                  onClick={handleRenderPastedToon}
+                  disabled={!pastedToon.trim()}
+                >
+                  📺 Render Class
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
