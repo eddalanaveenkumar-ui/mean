@@ -86,6 +86,9 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   const [sessionTopic, setSessionTopic] = useState('');
   const [subject, setSubject] = useState('General');
   const [level] = useState('high');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [pastedToon, setPastedToon] = useState('');
   const duration = 30;
 
   const LANGUAGES = {
@@ -782,6 +785,343 @@ Ensure you strictly follow the roadmap context.`;
           if (svg) svg.innerHTML = '';
         }
       } catch(_) {}
+    }
+  };
+
+  // Load custom TOON code
+  const loadToonCode = (toonText) => {
+    try {
+      const parsed = parseTOON(toonText);
+      if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+        // Auto-inject User Input Block if not already present
+        const contentToDisplay = fileContent || topic.trim() || 'Custom Prompt';
+        const hasUserInput = parsed.some(n => n.address === "user_input_special");
+        if (!hasUserInput && contentToDisplay) {
+          const displayContent = contentToDisplay.length > 800 ? contentToDisplay.slice(0, 800) + '\n\n[...Content truncated for display]' : contentToDisplay;
+          const roots = parsed.filter(n => !parsed.some(p => p.connect?.includes(n.address))).map(n => n.address);
+
+          parsed.unshift({
+             address: "user_input_special",
+             type: "special_block",
+             title: fileContent ? (fileName || "Uploaded Document") : "Your Prompt",
+             content: displayContent,
+             dialogs: [
+                 {
+                    topic: fileContent ? "Document Received" : "Prompt Received",
+                    input: "",
+                    output: "",
+                    explanation: fileContent ? "I have analyzed the document you provided. Let's walk through the detailed explanation I have prepared for you." : "I have received your prompt. Let's explore the roadmap based on it."
+                 }
+             ],
+             connect: roots
+          });
+        }
+
+        setSlides(parsed);
+        setRawToonText(toonText);
+        
+        // Find subject/topic
+        const config = parsed.find(b => b.type === 'config') || {};
+        const parsedTopic = config.topic || topic.trim() || 'Custom Lesson';
+        setSessionTopic(parsedTopic);
+        setSessionTitle(parsedTopic);
+        setPhase('done');
+        saveClass(parsedTopic, parsed);
+
+        const frame = document.getElementById('roadmapFrame');
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'LOAD_ROADMAP', payload: parsed, isPartial: false }, '*');
+          frame.contentWindow.postMessage({ type: 'GENERATION_DONE' }, '*');
+        }
+        return true;
+      }
+    } catch (e) {
+      console.error('Error loading custom TOON code:', e);
+    }
+    return false;
+  };
+
+  // Drag & Drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        const success = loadToonCode(content);
+        if (success) {
+          alert(`Successfully loaded custom lesson!`);
+        } else {
+          alert('Error: No valid TOON blocks found in dropped file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // Generate combined prompt
+  const getCombinedPrompt = () => {
+    const currentTopic = topic.trim() || 'Your Learning Topic';
+    const fileContext = fileContent
+      ? `\n\nAttached document: "${fileName}"\nContent: ${fileContent.slice(0, 1500)}\nUse this as primary source.`
+      : '';
+    
+    // Exact system prompt rules copy from index.jsx
+    const systemInstruction = 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.';
+    const outlinePrompt = `You are creating a visual block-diagram interactive Roadmap for "${currentTopic}".
+Return ONLY valid TOON format (Token-Oriented Object Notation). Current year: 2026.
+
+TOON FORMAT RULES:
+- Each block is separated by a line containing only ---
+- Properties use key: value (one per line)
+- Multi-line values (like code): use key: | then indent each line with 2 spaces
+- Nested array items start with >tag (e.g. >dialog, >step) on its own line, then indented properties with 2 spaces
+- Comma-separated arrays: connect: id1, id2, id3
+- Variable maps: variables: x=5, y=10
+- Do NOT use JSON syntax. No braces, no brackets, no quotes around keys/values.
+
+CRITICAL GRAPH FRACTURING RULES:
+1. MAX DEPTH 1: A tree can ONLY consist of ONE Parent and its immediate direct children.
+2. FRACTURE SUB-TREES: If a child node needs its own children, create a separate disconnected tree where it is the new parent.
+3. DUPLICATE WITH UNIQUE IDs: Give them different address IDs so the layout draws them as separate islands.
+
+MANDATORY TEXTBLOCK RULE:
+- EVERY block node MUST have AT LEAST ONE textblock connected to it.
+- Add the textblock address to the block's connect list.
+- Provide useful educational content. You can attach MULTIPLE textblocks per block.
+
+MANDATORY CODE VISUALIZATION RULE:
+- If the topic involves ANY coding, you MUST include these three connected blocks:
+1. Coder block example:
+---
+type: coder
+address: coder_1
+group: g1
+language: python
+code: |
+  x = 5
+  y = 10
+  print(x + y)
+connect: viz_1
+>dialog
+  topic: Addition Program
+  input: x=5, y=10
+  output: 15
+  explanation: This program demonstrates basic variable assignment and addition.
+
+2. Visualizer block example:
+---
+type: visualizer
+address: viz_1
+group: g1
+coder_ref: coder_1
+connect: out_1
+>step
+  line: 1
+  description: Assign 5 to variable x
+  variables: x=5
+  output:
+>step
+  line: 2
+  description: Assign 10 to variable y
+  variables: x=5, y=10
+  output:
+>step
+  line: 3
+  description: Print sum of x and y
+  variables: x=5, y=10
+  output: 15
+
+3. Outputer block example:
+---
+type: outputer
+address: out_1
+group: g1
+visualizer_ref: viz_1
+
+- The group field MUST be the SAME across all 3 blocks.
+- Include enough steps to trace FULL execution.
+
+MANDATORY MATHBLOCK RULE:
+- For math/physics/calculus topics, include a mathblock:
+---
+type: mathblock
+address: math_1
+title: Solving Quadratic Equation
+>step
+  label: Given
+  content: ax^2 + bx + c = 0
+>step
+  label: Formula
+  content: x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}
+>step
+  label: Answer
+  content: x = 2 \\text{ or } x = 3
+
+- Use LaTeX notation (\\frac, \\sqrt, \\int, \\sum, \\alpha, \\pi, etc.).
+- Show every substitution and simplification step.
+
+MANDATORY GRAPHBLOCK RULE (IF USER ASKS TO GRAPH):
+- For charts, plots, statistics: use graphblock, NOT diablock.
+---
+type: graphblock
+address: g_1
+title: Sales Chart
+chartType: line
+labels: Q1, Q2, Q3, Q4
+>dataset
+  label: Revenue
+  data: 100, 200, 150, 300
+
+- For scatter plots: use chartType: scatter and data: {x:1,y:2}, {x:3,y:4} with showLine: true.
+
+MANDATORY DRAWING RULE (IF USER ASKS TO DRAW):
+- Use diablock with layout: coordinate for geometry/shapes.
+---
+type: diablock
+address: dia_1
+title: Coordinate Sketch
+layout: coordinate
+>dianode
+  id: A
+  value: (2,3)
+  shape: point
+  label: Point A
+>dianode
+  id: B
+  value: (8,3)
+  shape: point
+>edge
+  from: A
+  to: B
+
+MANDATORY DIABLOCK RULE (DATA STRUCTURES & ALGORITHMS):
+- For linked lists, trees, graphs, stacks, queues, sorting traces:
+---
+type: diablock
+address: dia_1
+layout: horizontal
+>dianode
+  id: n1
+  value: 10
+  shape: box
+  label: Head
+>dianode
+  id: n2
+  value: 20
+  shape: box
+>edge
+  from: n1
+  to: n2
+  type: arrow
+>diastep
+  description: Start at head node
+  highlightNodes: n1
+
+- LAYOUTS: horizontal for Lists/Queues, vertical for Stacks, tree for Trees/Graphs.
+
+BLOCK STRUCTURE RULES:
+Block example:
+---
+type: block
+address: unique_id
+in-content: Display Text
+shape: square
+explanation: Short tooltip
+connect: child_id, textblock_id
+>dialog
+  topic: Topic Name
+  input:
+  output:
+  explanation: Detailed explanation at least 20 words...
+
+Textblock example:
+---
+type: textblock
+address: tb_unique_id
+title: Sub-category Title
+content: Detailed explanation text here
+>dialog
+  topic: Details
+  input:
+  output:
+  explanation: Detailed explanation at least 20 words...
+
+Arrow example:
+---
+type: arrow
+in-content: relationship label
+first-connection: parent_id
+next-connection: child_id
+
+MANDATORY VIRTUAL CURSOR DIALOGS RULE:
+- EVERY block MUST include >dialog entries. This is what the AI speaks.
+- ALL dialog text MUST be in: ${lang}.
+- Each >dialog needs: topic, input, output, explanation (at least 20 words).
+- Use clear real-world analogies.
+
+CRITICAL REMINDER: Charts → graphblock. Data structures → diablock. Code → coder+visualizer+outputer. Math → mathblock.
+
+Dense and accurate.${fileContext}
+Return ONLY valid TOON format. Start with --- for the first block.`;
+
+    return `System Instruction:\n${systemInstruction}\n\nUser Message Prompt:\n${outlinePrompt}`;
+  };
+
+  // Copy prompt to clipboard
+  const handleCopyPrompt = () => {
+    const promptText = getCombinedPrompt();
+    navigator.clipboard.writeText(promptText);
+    alert('Prompt copied to clipboard! Paste it into ChatGPT or Claude.');
+  };
+
+  // Download prompt as a .txt file
+  const handleDownloadPromptFile = () => {
+    const promptText = getCombinedPrompt();
+    const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mean_classroom_prompt_${(topic.trim() || 'lesson').replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Render pasted TOON code
+  const handleRenderPastedToon = () => {
+    if (!pastedToon.trim()) return;
+    const success = loadToonCode(pastedToon);
+    if (success) {
+      setShowCreateModal(false);
+      setPastedToon('');
+      alert('Whiteboard updated with custom TOON lesson!');
+    } else {
+      alert('Error: Failed to parse TOON code. Please check the format.');
     }
   };
 
@@ -1581,7 +1921,24 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
   // ===== UNIFIED CANVAS WORKSPACE =====
   return (
-    <div className="tc-overlay" style={{ background: 'var(--bg-dark)', display: 'flex', flexDirection: 'column' }}>
+    <div className="tc-overlay"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      style={{ background: 'var(--bg-dark)', display: 'flex', flexDirection: 'column' }}
+    >
+      {isDragging && (
+        <div className="tc-drag-overlay"
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <div className="tc-drag-box">
+            <span className="tc-drag-icon">📥</span>
+            <span className="tc-drag-text">Drop TOON File Here</span>
+            <span className="tc-drag-sub">Supports .txt or .toon files</span>
+          </div>
+        </div>
+      )}
       
       {/* Top Header */}
       <header style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1917,6 +2274,15 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                ))}
             </select>
 
+            <button
+               className="tc-create-btn"
+               type="button"
+               onClick={() => setShowCreateModal(true)}
+               disabled={phase === 'loading'}
+            >
+               Create
+            </button>
+
             {phase === 'loading' ? (
               <button
                 onClick={() => {
@@ -2145,6 +2511,61 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
       )}
 
 
+      {/* ── Create Lesson Modal Popup ── */}
+      {showCreateModal && (
+        <div className="tc-modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="tc-modal-card" onClick={e => e.stopPropagation()}>
+            <header className="tc-modal-header">
+              <span className="tc-modal-title">🛠️ Create Classroom Lesson via External AI</span>
+              <button className="tc-modal-close" onClick={() => setShowCreateModal(false)}>✕</button>
+            </header>
+            <div className="tc-modal-body">
+              <div className="tc-modal-section">
+                <span className="tc-modal-step-title">1️⃣ Download Tool / Prompt File</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 6px' }}>
+                  Download the tool prompt guidelines. You can drop this text file directly into Claude/ChatGPT to teach it how to write lesson roadmaps.
+                </p>
+                <div className="tc-modal-btn-row">
+                  <button className="tc-modal-btn" onClick={handleDownloadPromptFile}>
+                    📥 Download Tool File
+                  </button>
+                  <button className="tc-modal-btn" onClick={handleCopyPrompt}>
+                    📋 Copy Prompt Text
+                  </button>
+                </div>
+              </div>
+
+              <div className="tc-modal-section">
+                <span className="tc-modal-step-title">2️⃣ Generate TOON Code</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                  Upload/paste the file in ChatGPT or Claude, and ask it to write the TOON code for: <strong>"{topic.trim() || 'your topic'}"</strong>.
+                </p>
+              </div>
+
+              <div className="tc-modal-section" style={{ marginTop: '4px' }}>
+                <span className="tc-modal-step-title">3️⃣ Render on Whiteboard</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+                  Paste the generated TOON code block below, or drag & drop the saved `.txt`/`.toon` file anywhere on the main classroom screen.
+                </p>
+                <textarea
+                  className="tc-modal-textarea"
+                  placeholder="Paste TOON code starting with:&#10;---&#10;type: block&#10;address: ...&#10;in-content: ...&#10;---"
+                  value={pastedToon}
+                  onChange={e => setPastedToon(e.target.value)}
+                />
+                <button
+                  className="tc-modal-btn primary"
+                  style={{ marginTop: '4px' }}
+                  onClick={handleRenderPastedToon}
+                  disabled={!pastedToon.trim()}
+                >
+                  📺 Render Class
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

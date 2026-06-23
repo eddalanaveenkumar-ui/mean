@@ -1338,3 +1338,91 @@
     display: none !important;
   }
 }
+
+/* ── Create Lesson Popup Modal ── */
+.tc-modal-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(8px);
+}
+
+.tc-modal-card {
+  background: #151624;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  width: 100%; max-width: 600px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tc-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tc-modal-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.tc-modal-close { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
+.tc-modal-close:hover { color: #fff; }
+
+.tc-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 70vh;
+  display: flex; flex-direction: column;
+  gap: 16px;
+}
+
+.tc-modal-section { display: flex; flex-direction: column; gap: 8px; }
+.tc-modal-step-title { font-size: 0.85rem; font-weight: 700; color: #a78bfa; display: flex; align-items: center; gap: 6px; }
+
+.tc-modal-btn-row { display: flex; gap: 10px; }
+.tc-modal-btn {
+  flex: 1; padding: 10px 16px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03); color: #fff; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.tc-modal-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+.tc-modal-btn.primary { background: linear-gradient(135deg, #0a84ff, #005bb5); border: none; }
+.tc-modal-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3); }
+
+.tc-modal-textarea {
+  width: 100%; height: 120px; padding: 12px;
+  background: #090a12; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  color: #fff; font-size: 0.85rem; font-family: monospace; resize: none; outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.tc-modal-textarea:focus { border-color: #0a84ff; }
+
+.tc-create-btn {
+  padding: 8px 16px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);
+  font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px;
+  transition: all 0.2s; height: 32px; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+}
+.tc-create-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+
+/* ── Drag & Drop Overlay ── */
+.tc-drag-overlay {
+  position: absolute; inset: 0; z-index: 10002;
+  background: rgba(10, 132, 255, 0.15);
+  border: 3px dashed #0a84ff; border-radius: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease-out;
+  pointer-events: none;
+}
+.tc-drag-box {
+  background: #151624; border: 1px solid rgba(10, 132, 255, 0.3); border-radius: 16px;
+  padding: 24px 40px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.tc-drag-icon { font-size: 3rem; animation: floatSlow 2s ease-in-out infinite; }
+.tc-drag-text { font-size: 1rem; font-weight: 700; color: #fff; }
+.tc-drag-sub { font-size: 0.8rem; color: var(--text-muted); }
