@@ -6,6 +6,11 @@ export default function ProfilePage() {
   const { user, apiKey, setApiKey, logout, setShowProfile, login, theme, setTheme } = useApp();
   const [editApiKey, setEditApiKey] = useState(apiKey);
   const [mcpConnected, setMcpConnected] = useState(false);
+
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const mcpPath = isLocal 
+    ? 'c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js'
+    : '[YOUR_PROJECT_PATH]/mean-classroom-mcp/index.js';
   
   const [meanAiKeys, setMeanAiKeys] = useState(() => {
     const saved = localStorage.getItem('meanai_cli_keys');
@@ -212,7 +217,7 @@ export default function ProfilePage() {
   "mcpServers": {
     "mean-classroom": {
       "command": "node",
-      "args": ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"]
+      "args": ["${mcpPath}"]
     }
   }
 }`}
@@ -222,7 +227,7 @@ export default function ProfilePage() {
                           mcpServers: {
                             "mean-classroom": {
                               command: "node",
-                              args: ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"]
+                              args: [mcpPath]
                             }
                           }
                         }, null, 2))}
@@ -243,10 +248,10 @@ export default function ProfilePage() {
                         background: 'var(--ink, #1A1612)', color: '#34d399', padding: '10px',
                         borderRadius: '6px', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'var(--font-mono, monospace)'
                       }}>
-node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"
+{`node "${mcpPath}"`}
                       </pre>
                       <button 
-                        onClick={() => copyToClipboard('node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"')}
+                        onClick={() => copyToClipboard(`node "${mcpPath}"`)}
                         style={{
                           position: 'absolute', right: '6px', top: '24px', background: 'rgba(255,255,255,0.1)',
                           border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem'
