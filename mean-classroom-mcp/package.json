@@ -1,0 +1,14 @@
+{
+  "name": "mean-classroom-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for Mean AI Classroom TOON parsing and building",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "zod": "^3.22.4"
+  }
+}

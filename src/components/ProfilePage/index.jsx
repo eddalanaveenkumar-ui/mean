@@ -212,7 +212,7 @@ export default function ProfilePage() {
   "mcpServers": {
     "mean-classroom": {
       "command": "node",
-      "args": ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-classroom-mcp/index.js"]
+      "args": ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"]
     }
   }
 }`}
@@ -222,7 +222,7 @@ export default function ProfilePage() {
                           mcpServers: {
                             "mean-classroom": {
                               command: "node",
-                              args: ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-classroom-mcp/index.js"]
+                              args: ["c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"]
                             }
                           }
                         }, null, 2))}
@@ -243,10 +243,10 @@ export default function ProfilePage() {
                         background: 'var(--ink, #1A1612)', color: '#34d399', padding: '10px',
                         borderRadius: '6px', fontSize: '0.8rem', overflowX: 'auto', fontFamily: 'var(--font-mono, monospace)'
                       }}>
-node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-classroom-mcp/index.js"
+node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"
                       </pre>
                       <button 
-                        onClick={() => copyToClipboard('node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-classroom-mcp/index.js"')}
+                        onClick={() => copyToClipboard('node "c:/Users/Naveen Kumar/PycharmProjects/shark/mean-ai/mean-classroom-mcp/index.js"')}
                         style={{
                           position: 'absolute', right: '6px', top: '24px', background: 'rgba(255,255,255,0.1)',
                           border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem'
