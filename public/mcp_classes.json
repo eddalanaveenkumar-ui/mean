@@ -1,0 +1,97 @@
+[
+  {
+    "id": 1700000000000,
+    "topic": "Stack Data Structure (MCP)",
+    "category": "dsa",
+    "date": "6/24/2026",
+    "blocks": [
+      {
+        "type": "config",
+        "topic": "Stack",
+        "category": "dsa"
+      },
+      {
+        "type": "diagram",
+        "title": "Stack — LIFO Data Structure",
+        "width": 600,
+        "height": 340,
+        "elements": [
+          {
+            "kind": "text",
+            "x": 300,
+            "y": 20,
+            "label": "Stack: Last In, First Out (LIFO)",
+            "color": "#c4b5fd",
+            "fontSize": 15,
+            "bold": true,
+            "anchor": "middle",
+            "step": 0
+          },
+          {
+            "kind": "box",
+            "x": 220,
+            "y": 250,
+            "w": 160,
+            "h": 40,
+            "label": "10",
+            "sublabel": "Bottom",
+            "color": "#8b5cf6",
+            "step": 1
+          },
+          {
+            "kind": "box",
+            "x": 220,
+            "y": 200,
+            "w": 160,
+            "h": 40,
+            "label": "20",
+            "color": "#8b5cf6",
+            "step": 2
+          },
+          {
+            "kind": "box",
+            "x": 220,
+            "y": 150,
+            "w": 160,
+            "h": 40,
+            "label": "30",
+            "color": "#10b981",
+            "step": 2
+          },
+          {
+            "kind": "arrow",
+            "x1": 180,
+            "y1": 120,
+            "x2": 180,
+            "y2": 155,
+            "label": "push",
+            "color": "#10b981",
+            "step": 3
+          },
+          {
+            "kind": "arrow",
+            "x1": 420,
+            "y1": 155,
+            "x2": 420,
+            "y2": 120,
+            "label": "pop",
+            "color": "#ef4444",
+            "step": 4
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "title": "What is a Stack?",
+        "point1": "A Stack is a linear data structure that follows LIFO — Last In, First Out",
+        "point2": "Elements can only be added or removed from the TOP — no random access",
+        "point3": "Think of it as a restricted list where only one end is accessible",
+        "point4": "Stacks are fundamental in computing — used in function calls, undo systems, parsing",
+        "realworld": "Stack of plates in a cafeteria — you always take the top plate, and new plates go on top.",
+        "code": "Stack<int> s; // Empty stack",
+        "subtopic": "LIFO vs FIFO",
+        "chat": "Welcome! A Stack is like a stack of plates — last plate placed is the first one taken."
+      }
+    ]
+  }
+]

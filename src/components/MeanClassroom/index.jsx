@@ -447,6 +447,23 @@ export default function MeanClassroom({ onClose }) {
   const [savedClasses, setSavedClasses] = useState(() => {
     try { return JSON.parse(localStorage.getItem('mc_saved_classes') || '[]'); } catch { return []; }
   });
+  const [mcpClasses, setMcpClasses] = useState([]);
+
+  // Load MCP-generated classes
+  useEffect(() => {
+    fetch('/mcp_classes.json')
+      .then(res => {
+        if (!res.ok) throw new Error('No MCP classes');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setMcpClasses(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const saveCurrentClass = () => {
     if (!toonBlocks.length) return;
     const cls = { id: Date.now(), topic: configBlock.topic || topic, category, blocks: toonBlocks, date: new Date().toLocaleDateString() };
@@ -459,6 +476,7 @@ export default function MeanClassroom({ onClose }) {
     const updated = savedClasses.filter(c => c.id !== id);
     setSavedClasses(updated);
     localStorage.setItem('mc_saved_classes', JSON.stringify(updated));
+    setMcpClasses(prev => prev.filter(c => c.id !== id));
   };
 
   const configBlock = toonBlocks.find(b => b.type === 'config') || {};
@@ -733,14 +751,18 @@ export default function MeanClassroom({ onClose }) {
             )}
           </div>
           <div className="mc-classes-list">
-            {savedClasses.length === 0 ? (
-              <div className="mc-classes-empty">
-                <span style={{ fontSize: '2rem' }}>📝</span>
-                <p>No saved classes yet</p>
-                <p className="mc-classes-hint">Generate a topic, then click Save</p>
-              </div>
-            ) : (
-              savedClasses.map(cls => (
+            {(() => {
+              const allClasses = [...mcpClasses, ...savedClasses];
+              if (allClasses.length === 0) {
+                return (
+                  <div className="mc-classes-empty">
+                    <span style={{ fontSize: '2rem' }}>📝</span>
+                    <p>No saved classes yet</p>
+                    <p className="mc-classes-hint">Generate a topic, then click Save</p>
+                  </div>
+                );
+              }
+              return allClasses.map(cls => (
                 <div key={cls.id} className="mc-class-item" onClick={() => loadClass(cls)}>
                   <span className="mc-class-icon">{CATEGORY_THEMES[cls.category]?.icon || '📘'}</span>
                   <div className="mc-class-info">
@@ -749,8 +771,8 @@ export default function MeanClassroom({ onClose }) {
                   </div>
                   <button className="mc-class-delete" onClick={(e) => { e.stopPropagation(); deleteClass(cls.id); }}>✕</button>
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
         </div>
       </div>
