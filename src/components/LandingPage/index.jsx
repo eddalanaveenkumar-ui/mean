@@ -108,35 +108,35 @@ export default function LandingPage({ onGetStarted }) {
       <nav className={`lp-nav${navScrolled ? ' scrolled' : ''}`}>
         <div className="logo">
           <PenNibIcon />
-          Mean AI
+          mean ai
         </div>
         <div className="nav-links">
-          <a href="#">Curriculum</a>
-          <a href="#">Lab Space</a>
-          <a href="#">Interactive Docs</a>
-          <a href="#">Pricing</a>
+          <a href="#">Platform</a>
+          <a href="#">Developers</a>
+          <a href="#">Resources</a>
+          <a href="#">Company</a>
         </div>
-        <button className="nav-cta" onClick={onGetStarted}>Enter Classroom &rarr;</button>
+        <div className="nav-actions">
+          <button className="nav-cta btn-navy" onClick={onGetStarted}>Sign up</button>
+          <button className="nav-cta btn-white" onClick={() => window.location.href='#'}>Contact Us</button>
+        </div>
       </nav>
 
       {/* ── HERO ── */}
       <section className="hero">
-        <div className="ruled-lines" aria-hidden="true" />
-        <div className="margin-line" aria-hidden="true" />
-        <div className="coffee-stain" aria-hidden="true" />
-
+        <div className="hero-gradient-glow" aria-hidden="true" />
         <div className="hero-inner">
-          <span className="eyebrow">&#9998; Paper Classroom</span>
-          <h1>AI-Driven<br /><span className="hand-text">Interactive Classroom</span></h1>
+          <span className="hero-subtitle">India's Sovereign AI Classroom</span>
+          <h1>Intelligence for all<br />with Mean AI</h1>
           <p className="hero-sub">
-            Step into a notebook-inspired workspace where complex coding and mathematics come to life.
-            Real-time reasoning, visual execution stacks, and autonomous AI tutors at your side.
+            Built on high-fidelity visual execution. Powered by frontier-class classroom AI.<br />
+            Delivering population-scale academic impact.
           </p>
           <div className="hero-ctas">
-            <button className="btn btn-primary" onClick={onGetStarted}>
-              Start Learning <span aria-hidden="true">&#9998;</span>
+            <button className="btn btn-navy" onClick={onGetStarted}>
+              Sign up
             </button>
-            <a className="btn btn-secondary" href="#demo">Watch Demo</a>
+            <a className="btn btn-white" href="#demo">Contact Us</a>
           </div>
         </div>
 
@@ -151,22 +151,19 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* Fold shadow */}
-      <div className="fold-shadow" aria-hidden="true" />
-
       {/* ── SOCIAL PROOF ── */}
       <section className="proof">
-        <span className="eyebrow-plain">Utilized by Elite Institutions</span>
+        <span className="eyebrow-plain">INDIA BUILDS WITH MEAN AI</span>
         <div className="logos">
-          <span>NEXUS LABS</span>
-          <span>SYNTHOS ACADEMY</span>
-          <span>QUANTUM EDU</span>
-          <span>VECTOR MATH</span>
+          <span>CRED</span>
+          <span>CredResolve</span>
+          <span>DECENTRO</span>
+          <span>IDFC FIRST Bank</span>
+          <span>Infosys</span>
+          <span>LIC</span>
+          <span>Mahindra Finance</span>
         </div>
       </section>
-
-      {/* Fold shadow */}
-      <div className="fold-shadow" aria-hidden="true" />
 
       {/* ── FEATURES ── */}
       <section className="features">
@@ -176,7 +173,6 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div className="feature-grid">
           <article className="feature-card">
-            <div className="tape-strip" aria-hidden="true" />
             <div className="feature-icon icon-ember">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M4 6L10 12L4 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -187,7 +183,6 @@ export default function LandingPage({ onGetStarted }) {
             <p>Watch the AI explain its logic through real-time code execution and visual data structures.</p>
           </article>
           <article className="feature-card">
-            <div className="tape-strip" aria-hidden="true" />
             <div className="feature-icon icon-purple">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
@@ -197,13 +192,11 @@ export default function LandingPage({ onGetStarted }) {
             <p>Every concept is stored as an interactive knowledge graph. Navigate ideas visually and see how they connect.</p>
           </article>
           <article className="feature-card">
-            <div className="tape-strip" aria-hidden="true" />
             <div className="feature-icon icon-signal">&Sigma;</div>
             <h3>Interactive Algebra</h3>
             <p>Manipulate 3D mathematical models. Change parameters and watch the world rebuild instantly.</p>
           </article>
           <article className="feature-card">
-            <div className="tape-strip" aria-hidden="true" />
             <div className="feature-icon icon-circuit">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L13.5 9.5L21 11L13.5 12.5L12 20L10.5 12.5L3 11L10.5 9.5L12 2Z" fill="currentColor"/>
@@ -215,23 +208,21 @@ export default function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* Fold shadow */}
-      <div className="fold-shadow" aria-hidden="true" />
-
       {/* ── VIDEO DEMO ── */}
       <section className="demo" id="demo">
         <div className="features-head">
-          <span className="eyebrow">&#9998; See It In Action</span>
+          <span className="eyebrow">✦ See It In Action</span>
           <h2>Watch Mean AI in motion.</h2>
           <p>A live walkthrough of the interactive classroom — real-time traces, tutors, and 3D models.</p>
         </div>
-        <div className="demo-inner">
-          <div className="tape-strip tape-tl" aria-hidden="true" />
-          <div className="tape-strip tape-tr" aria-hidden="true" />
-          <video className="demo-video" muted autoPlay loop playsInline>
-            <source src="/0617.mp4" type="video/mp4" />
-          </video>
-          <div className="demo-overlay" />
+        <div className="demo-container">
+          <div className="demo-gradient-glow" aria-hidden="true" />
+          <div className="demo-inner">
+            <video className="demo-video" muted autoPlay loop playsInline>
+              <source src="/0617.mp4" type="video/mp4" />
+            </video>
+            <div className="demo-overlay" />
+          </div>
         </div>
         <p className="demo-caption">
           Experience real-time reasoning, visual execution stacks, and AI tutors — all in your browser.
@@ -241,15 +232,24 @@ export default function LandingPage({ onGetStarted }) {
       {/* ── CTA ── */}
       <div className="cta-wrap">
         <section className="cta">
+          {/* Spherical grid overlay SVG */}
+          <div className="cta-grid-overlay">
+            <svg width="100%" height="100%" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M400 400C400 200 600 0 800 0M400 400C400 200 200 0 0 0M400 400C400 250 550 100 700 100M400 400C400 250 250 100 100 100" stroke="rgba(255,255,255,0.16)" strokeWidth="1.8" />
+              <circle cx="400" cy="400" r="100" stroke="rgba(255,255,255,0.09)" strokeWidth="1.8" />
+              <circle cx="400" cy="400" r="200" stroke="rgba(255,255,255,0.09)" strokeWidth="1.8" />
+              <circle cx="400" cy="400" r="300" stroke="rgba(255,255,255,0.09)" strokeWidth="1.8" />
+            </svg>
+          </div>
           <div className="cta-inner">
-            <h2>Ready to evolve your intelligence?</h2>
-            <p>
-              Join the waitlist for the most immersive learning environment ever created.
-              Limited spots for the Early Access cohort.
-            </p>
+            <div className="star-sparkle-wrap">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="star-sparkle">
+                <path d="M12 0L14.8 9.2L24 12L14.8 14.8L12 24L9.2 14.8L0 12L9.2 9.2L12 0Z" />
+              </svg>
+            </div>
+            <h2>Build the Future of India's AI<br />with Mean AI</h2>
             <div className="cta-buttons">
-              <button className="btn btn-primary" onClick={onGetStarted}>Request Invite</button>
-              <a className="btn btn-secondary" href="#">View Curriculum</a>
+              <button className="btn btn-glass" onClick={onGetStarted}>Sign Up</button>
             </div>
           </div>
         </section>
@@ -258,7 +258,7 @@ export default function LandingPage({ onGetStarted }) {
       {/* ── KEYBOARD SHORTCUTS ── */}
       <section className="keyboard-section">
         <div className="features-head">
-          <span className="eyebrow">&#9998; Keyboard-First Design</span>
+          <span className="eyebrow">⌨ Keyboard-First Design</span>
           <h2>Built for Speed</h2>
           <p>Navigate the entire classroom without lifting your hands from the keyboard.</p>
         </div>
@@ -311,37 +311,71 @@ export default function LandingPage({ onGetStarted }) {
 
       {/* ── FOOTER ── */}
       <footer className="lp-footer">
+        <div className="footer-gradient-glow left" aria-hidden="true" />
+        <div className="footer-gradient-glow right" aria-hidden="true" />
+        
         <div className="footer-grid">
           <div className="footer-brand">
-            <div className="logo"><PenNibIcon /> Mean AI</div>
-            <p>Empowering the next generation of polymaths through high-fidelity AI-driven education.</p>
-          </div>
-          <div className="footer-col">
-            <h4>Platform</h4>
-            <a href="#">Interactive Lab</a>
-            <a href="#">Live Reasoning</a>
-            <a href="#">Benchmarks</a>
-          </div>
-          <div className="footer-col">
-            <h4>Resources</h4>
-            <a href="#">Documentation</a>
-            <a href="#">API Access</a>
-            <a href="#">Research</a>
-          </div>
-          <div className="footer-col">
-            <h4>Social</h4>
-            <div className="social-icons">
-              <a href="#" aria-label="Website">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              </a>
-              <a href="#" aria-label="GitHub">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
-              </a>
+            <div className="logo"><PenNibIcon /> mean ai</div>
+            <p>AI for India starts here</p>
+            <div className="certifications">
+              <div className="badge-cert">
+                <span className="cert-code">ISO:27001</span>
+              </div>
+              <div className="badge-cert">
+                <span className="cert-code">AICPA<br />SOC 2<br />TYPE 1</span>
+              </div>
             </div>
+          </div>
+          <div className="footer-col">
+            <h4>Products</h4>
+            <a href="#">Mean Classroom</a>
+            <a href="#">Mean Studio</a>
+            <a href="#">Mean Akshar</a>
+            <a href="#">Mean Arya</a>
+            <a href="#">Mean Indus</a>
+            <a href="#">Mean Edge</a>
+          </div>
+          <div className="footer-col">
+            <h4>APIs</h4>
+            <a href="#">Text to Speech</a>
+            <a href="#">Speech to Text</a>
+            <a href="#">Doc Digitisation</a>
+            <a href="#">Translation</a>
+            <a href="#">Dubbing</a>
+            <a href="#">Models</a>
+          </div>
+          <div className="footer-col">
+            <h4>Developers</h4>
+            <a href="#">Documentation</a>
+            <a href="#">API Pricing</a>
+            <a href="#">Integrations</a>
+          </div>
+          <div className="footer-col">
+            <h4>Company</h4>
+            <a href="#">About Us</a>
+            <a href="#">Careers</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Blogs</a>
+            <a href="#">Trust Center</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">EULA</a>
+          </div>
+          <div className="footer-col">
+            <h4>Socials</h4>
+            <a href="#">LinkedIn</a>
+            <a href="#">X</a>
+            <a href="#">YouTube</a>
+            <a href="#">GitHub</a>
+            <a href="#">Discord</a>
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Mean AI Lab. All rights reserved.</p>
+          <div className="footer-bottom-inner">
+            <span>&copy; {new Date().getFullYear()} Mean AI Lab. All rights reserved.</span>
+            <span>732, Chinmaya Mission Hospital Road, Indiranagar Stage 1, Bengaluru, Karnataka 560038</span>
+          </div>
         </div>
       </footer>
     </div>

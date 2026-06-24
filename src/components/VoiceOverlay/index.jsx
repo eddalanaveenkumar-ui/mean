@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import './VoiceOverlay.css';
 
 export default function VoiceOverlay({ isOpen, onClose }) {
-  const { apiKey, user } = useApp();
+  const { apiKey, user, checkApiKey } = useApp();
   const [phase, setPhase] = useState('idle'); // idle, listening, thinking, speaking
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
@@ -12,6 +12,10 @@ export default function VoiceOverlay({ isOpen, onClose }) {
   const synthRef = useRef(null);
 
   const startListening = useCallback(() => {
+    if (!checkApiKey()) {
+      onClose();
+      return;
+    }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { alert('Speech recognition not supported'); return; }
 
@@ -44,7 +48,7 @@ export default function VoiceOverlay({ isOpen, onClose }) {
 
     recognition.onerror = () => setPhase('idle');
     recognition.start();
-  }, [apiKey]);
+  }, [apiKey, checkApiKey, onClose]);
 
   const handleVoiceQuery = async (text) => {
     setPhase('thinking');

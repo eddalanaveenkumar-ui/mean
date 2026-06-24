@@ -124,8 +124,8 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
               <button className="header-tab" onClick={() => onTeacher?.()}>Tools</button>
             </div>
             <div className="mobile-header-brand">
-              <span className="hb-mean">Mean</span>
-              <span className="hb-ai">AI</span>
+              <span className="hb-mean">mean</span>
+              <span className="hb-ai">ai</span>
             </div>
           </div>
           <div className="chat-header-right">
@@ -156,8 +156,8 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
             </button>
             <div className="model-picker-wrap">
               <button className="model-picker-btn" onClick={(e) => { e.stopPropagation(); setShowModelPicker(!showModelPicker); }}>
-                <span className="hb-mean">Mean</span>
-                <span className="hb-ai">AI</span>
+                <span className="hb-mean">mean</span>
+                <span className="hb-ai">ai</span>
                 <span className="model-picker-current">{selectedModel.icon} {selectedModel.name}</span>
                 <i className={`fas fa-chevron-down model-picker-arrow ${showModelPicker ? 'open' : ''}`} />
               </button>

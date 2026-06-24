@@ -16,6 +16,14 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const ArrowLeftIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s ease' }}>
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+);
+
+
 // Helper: fetch with timeout
 const fetchWithTimeout = (url, options = {}, timeoutMs = 45000) => {
   const controller = new AbortController();
@@ -24,7 +32,7 @@ const fetchWithTimeout = (url, options = {}, timeoutMs = 45000) => {
     .finally(() => clearTimeout(timer));
 };
 
-export default function Login() {
+export default function Login({ onBack }) {
   const { login } = useApp();
   const [step, setStep] = useState(1);
   const [tempUser, setTempUser] = useState(null); 
@@ -334,6 +342,9 @@ Error: ${err.message}`);
 
   return (
     <div className="login-wrapper">
+      {/* Background glow matching the Landing Page */}
+      <div className="login-gradient-glow" aria-hidden="true" />
+
       <div className="login-card-ds">
         {isLoading ? (
           <div className="login-spinner-overlay">
@@ -349,6 +360,10 @@ Error: ${err.message}`);
           </div>
         ) : step === 1 ? (
           <>
+            <button type="button" className="login-back-nav" onClick={onBack} aria-label="Back to home">
+              <ArrowLeftIcon /> Back to home
+            </button>
+
             <div className="login-brand-ds">
               <span className="login-logo-text-ds">Continue to MeanAI</span>
             </div>
@@ -378,6 +393,10 @@ Error: ${err.message}`);
           </>
         ) : (
           <>
+            <button type="button" className="login-back-nav" onClick={() => setStep(1)} aria-label="Go back">
+              <ArrowLeftIcon /> Back
+            </button>
+
             <div className="login-brand-ds">
               <span className="login-logo-text-ds">Link OpenRouter</span>
             </div>
@@ -395,7 +414,7 @@ Error: ${err.message}`);
                   }
                   window.location.href = `https://openrouter.ai/auth?callback_url=${window.location.origin}`;
               }} 
-              style={{ backgroundColor: '#171717', color: 'white', border: '1px solid #333', marginTop: '20px', borderRadius: '50px' }}
+              style={{ backgroundColor: '#1c2030', color: 'white', border: 'none', marginTop: '20px', borderRadius: '50px' }}
             >
               Connect with OpenRouter
             </button>
@@ -420,6 +439,16 @@ Error: ${err.message}`);
 
             <button className="ds-login-btn orange-btn" onClick={handleSubmit} style={{ marginTop: '15px' }}>
               Link & Continue
+            </button>
+
+            <button 
+              type="button" 
+              className="ds-login-skip-btn" 
+              onClick={() => {
+                login({ id: tempUser?.email || 'user', name: tempUser?.name || 'User', apiKey: '', jwt: tempUser?.jwt, photoURL: tempUser?.photoURL });
+              }}
+            >
+              Skip and continue
             </button>
           </>
         )}

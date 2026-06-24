@@ -261,8 +261,39 @@
   margin: 4px 8px;
 }
 
-@media (max-width: 480px) {
-  .input-main-row { padding: 6px; }
+@media (max-width: 768px) {
+  .input-wrapper {
+    padding: 0 12px 12px;
+  }
+  .input-main-row {
+    border-radius: 26px !important;
+    padding: 6px 8px !important;
+  }
+  .main-input {
+    font-size: 0.95rem !important;
+    padding: 6px 8px !important;
+  }
+  .send-circle-btn, .voice-wave-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+  }
+  .input-plus-btn, .input-icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+  }
+  .wave-bars {
+    height: 12px;
+    gap: 2px;
+  }
+  .wave-bars span {
+    width: 2.5px;
+  }
+  .wave-bars span:nth-child(1) { height: 6px; }
+  .wave-bars span:nth-child(2) { height: 10px; }
+  .wave-bars span:nth-child(3) { height: 8px; }
+  .wave-bars span:nth-child(4) { height: 5px; }
 }
 
 @media (min-width: 769px) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from './context/AppContext';
 import Login from './components/Login';
+import ApiKeyPromptModal from './components/ApiKeyPromptModal';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import ProfilePage from './components/ProfilePage';
@@ -187,6 +188,7 @@ function DashboardLayout() {
       {showMeanClassroom && <MeanClassroom onClose={() => setShowMeanClassroom(false)} />}
       <FreebuffAgent isOpen={showFreebuffAgent} onClose={() => setShowFreebuffAgent(false)} />
       <VideoEditor isOpen={showOptics} onClose={() => setShowOptics(false)} />
+      <ApiKeyPromptModal />
     </div>
   );
 }
@@ -198,7 +200,7 @@ function HomePage() {
 
   if (user) return <DashboardLayout />;
   if (showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)} />;
-  return <Login />;
+  return <Login onBack={() => setShowLanding(true)} />;
 }
 
 

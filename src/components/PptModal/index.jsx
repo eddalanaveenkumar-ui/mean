@@ -10,13 +10,17 @@ const TEMPLATES = [
 ];
 
 export default function PptModal({ isOpen, onClose }) {
-  const { apiKey, addMessage, currentChatId } = useApp();
+  const { apiKey, addMessage, currentChatId, checkApiKey } = useApp();
   const [topic, setTopic] = useState('');
   const [slideCount, setSlideCount] = useState(6);
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [generating, setGenerating] = useState(false);
 
   const handleGenerate = async () => {
+    if (!checkApiKey()) {
+      onClose();
+      return;
+    }
     if (!topic.trim()) { alert('Enter a topic!'); return; }
     setGenerating(true);
 

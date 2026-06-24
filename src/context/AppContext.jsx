@@ -31,6 +31,7 @@ export function AppProvider({ children }) {
   const [showProfile, setShowProfile] = useState(false);
   const [deepdiveActive, setDeepdiveActive] = useState(false);
   const [webSearchActive, setWebSearchActive] = useState(false);
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('mean_theme') || 'light';
   });
@@ -263,6 +264,14 @@ export function AppProvider({ children }) {
     setShowProfile(false);
   }, []);
 
+  const checkApiKey = useCallback(() => {
+    if (!apiKey || !apiKey.trim()) {
+      setShowApiKeyPrompt(true);
+      return false;
+    }
+    return true;
+  }, [apiKey]);
+
   // Current chat
   const currentChat = chats.find(c => c.id === currentChatId) || null;
 
@@ -414,6 +423,7 @@ export function AppProvider({ children }) {
 
   // Stream AI response
   const sendMessage = useCallback(async (text, fileContent = null, fileName = null, imageUrl = null) => {
+    if (!checkApiKey()) return;
     if ((!text.trim() && !fileName) || isStreaming) {
       if (isStreaming && streamAbortRef.current) {
         streamAbortRef.current.abort();
@@ -757,6 +767,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
 
   const value = {
     user, apiKey, login, logout,
+    showApiKeyPrompt, setShowApiKeyPrompt, checkApiKey,
     chats, currentChat, currentChatId, setCurrentChatId,
     classes, setClasses, saveClass, deleteClass,
     newChat, deleteChat, loadChat, addMessage, updateMessageData, sendMessage,

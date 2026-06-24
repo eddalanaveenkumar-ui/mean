@@ -127,40 +127,40 @@
    LIGHT THEME OVERRIDES
    ═══════════════════════════════════════════════════ */
 body.light-theme {
-  --bg-deep: #f0f2f5;
-  --bg-dark: #f8fafc;
-  --bg-surface: #ffffff;
+  --bg-deep: #FAFAF9; /* warm off-white background */
+  --bg-dark: #F3F2EF; /* alternate warm off-white background */
+  --bg-surface: #ffffff; /* pure white for cards and modules */
   --bg-elevated: #ffffff;
-  --sidebar-bg: rgba(255, 255, 255, 0.95);
+  --sidebar-bg: #FAFAF9;
   
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-color: rgba(0, 0, 0, 0.05); /* ultra-soft borders */
+  --border-hover: rgba(0, 0, 0, 0.1);
   
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  --text-primary: #18181b; /* ink color */
+  --text-secondary: #52525b; /* ink3 color */
+  --text-muted: #a1a1aa; /* ink4 color */
 
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --input-bg: rgba(0, 0, 0, 0.03);
-  --hover-bg: rgba(0, 0, 0, 0.05);
+  --card-bg: #ffffff;
+  --input-bg: #FAFAF9;
+  --hover-bg: rgba(0, 0, 0, 0.02);
 
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-bg-strong: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(250, 250, 249, 0.8);
+  --glass-bg-strong: rgba(250, 250, 249, 0.95);
+  --glass-border: rgba(0, 0, 0, 0.05);
   --glass-shine: rgba(255, 255, 255, 0.5);
 
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.1);
-  --shadow-elevated: 0 10px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0,0,0,0.02);
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-glow: 0 0 20px rgba(255, 85, 0, 0.05);
+  --shadow-elevated: 0 12px 40px -8px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
 
-  --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
-  --gradient-surface: linear-gradient(180deg, var(--bg-surface), #f3f4f6);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+  --gradient-surface: linear-gradient(180deg, var(--bg-surface), #F3F2EF);
 }
 
 @media (min-width: 769px) {
   body.light-theme {
-    --bg-dark: #f3f4f6;
-    --sidebar-bg: rgba(249, 250, 251, 0.95);
+    --bg-dark: #F3F2EF;
+    --sidebar-bg: #FAFAF9;
   }
 }
 
@@ -221,6 +221,100 @@ body.light-theme .mc-class-item:hover { background: #f1f5f9; border-color: rgba(
 body.light-theme .mc-prompt-input { background: #ffffff; border-color: rgba(0,0,0,0.1); }
 body.light-theme .mc-subject-card { background: #ffffff; border-color: rgba(0,0,0,0.1); color: #4b5563; }
 body.light-theme .mc-subject-card:hover { background: #f1f5f9; }
+
+/* --- Sarvam Landing Page Theme Dashboard Custom Overrides --- */
+body.light-theme .dashboard-header {
+  background: rgba(250, 250, 249, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .hb-ai {
+  color: #ff5500 !important; /* orange AI brand accent */
+}
+
+body.light-theme .header-tab.active::after {
+  background: #ff5500 !important; /* orange underline */
+}
+
+body.light-theme .share-pill-btn {
+  background: #1c2030 !important; /* navy capsule */
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(28, 32, 48, 0.1) !important;
+}
+
+body.light-theme .share-pill-btn:hover {
+  background: #2b3047 !important;
+  box-shadow: 0 4px 12px rgba(28, 32, 48, 0.2) !important;
+}
+
+body.light-theme .premium-input-box {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.01) !important;
+}
+
+body.light-theme .premium-input-box:focus-within {
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.06), 0 8px 30px -10px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-theme .w-premium-send-btn.has-input {
+  background: #ff5500 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(255, 85, 0, 0.2) !important;
+}
+
+body.light-theme .w-premium-send-btn.has-input:hover {
+  background: #ff6f20 !important;
+  box-shadow: 0 4px 14px rgba(255, 85, 0, 0.3) !important;
+}
+
+body.light-theme .sidebar-brand-logo {
+  color: #18181b;
+}
+
+body.light-theme .sidebar-brand-logo svg {
+  color: #ff5500 !important; /* orange pen nib */
+}
+
+body.light-theme .sb-nav {
+  background: rgba(28, 32, 48, 0.03) !important;
+}
+
+body.light-theme .sb-nav-item:hover {
+  background: rgba(28, 32, 48, 0.05) !important;
+  color: #18181b !important;
+}
+
+body.light-theme .sb-nav-item.active {
+  background: rgba(28, 32, 48, 0.06) !important;
+  color: #1c2030 !important;
+}
+
+body.light-theme .sb-nav-item.active i {
+  color: #ff5500 !important; /* active menu icon turns orange */
+  opacity: 1 !important;
+}
+
+body.light-theme .wc-side-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light-theme .wc-side-card:hover {
+  border-color: rgba(255, 85, 0, 0.18) !important;
+  box-shadow: 0 8px 24px -8px rgba(255, 85, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+}
+
+body.light-theme .wc-side-card.active {
+  border-color: #ff5500 !important;
+  box-shadow: 0 0 0 3px rgba(255, 85, 0, 0.08) !important;
+}
+
+body.light-theme .wc-search-status {
+  color: #ff5500 !important;
+}
 
 /* ═══════════════════════════════════════════════════
    BASE STYLES
