@@ -4,15 +4,26 @@ import './StaticPages.css';
 
 export default function AboutPage() {
   useEffect(() => {
-    document.title = 'About Eddala Naveen Kumar | AI & Full Stack Developer';
+    document.title = 'About | Mean AI — Eddala Naveen Kumar, Founder';
     const meta = document.querySelector('meta[name="description"]');
     const original = meta?.content;
     if (meta) {
-      meta.content = 'About Eddala Naveen Kumar — AI & Full Stack Developer, creator of Mean AI. Skills, projects, and professional background.';
+      meta.content = 'About Eddala Naveen Kumar — Founder of Mean AI, an AI-powered education platform. Vision, skills, and professional background.';
     }
+
+    // Force dark mode on the About page
+    const wasLight = document.body.classList.contains('light-theme');
+    if (wasLight) {
+      document.body.classList.remove('light-theme');
+    }
+
     return () => {
-      document.title = 'Eddala Naveen Kumar | AI & Full Stack Developer | Creator of Mean AI';
+      document.title = 'Mean AI — AI-Powered Education Platform';
       if (meta && original) meta.content = original;
+      // Restore light theme if it was active before
+      if (wasLight) {
+        document.body.classList.add('light-theme');
+      }
     };
   }, []);
 
@@ -40,20 +51,20 @@ export default function AboutPage() {
         <section className="sp-section" style={{ marginTop: '2rem' }}>
           <img 
             src="/eddala-naveen-kumar-ai-full-stack-developer.jpg" 
-            alt="Eddala Naveen Kumar - AI & Full Stack Developer" 
+            alt="Eddala Naveen Kumar - Founder of Mean AI" 
             width="200" 
             height="200" 
             style={{ borderRadius: '50%', objectFit: 'cover', marginBottom: '1.5rem' }} 
           />
           <h1 className="sp-title" style={{ marginBottom: '0.5rem' }}>Eddala Naveen Kumar</h1>
           <p style={{ fontSize: '1.25rem', color: 'var(--sp-text-secondary)', marginBottom: '2rem' }}>
-            AI & Full Stack Developer
+            Founder & CEO of Mean AI
           </p>
         </section>
 
         <section className="sp-section">
           <div className="sp-card" style={{ textAlign: 'left', marginBottom: '3rem' }}>
-            <p>I'm Eddala Naveen Kumar, an AI & Full Stack Developer passionate about building intelligent applications that make a real impact. I created Mean AI, an AI-powered education platform that helps students learn through interactive, AI-driven classroom experiences. My work spans across React, Node.js, Python, Machine Learning, and Generative AI, with a focus on creating tools that make technology accessible to everyone.</p>
+            <p>I'm Eddala Naveen Kumar, the Founder & CEO of Mean AI — an AI-powered education platform that helps students learn through interactive, AI-driven classroom experiences. My vision is to make quality education accessible to everyone through the power of artificial intelligence. Mean AI features real-time code execution, autonomous AI tutors, and intelligent classrooms that adapt to every learner.</p>
           </div>
         </section>
 

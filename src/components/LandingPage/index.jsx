@@ -132,7 +132,7 @@ export default function LandingPage({ onGetStarted }) {
             Built on high-fidelity visual execution. Powered by frontier-class classroom AI.<br />
             Delivering population-scale academic impact.
           </p>
-          <p className="hero-creator" style={{fontSize:'0.85rem',opacity:0.6,marginTop:'0.5rem'}}>Created by <strong>Eddala Naveen Kumar</strong></p>
+          <p className="hero-creator" style={{fontSize:'0.85rem',opacity:0.6,marginTop:'0.5rem'}}>Founded by <strong>Eddala Naveen Kumar</strong></p>
           <div className="hero-ctas">
             <button className="btn btn-navy" onClick={onGetStarted}>
               Sign up
@@ -319,7 +319,7 @@ export default function LandingPage({ onGetStarted }) {
           <div className="footer-brand">
             <div className="logo"><PenNibIcon /> mean ai</div>
             <p>AI for India starts here</p>
-            <p style={{fontSize:'0.75rem',opacity:0.5,marginTop:'0.5rem'}}>Created by Eddala Naveen Kumar</p>
+            <p style={{fontSize:'0.75rem',opacity:0.5,marginTop:'0.5rem'}}>Founded by Eddala Naveen Kumar</p>
             <div className="certifications">
               <div className="badge-cert">
                 <span className="cert-code">ISO:27001</span>
