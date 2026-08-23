@@ -132,6 +132,7 @@ export default function LandingPage({ onGetStarted }) {
             Built on high-fidelity visual execution. Powered by frontier-class classroom AI.<br />
             Delivering population-scale academic impact.
           </p>
+          <p className="hero-creator" style={{fontSize:'0.85rem',opacity:0.6,marginTop:'0.5rem'}}>Created by <strong>Eddala Naveen Kumar</strong></p>
           <div className="hero-ctas">
             <button className="btn btn-navy" onClick={onGetStarted}>
               Sign up
@@ -318,6 +319,7 @@ export default function LandingPage({ onGetStarted }) {
           <div className="footer-brand">
             <div className="logo"><PenNibIcon /> mean ai</div>
             <p>AI for India starts here</p>
+            <p style={{fontSize:'0.75rem',opacity:0.5,marginTop:'0.5rem'}}>Created by Eddala Naveen Kumar</p>
             <div className="certifications">
               <div className="badge-cert">
                 <span className="cert-code">ISO:27001</span>
@@ -353,21 +355,21 @@ export default function LandingPage({ onGetStarted }) {
           </div>
           <div className="footer-col">
             <h4>Company</h4>
-            <a href="#">About Us</a>
+            <a href="/about">About Us</a>
             <a href="#">Careers</a>
             <a href="#">Contact Us</a>
-            <a href="#">Blogs</a>
+            <a href="/blog">Blogs</a>
             <a href="#">Trust Center</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/privacy">Privacy Policy</a>
             <a href="#">EULA</a>
           </div>
           <div className="footer-col">
             <h4>Socials</h4>
-            <a href="#">LinkedIn</a>
+            <a href="https://www.linkedin.com/in/eddala-naveen-kumar/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
             <a href="#">X</a>
             <a href="#">YouTube</a>
-            <a href="#">GitHub</a>
+            <a href="https://github.com/eddalanaveenkumar-ui" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="#">Discord</a>
           </div>
         </div>

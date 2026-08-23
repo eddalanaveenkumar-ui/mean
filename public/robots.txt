@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://eddalanaveen.netlify.app/sitemap.xml
 Sitemap: https://meanai.site/sitemap.xml
