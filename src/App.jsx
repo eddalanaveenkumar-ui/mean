@@ -18,6 +18,7 @@ import PremiumPlans from './components/PremiumPlans';
 import FreebuffAgent from './components/FreebuffAgent';
 import ProtectedRoute from './components/ProtectedRoute';
 import VideoEditor from './components/VideoEditor';
+import DesktopAppModal from './components/DesktopAppModal';
 
 // Public static pages
 import AboutPage from './components/pages/AboutPage';
@@ -41,6 +42,7 @@ function DashboardLayout() {
   const [showMeanClassroom, setShowMeanClassroom] = useState(false);
   const [showFreebuffAgent, setShowFreebuffAgent] = useState(false);
   const [showOptics, setShowOptics] = useState(false);
+  const [showDesktopApp, setShowDesktopApp] = useState(false);
   // Holds topic+slides when expanding an InlineClassroom into the full canvas
   const [expandedClassroom, setExpandedClassroom] = useState(null);
 
@@ -159,6 +161,7 @@ function DashboardLayout() {
     onMeanClassroom: () => setShowMeanClassroom(true),
     onFreebuffAgent: () => setShowFreebuffAgent(true),
     onOptics: () => setShowOptics(true),
+    onDesktopApp: () => setShowDesktopApp(true),
   };
 
   return (
@@ -188,6 +191,7 @@ function DashboardLayout() {
       {showMeanClassroom && <MeanClassroom onClose={() => setShowMeanClassroom(false)} />}
       <FreebuffAgent isOpen={showFreebuffAgent} onClose={() => setShowFreebuffAgent(false)} />
       <VideoEditor isOpen={showOptics} onClose={() => setShowOptics(false)} />
+      <DesktopAppModal isOpen={showDesktopApp} onClose={() => setShowDesktopApp(false)} />
       <ApiKeyPromptModal />
     </div>
   );

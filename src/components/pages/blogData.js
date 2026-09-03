@@ -1,5 +1,14 @@
 const blogPosts = [
   {
+    id: 'mean-ai-desktop-app-interview-cracking',
+    title: 'Cracking Interviews with the New MeanAI Desktop App',
+    excerpt: 'The MeanAI Desktop App is your ultimate tool for interview preparation, featuring STT and top-tier LLMs.',
+    category: 'Product',
+    date: '2026-09-03',
+    readTime: '3 min',
+    content: `We are thrilled to announce the launch of the MeanAI Desktop App, specifically designed to help you crack your upcoming interviews with confidence.\n\n## What is the MeanAI Desktop App?\n\nInterviews can be stressful, but preparation doesn't have to be. The MeanAI Desktop App offers a seamless, focused environment for practicing interview questions through manual text input or voice via our advanced Speech-to-Text (STT) capabilities.\n\n## Powered by Top-Tier AI Models\n\nThanks to OpenRouter and our inbuilt model routing, the Desktop App gives you access to a curated selection of world-class LLMs to simulate real interview scenarios, grade your answers, and provide actionable feedback:\n\n- **poolside/laguna-s-2.1:free**\n- **nvidia/nemotron-3-ultra-550b-a55b:free**\n- **nvidia/nemotron-3.5-lightning:free**\n- **poolside/laguna-xs-2.1:free**\n- **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free**\n- **liquid/lfm-2.5-2.6b:free**\n\n## How to Get It\n\nYou can download the app directly from our sidebar by clicking on the **Desktop App** button. It's fully integrated into your MeanAI experience.\n\nGet ready to ace your next technical interview! Download the setup today and start practicing.`
+  },
+  {
     id: 'why-ai-is-future-of-education',
     title: 'Why AI Is the Future of Education',
     excerpt: 'Artificial intelligence is reshaping how students learn, offering personalized paths that traditional classrooms cannot match.',

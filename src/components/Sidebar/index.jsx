@@ -14,7 +14,7 @@ const PenNibIcon = () => (
   </svg>
 );
 
-export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom, onFreebuffAgent, onOptics }) {
+export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPremiumPlans, onMeanClassroom, onFreebuffAgent, onOptics, onDesktopApp }) {
   const {
     chats, currentChatId, sidebarOpen, setSidebarOpen,
     sidebarCollapsed, setSidebarCollapsed,
@@ -74,6 +74,14 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M23 7l-7 5 7 5V7z"/>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </button>
+        <div className="sc-divider" />
+        <button className="sc-icon" onClick={() => { onDesktopApp?.(); }} title="Desktop App" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
         </button>
         <div className="sc-divider" />
@@ -142,6 +150,17 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
             <i className="fas fa-video" />
             <span>AI Video Editor</span>
           </button>
+          
+          <div className="sb-nav-divider" style={{ margin: '10px 0', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>
+          <div className="chat-group-label" style={{ padding: '0 12px 8px' }}>Apps</div>
+          
+          <button className="sb-nav-item" onClick={() => { onDesktopApp?.(); setSidebarOpen(false); }}>
+            <i className="fas fa-desktop" />
+            <span>Desktop App</span>
+          </button>
+          
+          <div className="sb-nav-divider" style={{ margin: '10px 0', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>
+
           <button className="sb-nav-item" onClick={() => { setShowProfile(true); setSidebarOpen(false); }}>
             <i className="fas fa-gear" />
             <span>Settings</span>
