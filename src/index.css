@@ -27,11 +27,23 @@
 .sp-page::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
 
 /* ── Global Logo Theme Swapping ── */
-.global-logo-light { display: none; }
-.global-logo-dark { display: block; }
+.global-logo-light, .sp-logo-light, .apps-logo-light {
+  display: none !important;
+}
+.global-logo-dark, .sp-logo-dark, .apps-logo-dark {
+  display: inline-block !important;
+}
 
-body.light-theme .global-logo-light { display: block; }
-body.light-theme .global-logo-dark { display: none; }
+body.light-theme .global-logo-light,
+body.light-theme .sp-logo-light,
+body.light-theme .apps-logo-light {
+  display: inline-block !important;
+}
+body.light-theme .global-logo-dark,
+body.light-theme .sp-logo-dark,
+body.light-theme .apps-logo-dark {
+  display: none !important;
+}
 
 
 

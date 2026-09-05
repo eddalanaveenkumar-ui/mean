@@ -115,8 +115,8 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
         <header className="sidebar-header">
           <div className="sidebar-brand-wrapper">
             <div className="sidebar-brand-logo">
-              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
-              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo-light.png'; }} />
+              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
               <span>mean ai</span>
             </div>
             <span className="sb-brand-sub">Workspace</span>

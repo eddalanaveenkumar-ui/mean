@@ -107,8 +107,8 @@ export default function LandingPage({ onGetStarted }) {
       {/* ── NAV ── */}
       <nav className={`lp-nav${navScrolled ? ' scrolled' : ''}`}>
         <div className="logo">
-          <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
-          <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
+          <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo-light.png'; }} />
+          <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
           mean ai
         </div>
         <div className="nav-links">
@@ -320,8 +320,8 @@ export default function LandingPage({ onGetStarted }) {
         <div className="footer-grid">
           <div className="footer-brand">
             <div className="logo">
-              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
-              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo-light.png'; }} />
+              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
               mean ai
             </div>
             <p>AI for India starts here</p>

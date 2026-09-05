@@ -15,8 +15,8 @@ export default function AppsPage() {
     <div className="apps-page-container">
       <nav className="apps-nav">
         <Link to="/" className="apps-nav-brand">
-          <img src="/logo-2.png" alt="Mean AI" className="apps-logo-light" />
-          <img src="/logo-1.png" alt="Mean AI" className="apps-logo-dark" />
+          <img src="/logo-2.png" alt="Mean AI" className="apps-logo-light" onError={(e) => { e.currentTarget.src = '/logo-light.png'; }} />
+          <img src="/logo-1.png" alt="Mean AI" className="apps-logo-dark" onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
           <span>Mean AI</span>
         </Link>
         <div className="apps-nav-links">
