@@ -107,7 +107,8 @@ export default function LandingPage({ onGetStarted }) {
       {/* ── NAV ── */}
       <nav className={`lp-nav${navScrolled ? ' scrolled' : ''}`}>
         <div className="logo">
-          <PenNibIcon />
+          <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
+          <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
           mean ai
         </div>
         <div className="nav-links">
@@ -155,7 +156,7 @@ export default function LandingPage({ onGetStarted }) {
 
       {/* ── SOCIAL PROOF ── */}
       <section className="proof">
-        <span className="eyebrow-plain">INDIA BUILDS WITH MEAN AI</span>
+        <span className="eyebrow-plain">INDIA BUILDS WITH MEAN A</span>
         <div className="logos">
           <span>CRED</span>
           <span>CredResolve</span>
@@ -318,7 +319,11 @@ export default function LandingPage({ onGetStarted }) {
         
         <div className="footer-grid">
           <div className="footer-brand">
-            <div className="logo"><PenNibIcon /> mean ai</div>
+            <div className="logo">
+              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              mean ai
+            </div>
             <p>AI for India starts here</p>
             <p style={{fontSize:'0.75rem',opacity:0.5,marginTop:'0.5rem'}}>Founded by Eddala Naveen Kumar</p>
             <div className="certifications">

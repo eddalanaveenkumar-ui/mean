@@ -26,6 +26,15 @@
 .sp-page::-webkit-scrollbar-track { background: transparent; }
 .sp-page::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 10px; }
 
+/* ── Global Logo Theme Swapping ── */
+.global-logo-light { display: none; }
+.global-logo-dark { display: block; }
+
+body.light-theme .global-logo-light { display: block; }
+body.light-theme .global-logo-dark { display: none; }
+
+
+
 /* ═══════════════════════════════════════════════════
    DESIGN TOKENS
    ═══════════════════════════════════════════════════ */

@@ -109,12 +109,12 @@ const blogPosts = [
   },
   {
     id: 'how-we-built-mean-ai-classroom',
-    title: 'How We Built Mean AI\'s Interactive Classroom',
-    excerpt: 'An inside look at the architecture behind Mean AI\'s canvas-based classroom with real-time AI teaching.',
+    title: "How We Built Mean AI\'s Interactive Classroom",
+    excerpt: "An inside look at the architecture behind Mean AI\'s canvas-based classroom with real-time AI teaching.",
     category: 'Product',
     date: '2026-03-20',
     readTime: '6 min',
-    content: `Mean AI's classroom is built on a custom canvas-based rendering engine that seamlessly combines AI generation with interactive visualization.\n\n## The Architecture\n\n### Frontend\nThe classroom UI is a React component that manages the overlay state, prompt input, and communication with the roadmap canvas.\n\n### The Canvas Engine\nInside the classroom sits an iframe running a custom HTML5 Canvas application. This canvas renders nodes, edges, and interactive blocks that represent the AI-generated lesson plan.\n\n### AI Pipeline\nWhen you enter a topic, Mean AI streams the lesson structure from a Gemini or OpenRouter model. The structured JSON is parsed in real-time and injected into the canvas as visual blocks.\n\n### Cross-Frame Communication\nThe React app and canvas iframe communicate via the postMessage API — a secure, origin-validated protocol that syncs theme changes, lesson data, and user interactions between the two isolated contexts.\n\n## The Result\n\nA classroom that feels alive — blocks animate in, themes switch dynamically, and the entire experience feels like a premium desktop application rather than a web page.`
+    content: `Mean AI\'s classroom is built on a custom canvas-based rendering engine that seamlessly combines AI generation with interactive visualization.\n\n## The Architecture\n\n### Frontend\nThe classroom UI is a React component that manages the overlay state, prompt input, and communication with the roadmap canvas.\n\n### The Canvas Engine\nInside the classroom sits an iframe running a custom HTML5 Canvas application. This canvas renders nodes, edges, and interactive blocks that represent the AI-generated lesson plan.\n\n### AI Pipeline\nWhen you enter a topic, Mean AI\ streams the lesson structure from a Gemini or OpenRouter model. The structured JSON is parsed in real-time and injected into the canvas as visual blocks.\n\n### Cross-Frame Communication\nThe React app and canvas iframe communicate via the postMessage API — a secure, origin-validated protocol that syncs theme changes, lesson data, and user interactions between the two isolated contexts.\n\n## The Result\n\nA classroom that feels alive — blocks animate in, themes switch dynamically, and the entire experience feels like a premium desktop application rather than a web page.`
   },
   {
     id: 'git-commands-every-developer-should-know',

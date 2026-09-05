@@ -193,7 +193,7 @@ export default function WelcomeScreen({ onVoice, onPpt, onTeacher, onMusic }) {
         <div className="premium-input-box">
           <textarea
             className="w-textarea-input"
-            placeholder={isExtracting ? extractStatus || "Extracting file..." : "Ask Mean AI anything..."}
+            placeholder={isExtracting ? extractStatus || "Extracting file..." : "Ask Mean AI\ anything..."}
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}

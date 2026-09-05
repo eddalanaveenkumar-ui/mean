@@ -73,6 +73,21 @@
   border-radius: 8px;
 }
 
+/* Logo Theme Swapping */
+.sp-logo-light {
+  display: none;
+}
+.sp-logo-dark {
+  display: block;
+}
+
+body.light-theme .sp-logo-light {
+  display: block;
+}
+body.light-theme .sp-logo-dark {
+  display: none;
+}
+
 .sp-accent {
   background: linear-gradient(135deg, #6366f1, #3b82f6);
   -webkit-background-clip: text;

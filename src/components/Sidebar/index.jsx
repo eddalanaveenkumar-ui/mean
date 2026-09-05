@@ -77,7 +77,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           </svg>
         </button>
         <div className="sc-divider" />
-        <button className="sc-icon" onClick={() => { onDesktopApp?.(); }} title="Desktop App" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button className="sc-icon" onClick={() => { window.location.href = '/apps'; }} title="Apps" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
@@ -115,8 +115,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
         <header className="sidebar-header">
           <div className="sidebar-brand-wrapper">
             <div className="sidebar-brand-logo">
-              <PenNibIcon />
-              <span>mean ai</span>
+              <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
+              <span>mean a</span>
             </div>
             <span className="sb-brand-sub">Workspace</span>
           </div>
@@ -154,9 +155,9 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
           <div className="sb-nav-divider" style={{ margin: '10px 0', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>
           <div className="chat-group-label" style={{ padding: '0 12px 8px' }}>Apps</div>
           
-          <button className="sb-nav-item" onClick={() => { onDesktopApp?.(); setSidebarOpen(false); }}>
+          <button className="sb-nav-item" onClick={() => { window.location.href = '/apps'; }}>
             <i className="fas fa-desktop" />
-            <span>Desktop App</span>
+            <span>Apps</span>
           </button>
           
           <div className="sb-nav-divider" style={{ margin: '10px 0', borderTop: '1px solid var(--border)', opacity: 0.5 }}></div>

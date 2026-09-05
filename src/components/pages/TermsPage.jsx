@@ -12,8 +12,9 @@ export default function TermsPage() {
 
       <nav className="sp-nav">
         <Link to="/" className="sp-nav-brand">
-          <img src="/logo.png" alt="Mean AI" className="sp-nav-logo" />
-          <span>Mean <span className="sp-accent">AI</span></span>
+          <img src="/logo-2.png" alt="Mean AI" className="sp-nav-logo sp-logo-light" />
+          <img src="/logo-1.png" alt="Mean AI" className="sp-nav-logo sp-logo-dark" />
+          <span>Mean <span className="sp-accent">A\</span></span>
         </Link>
         <div className="sp-nav-links">
           <Link to="/blog" className="sp-nav-link">Blog</Link>
