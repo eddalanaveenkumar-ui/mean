@@ -117,7 +117,7 @@ export default function Sidebar({ onTeacher, onPpt, onMusic, onTokenBank, onPrem
             <div className="sidebar-brand-logo">
               <img src="/logo-2.png" alt="Mean AI" className="global-logo-light" style={{ width: 24, height: 24, borderRadius: 6 }} />
               <img src="/logo-1.png" alt="Mean AI" className="global-logo-dark" style={{ width: 24, height: 24, borderRadius: 6 }} />
-              <span>mean a</span>
+              <span>mean ai</span>
             </div>
             <span className="sb-brand-sub">Workspace</span>
           </div>

@@ -156,7 +156,7 @@ export default function LandingPage({ onGetStarted }) {
 
       {/* ── SOCIAL PROOF ── */}
       <section className="proof">
-        <span className="eyebrow-plain">INDIA BUILDS WITH MEAN A</span>
+        <span className="eyebrow-plain">INDIA BUILDS WITH MEAN AI</span>
         <div className="logos">
           <span>CRED</span>
           <span>CredResolve</span>
