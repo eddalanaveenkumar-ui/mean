@@ -26,6 +26,7 @@ import PrivacyPage from './components/pages/PrivacyPage';
 import TermsPage from './components/pages/TermsPage';
 import BlogPage from './components/pages/BlogPage';
 import BlogPostPage from './components/pages/BlogPostPage';
+import AppsPage from './components/pages/AppsPage';
 
 import './App.css';
 
@@ -217,6 +218,7 @@ export default function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/apps" element={<AppsPage />} />
 
       {/* Protected profile route */}
       <Route path="/profile" element={

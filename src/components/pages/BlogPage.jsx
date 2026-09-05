@@ -109,6 +109,7 @@ export default function BlogPage() {
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms & Conditions</Link>
           <Link to="/blog">Blog</Link>
+          <Link to="/apps">Apps</Link>
         </div>
         <p>© {new Date().getFullYear()} Mean AI. All rights reserved.</p>
       </footer>

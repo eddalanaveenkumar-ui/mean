@@ -112,6 +112,7 @@ export default function LandingPage({ onGetStarted }) {
         </div>
         <div className="nav-links">
           <a href="#">Platform</a>
+          <a href="/apps">Apps</a>
           <a href="#">Developers</a>
           <a href="#">Resources</a>
           <a href="#">Company</a>
@@ -337,6 +338,7 @@ export default function LandingPage({ onGetStarted }) {
             <a href="#">Mean Arya</a>
             <a href="#">Mean Indus</a>
             <a href="#">Mean Edge</a>
+            <a href="/apps">Desktop Apps</a>
           </div>
           <div className="footer-col">
             <h4>APIs</h4>
