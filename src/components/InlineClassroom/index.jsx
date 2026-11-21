@@ -7,6 +7,7 @@ import {
   nvidiaChatUrl,
   nvidiaHeaders,
   buildNvidiaPayload,
+  nvidiaFetch,
 } from '../../utils/nvidiaNim';
 import './InlineClassroom.css';
 
@@ -364,7 +365,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         };
       }
 
-      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal: abortRef.current.signal });
+      const resp = await (activeEngine === 'nvidia' ? nvidiaFetch : fetch)(url, { method: 'POST', headers, body: JSON.stringify(payload), signal: abortRef.current.signal });
 
       if (!resp.ok) {
         throw new Error(`API Error (${resp.status})`);

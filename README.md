@@ -37,12 +37,26 @@ If you are developing a production application, we recommend using TypeScript wi
 NIM (`integrate.api.nvidia.com`) does not send CORS headers, so the browser
 cannot call it directly. Requests therefore go through a same-origin relay:
 
-- **Dev** — Vite proxies `/nvidia-api/*` → `https://integrate.api.nvidia.com/v1/*`
-  (see `vite.config.js`); nothing to configure.
-- **Production** — deploy the included edge function `api/nvidia.js` on Vercel
-  and set `VITE_NVIDIA_PROXY_URL=https://<your-app>.vercel.app/api/nvidia`.
-  The function only forwards to NVIDIA and adds CORS headers; the `nvapi-` key
-  travels in the `Authorization` header and is never stored server-side.
+| Environment | Relay used |
+| --- | --- |
+| `vite dev` / `vite preview` | `/nvidia-api` → `https://integrate.api.nvidia.com/v1/*` (built into `vite.config.js`, no setup) |
+| Production / Vercel | `VITE_NVIDIA_PROXY_URL` if set, otherwise `/api/nvidia` (the bundled edge function `api/nvidia.js`) |
+
+So a Vercel deploy works out of the box: `api/nvidia.js` is served at
+`/api/nvidia` and the app calls it by default. To use a relay on another
+domain, set `VITE_NVIDIA_PROXY_URL=https://…/api/nvidia` at build time.
+
+The relay only forwards to NVIDIA and adds CORS headers; the `nvapi-` key
+travels in the `Authorization` header and is never stored server-side.
+
+### Troubleshooting
+
+| Symptom | Cause / fix |
+| --- | --- |
+| `NVIDIA NIM relay not found at /nvidia-api/...` | Running a production build without a relay. Deploy `api/nvidia.js` (or set `VITE_NVIDIA_PROXY_URL`) and redeploy. |
+| `NVIDIA NIM model not found (404): "…"` | That id is retired/renamed. Settings → NVIDIA NIM → **Save & Test Key** loads the live model list; choose the id there. |
+| `NVIDIA NIM rejected the API key (401)` | Paste a fresh `nvapi-…` key from build.nvidia.com. |
+| Switched to a vision model automatically | Images are only sent to omni models; text models would reject them with a 400. |
 
 Android builds are served from the app bundle, where the dev proxy does not
 exist — set `VITE_NVIDIA_PROXY_URL` before `npx cap sync android`.

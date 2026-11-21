@@ -6,6 +6,7 @@ import {
   nvidiaChatUrl,
   nvidiaHeaders,
   buildNvidiaPayload,
+  nvidiaFetch,
 } from '../../utils/nvidiaNim';
 import './FreebuffAgent.css';
 
@@ -91,7 +92,7 @@ Example:
 
       setLogs(prev => [...prev, { type: 'agent', text: '' }]);
 
-      const resp = await fetch(url, { method: 'POST', headers, body });
+      const resp = await (nvKey ? nvidiaFetch : fetch)(url, { method: 'POST', headers, body });
       if (!resp.ok) throw new Error(`API error ${resp.status}`);
 
       const reader = resp.body.getReader();

@@ -9,6 +9,7 @@ import {
   nvidiaChatUrl,
   nvidiaHeaders,
   buildNvidiaPayload,
+  nvidiaFetch,
 } from '../../utils/nvidiaNim';
 import './MeanClassroom.css';
 
@@ -39,7 +40,7 @@ function resolveKey(appKey) {
 async function fetchAI(messages, appKey, maxTokens = 3000) {
   const { or: orKey, g: gKey, oa: oaKey, nv: nvKey } = resolveKey(appKey);
   if (nvKey) {
-    const r = await fetch(nvidiaChatUrl(), {
+    const r = await nvidiaFetch(nvidiaChatUrl(), {
       method: 'POST',
       headers: nvidiaHeaders(nvKey, { Accept: 'application/json' }),
       body: JSON.stringify(buildNvidiaPayload({
@@ -89,7 +90,7 @@ async function streamAI(messages, onChunk, appKey, maxTokens = 3000) {
   let full = '';
 
   if (nvKey) {
-    const r = await fetch(nvidiaChatUrl(), {
+    const r = await nvidiaFetch(nvidiaChatUrl(), {
       method: 'POST',
       headers: nvidiaHeaders(nvKey),
       body: JSON.stringify(buildNvidiaPayload({
