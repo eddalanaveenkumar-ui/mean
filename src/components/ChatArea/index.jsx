@@ -175,9 +175,14 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
                     NVIDIA NIM <i className="fas fa-microchip" style={{ fontSize: 10 }} />
                   </div>
                   {FREE_MODELS.filter(m => m.provider === 'nvidia').map(m => (
-                    <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                    <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)} title={m.description || m.id}>
                       <span className="mpd-icon">{m.icon}</span>
-                      <span className="mpd-name">{m.name}</span>
+                      <span className="mpd-name">
+                        {m.name}
+                        {m.capabilities?.image && (
+                          <i className="fas fa-image" title="Accepts images" style={{ fontSize: 9, marginLeft: 5, color: '#76b900' }} />
+                        )}
+                      </span>
                       <span className="mpd-badge" style={{ color: '#76b900' }}>NIM</span>
                       {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
                     </button>
