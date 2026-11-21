@@ -1,11 +1,36 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import {
+  NVIDIA_KEY_PREFIX,
+  resolveNvidiaKey,
+  saveNvidiaLocalKey,
+  nvidiaListModels,
+} from '../../utils/nvidiaNim';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
   const { user, apiKey, setApiKey, logout, setShowProfile, login, theme, setTheme } = useApp();
   const [editApiKey, setEditApiKey] = useState(apiKey);
   const [mcpConnected, setMcpConnected] = useState(false);
+
+  // NVIDIA NIM key (stored locally, never sent to the Mean backend)
+  const [nvidiaKey, setNvidiaKey] = useState(() => resolveNvidiaKey(apiKey));
+  const [nvidiaTest, setNvidiaTest] = useState({ status: 'idle', msg: '' });
+
+  const handleNvidiaTest = async () => {
+    if (!nvidiaKey.trim()) {
+      setNvidiaTest({ status: 'error', msg: 'Paste an nvapi- key first.' });
+      return;
+    }
+    saveNvidiaLocalKey(nvidiaKey);
+    setNvidiaTest({ status: 'loading', msg: 'Contacting integrate.api.nvidia.com…' });
+    try {
+      const models = await nvidiaListModels(nvidiaKey);
+      setNvidiaTest({ status: 'ok', msg: `Key works — ${models.length} NIM models available.` });
+    } catch (e) {
+      setNvidiaTest({ status: 'error', msg: e.message || 'Could not verify the key.' });
+    }
+  };
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const mcpPath = isLocal 
@@ -47,6 +72,7 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
+    saveNvidiaLocalKey(nvidiaKey);
     if (editApiKey.trim() && editApiKey !== apiKey) {
       const updated = { ...user, apiKey: editApiKey.trim() };
       login(updated);
@@ -127,6 +153,66 @@ export default function ProfilePage() {
               </div>
             </div>
             <p className="ios-section-footer">Your OpenAI (ChatGPT), OpenRouter, or Google Gemini API key used for text generation.</p>
+          </div>
+
+          {/* NVIDIA NIM Section */}
+          <div className="ios-section">
+            <h4 className="ios-section-title">NVIDIA NIM</h4>
+            <div className="ios-group">
+              <div className="ios-row field-row">
+                <label>NIM API Key</label>
+                <input
+                  type="password"
+                  value={nvidiaKey}
+                  onChange={e => {
+                    setNvidiaKey(e.target.value);
+                    setNvidiaTest({ status: 'idle', msg: '' });
+                  }}
+                  onBlur={() => saveNvidiaLocalKey(nvidiaKey)}
+                  placeholder={`${NVIDIA_KEY_PREFIX}...`}
+                  className="ios-input"
+                />
+              </div>
+              <div className="ios-row" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleNvidiaTest}
+                  disabled={nvidiaTest.status === 'loading'}
+                  style={{
+                    background: '#76b900', color: '#0b0f08', border: 'none',
+                    padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
+                    fontWeight: 700, fontSize: '0.85rem', opacity: nvidiaTest.status === 'loading' ? 0.6 : 1,
+                  }}
+                >
+                  {nvidiaTest.status === 'loading' ? 'Testing…' : 'Save & Test Key'}
+                </button>
+                <a
+                  href="https://build.nvidia.com/models"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: '0.85rem', color: '#76b900', fontWeight: 600, alignSelf: 'center' }}
+                >
+                  Get a free nvapi- key ↗
+                </a>
+              </div>
+              {nvidiaTest.msg && (
+                <div className="ios-row" style={{ paddingTop: 0 }}>
+                  <p
+                    style={{
+                      margin: 0, fontSize: '0.82rem', lineHeight: 1.4,
+                      color: nvidiaTest.status === 'ok' ? '#1f9d55' : nvidiaTest.status === 'error' ? '#c0392b' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {nvidiaTest.msg}
+                  </p>
+                </div>
+              )}
+            </div>
+            <p className="ios-section-footer">
+              NVIDIA NIM (build.nvidia.com) models stream through an OpenAI-compatible endpoint. NIM blocks direct
+              browser calls, so requests are routed via <code>/nvidia-api</code> (dev proxy) or{' '}
+              <code>VITE_NVIDIA_PROXY_URL</code> (production). Pick a NIM model from the chat model picker to use it.
+            </p>
           </div>
 
           {/* MeanAI CLI API Keys Section */}

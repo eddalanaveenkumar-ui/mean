@@ -164,10 +164,21 @@ export default function ChatArea({ onVoice, onPpt, onTeacher, onMusic }) {
               {showModelPicker && (
                 <div className="model-picker-dropdown">
                   <div className="mpd-group-label">Free Models</div>
-                  {FREE_MODELS.map(m => (
+                  {FREE_MODELS.filter(m => m.provider !== 'nvidia').map(m => (
                     <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
                       <span className="mpd-icon">{m.icon}</span>
                       <span className="mpd-name">{m.name}</span>
+                      {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
+                    </button>
+                  ))}
+                  <div className="mpd-group-label" style={{ color: '#76b900' }}>
+                    NVIDIA NIM <i className="fas fa-microchip" style={{ fontSize: 10 }} />
+                  </div>
+                  {FREE_MODELS.filter(m => m.provider === 'nvidia').map(m => (
+                    <button key={m.id} className={`mpd-item ${selectedModel.id === m.id ? 'active' : ''}`} onClick={() => handleModelSelect(m)}>
+                      <span className="mpd-icon">{m.icon}</span>
+                      <span className="mpd-name">{m.name}</span>
+                      <span className="mpd-badge" style={{ color: '#76b900' }}>NIM</span>
                       {selectedModel.id === m.id && <i className="fas fa-check mpd-check" />}
                     </button>
                   ))}

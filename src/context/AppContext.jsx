@@ -1,10 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import {
+  NVIDIA_MODELS,
+  DEFAULT_NVIDIA_MODEL,
+  nvidiaChatUrl,
+  nvidiaHeaders,
+  buildNvidiaPayload,
+  humanizeNvidiaError,
+  resolveNvidiaKey,
+} from '../utils/nvidiaNim';
 
 const AppContext = createContext(null);
 
+// NVIDIA NIM models are always free to try with an nvapi- key, so they sit
+// alongside the other free options in the picker.
 const FREE_MODELS = [
   { id: 'gemini', name: 'Gemini Flash', provider: 'google', icon: '✦' },
   { id: 'openrouter/free', name: 'Free (Auto)', provider: 'openrouter', icon: '△' },
+  ...NVIDIA_MODELS,
   { id: 'deepseek/deepseek-r1-0528:free', name: 'DeepSeek R1', provider: 'openrouter', icon: '◈' },
   { id: 'qwen/qwen3-235b-a22b:free', name: 'Qwen 3 235B', provider: 'openrouter', icon: '◉' },
   { id: 'meta-llama/llama-4-maverick:free', name: 'Llama 4 Maverick', provider: 'openrouter', icon: '🦙' },
@@ -265,7 +277,10 @@ export function AppProvider({ children }) {
   }, []);
 
   const checkApiKey = useCallback(() => {
-    if (!apiKey || !apiKey.trim()) {
+    // NVIDIA NIM keys live in Settings (localStorage) so they're valid even
+    // when no OpenRouter/OpenAI key is linked to the account.
+    const nvidiaKey = resolveNvidiaKey(apiKey);
+    if ((!apiKey || !apiKey.trim()) && !nvidiaKey) {
       setShowApiKeyPrompt(true);
       return false;
     }
@@ -365,9 +380,25 @@ export function AppProvider({ children }) {
     try {
       const cleanedKey = apiKey ? apiKey.trim() : '';
       const isGeminiKey = cleanedKey.includes('AIza');
-      
+      const nvKey = selectedModel?.provider === 'nvidia' ? resolveNvidiaKey(cleanedKey) : '';
+
       let title = '';
-      if (isGeminiKey) {
+      if (nvKey) {
+          const resp = await fetch(nvidiaChatUrl(), {
+            method: 'POST',
+            headers: nvidiaHeaders(nvKey, { Accept: 'application/json' }),
+            body: JSON.stringify(buildNvidiaPayload({
+              model: selectedModel.id || DEFAULT_NVIDIA_MODEL,
+              messages: [{ role: 'user', content: userMessage.slice(0, 300) }],
+              systemPrompt: 'Generate a SHORT chat title (max 5 words). Return ONLY the title — no quotes, no punctuation.',
+              stream: false,
+              maxTokens: 24,
+            })),
+          });
+          if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+          const data = await resp.json();
+          title = data.choices?.[0]?.message?.content?.trim() || '';
+      } else if (isGeminiKey) {
           const g_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
           const g_resp = await fetch(g_url, {
              method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -419,7 +450,7 @@ export function AppProvider({ children }) {
         return updated;
       });
     }
-  }, [apiKey, persistChats]);
+  }, [apiKey, persistChats, selectedModel]);
 
   // Stream AI response
   const sendMessage = useCallback(async (text, fileContent = null, fileName = null, imageUrl = null) => {
@@ -532,8 +563,23 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     
     let url, headers, body;
 
+    const useNvidia = selectedModel.provider === 'nvidia';
     const useGeminiDirect = selectedModel.id === 'gemini' && isGeminiKey;
-    if (useGeminiDirect) {
+    if (useNvidia) {
+        // ── NVIDIA NIM (OpenAI-compatible, proxied to avoid browser CORS) ──
+        const nvKey = resolveNvidiaKey(cleanedKey);
+        if (!nvKey) throw new Error('Add your NVIDIA NIM API key (nvapi-…) in Settings → API Configuration to use NIM models.');
+        url = nvidiaChatUrl();
+        headers = nvidiaHeaders(nvKey);
+        body = JSON.stringify(buildNvidiaPayload({
+          model: selectedModel.id || DEFAULT_NVIDIA_MODEL,
+          messages: allMsgs,
+          systemPrompt,
+          userContent: finalUserContent,
+          imageDataUrl: isBase64Image ? fileContent : null,
+          stream: true,
+        }));
+    } else if (useGeminiDirect) {
        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
        headers = { 'Content-Type': 'application/json' };
        let contents = [];
@@ -610,6 +656,9 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
       });
 
       if (!resp.ok) {
+        if (useNvidia) {
+          throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+        }
         if (resp.status === 429) {
           throw new Error('Rate Limit Exceeded (429). You are sending too many requests too quickly (or using a free tier API key). Please wait a few moments.');
         } else if (resp.status === 401 || resp.status === 403) {
@@ -781,6 +830,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
     persistChats, setChats, setApiKey,
     adTokens, adTokensLastUpdated, premiumTokens, addAdToken, resetAdTokens,
     selectedModel, setSelectedModel, FREE_MODELS, PAID_MODELS,
+    NVIDIA_MODELS, DEFAULT_NVIDIA_MODEL,
     // Code Canvas
     canvasOpen, canvasCode, canvasLang, canvasTitle,
     canvasVersions, canvasVersionIdx,
