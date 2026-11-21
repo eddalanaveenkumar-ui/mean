@@ -40,10 +40,26 @@ export default async function handler(req) {
   }
 
   const url = new URL(req.url);
-  // /api/nvidia/chat/completions → /chat/completions  (base already ends in /v1)
-  const upstreamPath = url.pathname
+
+  // Accept every shape the client (or a user in Settings) may produce:
+  //   /api/nvidia?action=models            → /models        (single-function route)
+  //   /api/nvidia/chat/completions         → /chat/completions
+  //   /api/nvidia/v1/chat/completions      → /chat/completions
+  //   /nvidia-api/chat/completions         → /chat/completions
+  //   <proxy URL that already ends in the endpoint, e.g. …/api/nvidia/chat/completions>
+  const action = url.searchParams.get('action');
+  url.searchParams.delete('action');
+
+  let upstreamPath = url.pathname
     .replace(/^\/api\/nvidia/, '')
     .replace(/^\/nvidia-api/, '');
+
+  if (action === 'models') upstreamPath = '/models';
+  if (action === 'chat' && (!upstreamPath || upstreamPath === '/')) upstreamPath = '/chat/completions';
+  if (!upstreamPath || upstreamPath === '/') upstreamPath = '/models';
+
+  // Tolerate a proxy base that already includes /v1
+  upstreamPath = upstreamPath.replace(/^\/v1(?=\/)/, '');
 
   if (!upstreamPath.startsWith('/')) {
     return json(400, { error: 'Bad proxy path' }, origin);

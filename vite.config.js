@@ -24,7 +24,14 @@ export default defineConfig({
   },
   preview: {
     allowedHosts: ['.e2b.app', '.vercel.app', 'localhost'],
+    // `vite preview` has no Vercel functions, so map the production relay path
+    // back to the /nvidia-api target to keep the deployed URL shape testable.
     proxy: {
+      '/api/nvidia': {
+        target: NVIDIA_TARGET,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/nvidia(\?action=(chat|models))?$/, (_m, _q, action) => (action === 'chat' ? '/chat/completions' : '/models')),
+      },
       '/nvidia-api': {
         target: NVIDIA_TARGET,
         changeOrigin: true,

@@ -9,6 +9,9 @@ import {
   nvidiaListModels,
   hasNvidiaRelay,
   getNvidiaProxyUrl,
+  nvidiaChatUrl,
+  nvidiaModelsUrl,
+  nvidiaDiagnostics,
 } from '../../utils/nvidiaNim';
 import './ProfilePage.css';
 
@@ -21,6 +24,8 @@ export default function ProfilePage() {
   const [nvidiaKey, setNvidiaKey] = useState(() => resolveNvidiaKey(apiKey));
   const [nvidiaTest, setNvidiaTest] = useState({ status: 'idle', msg: '' });
   const [nvidiaModelIds, setNvidiaModelIds] = useState([]);
+  const [nvidiaDiag, setNvidiaDiag] = useState(null);
+  const [nvidiaDiagRunning, setNvidiaDiagRunning] = useState(false);
   const [nvidiaFilter, setNvidiaFilter] = useState('');
   const [nvidiaChatModel, setNvidiaChatModel] = useState(
     () => localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
@@ -33,6 +38,19 @@ export default function ProfilePage() {
 
   const nvidiaRelayLabel = getNvidiaProxyUrl();
   const nvidiaRelayMissing = !hasNvidiaRelay();
+
+  const handleNvidiaDiagnostics = async () => {
+    setNvidiaDiagRunning(true);
+    setNvidiaDiag(null);
+    try {
+      saveNvidiaLocalKey(nvidiaKey);
+      setNvidiaDiag(await nvidiaDiagnostics(nvidiaKey));
+    } catch (e) {
+      setNvidiaDiag({ ok: false, steps: [{ name: 'Diagnostics', ok: false, detail: e.message }] });
+    } finally {
+      setNvidiaDiagRunning(false);
+    }
+  };
 
   const handleNvidiaTest = async () => {
     if (!nvidiaKey.trim()) {
@@ -214,6 +232,39 @@ export default function ProfilePage() {
                   Get a free nvapi- key ↗
                 </a>
               </div>
+              <div className="ios-row" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleNvidiaDiagnostics}
+                  disabled={nvidiaDiagRunning}
+                  style={{
+                    background: 'var(--hover-bg)', color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)', padding: '8px 16px',
+                    borderRadius: '8px', cursor: 'pointer', fontWeight: 600,
+                    fontSize: '0.85rem', opacity: nvidiaDiagRunning ? 0.6 : 1,
+                  }}
+                >
+                  {nvidiaDiagRunning ? 'Running…' : 'Run diagnostics'}
+                </button>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>
+                  relay → key → test completion
+                </span>
+              </div>
+
+              {nvidiaDiag && (
+                <div className="ios-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '6px', paddingTop: 4 }}>
+                  {nvidiaDiag.steps.map((st, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                      <span style={{ color: st.ok ? '#1f9d55' : '#c0392b', fontWeight: 700 }}>{st.ok ? '✓' : '✗'}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 600, minWidth: '128px' }}>{st.name}</span>
+                      <span style={{ color: 'var(--text-secondary)', flex: 1, wordBreak: 'break-word' }}>{st.detail}</span>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Endpoints: <code>{nvidiaModelsUrl()}</code> · <code>{nvidiaChatUrl()}</code>
+                  </div>
+                </div>
+              )}
               {nvidiaTest.msg && (
                 <div className="ios-row" style={{ paddingTop: 0 }}>
                   <p

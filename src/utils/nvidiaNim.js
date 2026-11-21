@@ -193,9 +193,29 @@ export function getNvidiaProxyUrl() {
     configured = (import.meta.env?.VITE_NVIDIA_PROXY_URL || '').trim();
   } catch { /* ignore */ }
 
-  let base = configured;
-  if (!base) base = isDevServer ? '/nvidia-api' : '/api/nvidia';
-  return base.replace(/\/+$/, '');
+  const base = configured || (isDevServer ? '/nvidia-api' : '/api/nvidia');
+  return normalizeProxyBase(base);
+}
+
+/**
+ * Accept whatever was pasted as the relay URL: drop a trailing endpoint
+ * (…/api/nvidia/chat/completions) or a trailing /v1 so paths append once.
+ */
+function normalizeProxyBase(base) {
+  return String(base || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/(chat\/completions|models)$/, '')
+    .replace(/\/v1$/, '');
+}
+
+/**
+ * Single-function relays (e.g. Vercel's api/nvidia.js when no catch-all rewrite
+ * exists) only answer the exact path `/api/nvidia`. Those builds use query
+ * params instead of sub-paths: `?action=models` and `?action=chat`.
+ */
+function usesQueryRoutes(base) {
+  return /\/api\/nvidia$/.test(base);
 }
 
 /** True when a relay is explicitly configured or shipped with the build. */
@@ -212,14 +232,16 @@ export function hasNvidiaRelay() {
  * custom proxy and the NIM path is appended (unless it already ends with it).
  */
 export function nvidiaChatUrl(customBase) {
-  const base = (customBase || getNvidiaProxyUrl()).replace(/\/+$/, '');
+  const base = customBase ? normalizeProxyBase(customBase) : getNvidiaProxyUrl();
   if (base.endsWith('/chat/completions')) return base;
+  if (usesQueryRoutes(base)) return `${base}${base.includes('?') ? '&' : '?'}action=chat`;
   return `${base}/chat/completions`;
 }
 
 export function nvidiaModelsUrl(customBase) {
-  const base = (customBase || getNvidiaProxyUrl()).replace(/\/+$/, '');
+  const base = customBase ? normalizeProxyBase(customBase) : getNvidiaProxyUrl();
   if (base.endsWith('/models')) return base;
+  if (usesQueryRoutes(base)) return `${base}${base.includes('?') ? '&' : '?'}action=models`;
   return `${base}/models`;
 }
 
@@ -229,12 +251,44 @@ function looksLikeHtml(text) {
   return head.includes('<!doctype html') || head.includes('<html');
 }
 
-function relayMissingError(url) {
+/**
+ * Generic "no such route" pages served by hosts when the relay isn't there:
+ * Vercel's plain-text "The page could not be found", Netlify's NOT_FOUND,
+ * nginx 404s, etc. They must not be mistaken for a NIM error.
+ */
+function looksLikeMissingRoute(text) {
+  const t = (text || '').slice(0, 400).toLowerCase();
+  if (!t.trim()) return true;
+  return (
+    looksLikeHtml(t) ||
+    t.includes('the page could not be found') ||
+    t.includes('not_found') ||
+    t.includes('page not found') ||
+    t.includes('404 not found') ||
+    t.includes('cannot get ') ||
+    (t.includes('not found') && t.length < 120)
+  );
+}
+
+function relayMissingError(url, status) {
+  const target = url || getNvidiaProxyUrl();
   return new Error(
-    `NVIDIA NIM relay not found at ${url || getNvidiaProxyUrl()} (got the app's 404 page). ` +
-    'The NIM proxy only exists while running `vite dev`; a deployed build needs ' +
-    'VITE_NVIDIA_PROXY_URL pointing at the api/nvidia.js relay ' +
-    '(e.g. https://<your-app>.vercel.app/api/nvidia).',
+    `NVIDIA NIM relay not found at ${target}` +
+    (status ? ` (HTTP ${status}, not a NIM response)` : '') +
+    '. The relay only exists under `vite dev`, or on a host that deploys `api/nvidia.js`. ' +
+    'Check that the relay URL is reachable and that the build was made with ' +
+    'VITE_NVIDIA_PROXY_URL pointing at it (e.g. https://<your-app>.vercel.app/api/nvidia), ' +
+    'then redeploy. Settings → NVIDIA NIM → Run diagnostics shows the exact URL in use.',
+  );
+}
+
+/** The relay is deployed on another origin but its CORS headers aren't reaching us. */
+function relayCorsError(url) {
+  return new Error(
+    `The NVIDIA NIM relay at ${url || getNvidiaProxyUrl()} was blocked by CORS. ` +
+    'The browser never saw a response, which means the relay did not send ' +
+    'Access-Control-Allow-Origin for this site. Deploy api/nvidia.js from this repo ' +
+    '(it sets the header), or serve the relay from the same origin as the app.',
   );
 }
 
@@ -248,29 +302,37 @@ export async function nvidiaFetch(url, options = {}) {
   try {
     resp = await fetch(url, options);
   } catch (err) {
-    throw new Error(
-      `Could not reach the NVIDIA NIM relay (${err.message}). ` +
-      (hasNvidiaRelay()
-        ? 'Check that the relay deployment is up.'
-        : 'Set VITE_NVIDIA_PROXY_URL to your api/nvidia.js deployment.'),
-    );
+    const msg = String(err?.message || err);
+    // A cross-origin relay without CORS headers surfaces in the browser as an
+    // opaque TypeError ("Failed to fetch" / "NetworkError"). Say so precisely.
+    if (/failed to fetch|networkerror|load failed|network error/i.test(msg)) {
+      let crossOrigin = false;
+      try {
+        crossOrigin = new URL(url, window.location.href).origin !== window.location.origin;
+      } catch { /* relative url */ }
+      if (crossOrigin) throw relayCorsError(url);
+      throw new Error(`Could not reach the NVIDIA NIM relay at ${url}: ${msg}. Is the dev/server running?`);
+    }
+    throw new Error(`Could not reach the NVIDIA NIM relay at ${url}: ${msg}`);
   }
 
   const contentType = resp.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
 
-  // Relay missing: SPA fallback served index.html (200 or 404) and/or a plain
-  // HTML 404 page. Genuine NIM errors always come back as JSON.
-  const maybeSpaFallback = contentType.includes('text/html') || resp.status === 404;
-  if (!maybeSpaFallback) return resp;
+  // Fast path: a JSON 2xx/4xx/5xx is a genuine relay/NIM answer.
+  if (isJson) return resp;
 
-  let body = '';
-  try { body = await resp.text(); } catch { /* ignore */ }
+  // Everything else could be a host "route not found" page (Vercel plain-text,
+  // SPA index.html, nginx). Read it and decide — a 200 text/html page is the
+  // SPA fallback, which is just as broken as a 404 for our purposes.
+  if (resp.status === 404 || contentType.includes('text/html') || contentType.startsWith('text/plain')) {
+    let body = '';
+    try { body = await resp.text(); } catch { /* ignore */ }
+    if (looksLikeMissingRoute(body)) throw relayMissingError(url, resp.status);
+    return new Response(body, { status: resp.status, headers: resp.headers });
+  }
 
-  if (looksLikeHtml(body) || contentType.includes('text/html')) throw relayMissingError(url);
-  if (resp.status === 404 && !body) throw relayMissingError(url);
-
-  // Real JSON error from NIM (e.g. retired model) — hand it back to the caller.
-  return new Response(body, { status: resp.status, headers: resp.headers });
+  return resp;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -357,6 +419,9 @@ export function humanizeNvidiaError(status, bodyText, model) {
     return `NVIDIA NIM rejected the request (${status}). Add/refresh your nvapi- key in Settings.${entitlement} ${detail}`.trim();
   }
   if (status === 404) {
+    if (!model) {
+      return `NVIDIA NIM returned 404 (no model was specified for this request). ${detail}`.trim();
+    }
     return `NVIDIA NIM model not found (404): "${model}". Verify the exact id with Settings → NVIDIA NIM → Browse models, or pick another NIM model. ${detail}`.trim();
   }
   if (status === 429) {
@@ -414,7 +479,27 @@ export async function nvidiaComplete({
     ),
   });
 
-  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp), model));
+  const contentType = resp.headers.get('content-type') || '';
+
+  if (!resp.ok) {
+    throw new Error(humanizeNvidiaError(resp.status, await resp.text(), model));
+  }
+
+  // Some NIM deployments/relays answer with SSE even when stream:false was
+  // requested. Handle both shapes instead of blowing up on JSON.parse.
+  if (contentType.includes('event-stream') || contentType.startsWith('text/plain')) {
+    const raw = await resp.text();
+    let text = '';
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ') || trimmed === 'data: [DONE]') continue;
+      try {
+        const parsed = JSON.parse(trimmed.slice(6));
+        text += parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.message?.content || '';
+      } catch { /* skip malformed frame */ }
+    }
+    return text;
+  }
 
   const data = await resp.json();
   const message = data?.choices?.[0]?.message || {};
@@ -514,7 +599,86 @@ export async function nvidiaListModels(keyOverride) {
     method: 'GET',
     headers: { Authorization: `Bearer ${resolvedKey}`, Accept: 'application/json' },
   });
-  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp)));
+  if (!resp.ok) {
+    const body = await readError(resp);
+    throw new Error(
+      `Could not list NVIDIA NIM models (${resp.status} from ${nvidiaModelsUrl()}). ` +
+      `This is a relay/credential problem, not a model id. ${body.slice(0, 200)}`,
+    );
+  }
   const data = await resp.json();
-  return Array.isArray(data?.data) ? data.data.map((m) => m.id) : [];
+  if (!Array.isArray(data?.data)) {
+    throw new Error(
+      `The NIM relay at ${nvidiaModelsUrl()} did not return a model list. ` +
+      'Check that VITE_NVIDIA_PROXY_URL points at api/nvidia.js and not at the app itself.',
+    );
+  }
+  return data.data.map((m) => m.id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diagnostics (Settings → NVIDIA NIM → Run diagnostics)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Pings the relay with no credentials so the relay's own health can be checked
+ * without exposing the key. Returns a step-by-step report.
+ */
+export async function nvidiaDiagnostics(keyOverride) {
+  const steps = [];
+  const add = (name, ok, detail) => steps.push({ name, ok, detail });
+
+  const relay = getNvidiaProxyUrl();
+  const modelsUrl = nvidiaModelsUrl();
+  const chatUrl = nvidiaChatUrl();
+
+  add('Relay URL', true, `${relay} (${hasNvidiaRelay() ? 'configured/dev' : 'built-in default'})`);
+  add('Models endpoint', true, modelsUrl);
+  add('Chat endpoint', true, chatUrl);
+
+  // 1. Does the relay exist at all?
+  let relayReachable = false;
+  try {
+    // No Authorization on purpose: a live relay forwards this and NIM answers
+    // 401, which proves the relay works without touching the user's key.
+    const probe = await nvidiaFetch(modelsUrl, { method: 'GET', headers: { Accept: 'application/json' } });
+    relayReachable = true;
+    add('Relay reachable', true, `HTTP ${probe.status} — relay is forwarding to NIM`);
+    // Drain so the connection can close.
+    try { await probe.text(); } catch { /* ignore */ }
+  } catch (e) {
+    add('Relay reachable', false, e.message);
+  }
+
+  if (!relayReachable) return { ok: false, steps, relay, modelsUrl, chatUrl };
+
+  // 2. Does the key work?
+  const key = resolveExplicitKey(keyOverride);
+  if (!key) {
+    add('API key', false, 'No nvapi- key saved.');
+    return { ok: false, steps, relay, modelsUrl, chatUrl };
+  }
+
+  try {
+    const ids = await nvidiaListModels(key);
+    add('API key', true, `${ids.length} models visible to this key`);
+  } catch (e) {
+    add('API key', false, e.message);
+    return { ok: false, steps, relay, modelsUrl, chatUrl };
+  }
+
+  // 3. Can we actually complete a token?
+  try {
+    const text = await nvidiaComplete({
+      keyOverride: key,
+      userContent: 'Reply with the single word: pong',
+      maxTokens: 8,
+    });
+    add('Test completion', true, `Model replied: ${String(text).trim().slice(0, 40) || '(empty)'}`);
+  } catch (e) {
+    add('Test completion', false, e.message);
+    return { ok: false, steps, relay, modelsUrl, chatUrl };
+  }
+
+  return { ok: true, steps, relay, modelsUrl, chatUrl };
 }
