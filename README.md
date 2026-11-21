@@ -36,6 +36,13 @@ If you are developing a production application, we recommend using TypeScript wi
 4. If anything fails, open **Settings → NVIDIA NIM → Run diagnostics**. It
    checks relay → key → a real completion and prints the exact endpoint in use,
    so a broken relay never shows up as a bogus "model not found".
+5. **Stale bundle check.** Relay errors are prefixed with the integration build
+   (`[nim-v4]`) and Settings shows the same version. If your browser reports an
+   older build than the current deploy — or you still see errors that contain
+   `"undefined"`, which no current build can produce — hard-reload with
+   Ctrl/Cmd+Shift+R. **Test a relay URL** in the same section probes any relay
+   (`?action=models`, `/models`, `/v1/models`, bare base) and reports which
+   shape answered.
 
 NIM (`integrate.api.nvidia.com`) does not send CORS headers, so the browser
 cannot call it directly. Requests therefore go through a same-origin relay:
@@ -51,6 +58,20 @@ domain, set `VITE_NVIDIA_PROXY_URL=https://…/api/nvidia` at build time.
 
 The relay only forwards to NVIDIA and adds CORS headers; the `nvapi-` key
 travels in the `Authorization` header and is never stored server-side.
+
+### Vercel routing
+
+`vercel.json` maps the relay explicitly, ahead of the SPA fallback:
+
+```json
+{ "source": "/api/nvidia/:path*",  "destination": "/api/nvidia" }
+{ "source": "/nvidia-api/:path*",  "destination": "/api/nvidia" }
+```
+
+Both the query form (`/api/nvidia?action=chat`) and real sub-paths
+(`/api/nvidia/chat/completions`) therefore reach the function. `index.html` is
+served with `no-cache`, so a deploy never leaves browsers pinned to an old
+bundle.
 
 ### Troubleshooting
 
