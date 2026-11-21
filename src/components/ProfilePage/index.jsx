@@ -12,6 +12,8 @@ import {
   nvidiaChatUrl,
   nvidiaModelsUrl,
   nvidiaDiagnostics,
+  probeNvidiaRelay,
+  NVIDIA_INTEGRATION_VERSION,
 } from '../../utils/nvidiaNim';
 import './ProfilePage.css';
 
@@ -26,6 +28,9 @@ export default function ProfilePage() {
   const [nvidiaModelIds, setNvidiaModelIds] = useState([]);
   const [nvidiaDiag, setNvidiaDiag] = useState(null);
   const [nvidiaDiagRunning, setNvidiaDiagRunning] = useState(false);
+  const [relayProbeUrl, setRelayProbeUrl] = useState(() => getNvidiaProxyUrl());
+  const [relayProbe, setRelayProbe] = useState(null);
+  const [relayProbeRunning, setRelayProbeRunning] = useState(false);
   const [nvidiaFilter, setNvidiaFilter] = useState('');
   const [nvidiaChatModel, setNvidiaChatModel] = useState(
     () => localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
@@ -38,6 +43,18 @@ export default function ProfilePage() {
 
   const nvidiaRelayLabel = getNvidiaProxyUrl();
   const nvidiaRelayMissing = !hasNvidiaRelay();
+
+  const handleProbeRelay = async () => {
+    setRelayProbeRunning(true);
+    setRelayProbe(null);
+    try {
+      setRelayProbe(await probeNvidiaRelay(relayProbeUrl));
+    } catch (e) {
+      setRelayProbe({ worked: false, results: [{ url: relayProbeUrl, ok: false, detail: e.message }] });
+    } finally {
+      setRelayProbeRunning(false);
+    }
+  };
 
   const handleNvidiaDiagnostics = async () => {
     setNvidiaDiagRunning(true);
@@ -265,6 +282,61 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+
+              {/* Which build am I running + probe any relay URL */}
+              <div className="ios-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  NIM integration build <code>v{NVIDIA_INTEGRATION_VERSION}</code>. If Settings shows a different
+                  version than the latest deploy, the browser is running a cached bundle — hard-reload (Ctrl/Cmd+Shift+R).
+                </p>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Test a relay URL</label>
+                <input
+                  type="text"
+                  className="ios-input"
+                  value={relayProbeUrl}
+                  onChange={e => setRelayProbeUrl(e.target.value)}
+                  placeholder="https://<app>.vercel.app/api/nvidia"
+                />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={handleProbeRelay}
+                    disabled={relayProbeRunning}
+                    style={{
+                      background: 'var(--hover-bg)', color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)', padding: '8px 14px',
+                      borderRadius: '8px', cursor: 'pointer', fontWeight: 600,
+                      fontSize: '0.82rem', opacity: relayProbeRunning ? 0.6 : 1,
+                    }}
+                  >
+                    {relayProbeRunning ? 'Probing…' : 'Probe relay'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRelayProbeUrl(getNvidiaProxyUrl())}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem' }}
+                  >
+                    use current
+                  </button>
+                </div>
+                {relayProbe && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {relayProbe.results.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '0.78rem', lineHeight: 1.4, alignItems: 'flex-start' }}>
+                        <span style={{ color: r.ok ? '#1f9d55' : '#c0392b', fontWeight: 700 }}>{r.ok ? '✓' : '✗'}</span>
+                        <code style={{ color: 'var(--text-primary)', wordBreak: 'break-all' }}>{r.url}</code>
+                        <span style={{ color: 'var(--text-secondary)', flex: 1 }}>{r.detail}</span>
+                      </div>
+                    ))}
+                    {!relayProbe.worked && (
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#c0392b' }}>
+                        None of the shapes answered. Deploy this repo&apos;s <code>api/nvidia.js</code>, then point
+                        {' '}<code>VITE_NVIDIA_PROXY_URL</code> at it and redeploy.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               {nvidiaTest.msg && (
                 <div className="ios-row" style={{ paddingTop: 0 }}>
                   <p

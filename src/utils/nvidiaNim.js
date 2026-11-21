@@ -16,6 +16,13 @@
 
 export const NVIDIA_API_HOST = 'https://integrate.api.nvidia.com/v1';
 
+/**
+ * Bumped whenever the NIM relay contract changes. It is appended to relay
+ * errors and shown in diagnostics so a browser running a cached bundle from an
+ * older deploy is immediately identifiable.
+ */
+export const NVIDIA_INTEGRATION_VERSION = '4';
+
 export const NVIDIA_KEY_PREFIX = 'nvapi-';
 
 /** LocalStorage key used by Teacher Classroom / Inline Classroom settings. */
@@ -273,7 +280,7 @@ function looksLikeMissingRoute(text) {
 function relayMissingError(url, status) {
   const target = url || getNvidiaProxyUrl();
   return new Error(
-    `NVIDIA NIM relay not found at ${target}` +
+    `[nim-v${NVIDIA_INTEGRATION_VERSION}] NVIDIA NIM relay not found at ${target}` +
     (status ? ` (HTTP ${status}, not a NIM response)` : '') +
     '. The relay only exists under `vite dev`, or on a host that deploys `api/nvidia.js`. ' +
     'Check that the relay URL is reachable and that the build was made with ' +
@@ -681,4 +688,45 @@ export async function nvidiaDiagnostics(keyOverride) {
   }
 
   return { ok: true, steps, relay, modelsUrl, chatUrl };
+}
+
+/**
+ * Probe an arbitrary relay URL (Settings → "Test a relay URL"). Useful when a
+ * stale deploy, a wrong env var or a mis-hosted function is suspected: it tries
+ * the query form, real sub-paths and a bare origin, and reports which answered.
+ */
+export async function probeNvidiaRelay(customUrl) {
+  const base = normalizeProxyBase(customUrl || getNvidiaProxyUrl());
+  const candidates = [
+    `${base}${base.includes('?') ? '&' : '?'}action=models`,
+    `${base}/models`,
+    `${base}/v1/models`,
+    base,
+  ];
+
+  const results = [];
+  for (const url of candidates) {
+    try {
+      const resp = await nvidiaFetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      const body = await resp.text();
+      const json = (() => { try { return JSON.parse(body); } catch { return null; } })();
+      const isModelList = Array.isArray(json?.data);
+      results.push({
+        url,
+        ok: true,
+        status: resp.status,
+        detail: isModelList
+          ? `model list (${json.data.length} ids)`
+          : resp.status === 401 || resp.status === 403
+            ? 'relay is live (NIM rejected the anonymous probe)'
+            : `HTTP ${resp.status}`,
+        isModelList,
+      });
+      // First endpoint that answers like a relay is enough.
+      if (isModelList || resp.status === 401 || resp.status === 403) break;
+    } catch (e) {
+      results.push({ url, ok: false, status: 0, detail: e.message });
+    }
+  }
+  return { base, results, worked: results.some((r) => r.ok) };
 }
