@@ -7,6 +7,7 @@ import {
   buildNvidiaPayload,
   humanizeNvidiaError,
   resolveNvidiaKey,
+  nvidiaFetch,
 } from '../utils/nvidiaNim';
 
 const AppContext = createContext(null);
@@ -384,7 +385,7 @@ export function AppProvider({ children }) {
 
       let title = '';
       if (nvKey) {
-          const resp = await fetch(nvidiaChatUrl(), {
+          const resp = await nvidiaFetch(nvidiaChatUrl(), {
             method: 'POST',
             headers: nvidiaHeaders(nvKey, { Accept: 'application/json' }),
             body: JSON.stringify(buildNvidiaPayload({
@@ -395,7 +396,7 @@ export function AppProvider({ children }) {
               maxTokens: 24,
             })),
           });
-          if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+          if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await resp.text(), selectedModel.id));
           const data = await resp.json();
           title = data.choices?.[0]?.message?.content?.trim() || '';
       } else if (isGeminiKey) {
@@ -648,7 +649,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
 
     let assistantText = didSearch ? "🌍 *Database Check Complete*\n\n" : "";
     try {
-      const resp = await fetch(url, {
+      const resp = await (useNvidia ? nvidiaFetch : fetch)(url, {
         method: 'POST',
         headers,
         body,
@@ -657,7 +658,7 @@ If the user asks to "create a class", "make a roadmap", "teach me", "visualize t
 
       if (!resp.ok) {
         if (useNvidia) {
-          throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+          throw new Error(humanizeNvidiaError(resp.status, await resp.text(), selectedModel.id));
         }
         if (resp.status === 429) {
           throw new Error('Rate Limit Exceeded (429). You are sending too many requests too quickly (or using a free tier API key). Please wait a few moments.');

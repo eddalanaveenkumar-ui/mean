@@ -49,6 +49,10 @@ export default async function handler(req) {
     return json(400, { error: 'Bad proxy path' }, origin);
   }
 
+  // Buffer the request body: passing a ReadableStream straight to fetch needs
+  // `duplex: 'half'`, which some runtimes reject. NIM payloads are JSON.
+  const requestBody = req.method === 'POST' ? await req.text() : undefined;
+
   let upstream;
   try {
     upstream = await fetch(`${NVIDIA_BASE}${upstreamPath}${url.search}`, {
@@ -58,7 +62,7 @@ export default async function handler(req) {
         'Content-Type': req.headers.get('content-type') || 'application/json',
         Accept: req.headers.get('accept') || 'text/event-stream',
       },
-      body: req.method === 'POST' ? req.body : undefined,
+      body: requestBody,
     });
   } catch (err) {
     return json(502, { error: `NIM upstream unreachable: ${err.message}` }, origin);

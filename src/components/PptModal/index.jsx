@@ -7,6 +7,7 @@ import {
   nvidiaHeaders,
   buildNvidiaPayload,
   humanizeNvidiaError,
+  nvidiaFetch,
 } from '../../utils/nvidiaNim';
 import './PptModal.css';
 
@@ -53,8 +54,8 @@ export default function PptModal({ isOpen, onClose }) {
             messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: `Generate ${slideCount} slides about: ${topic}. JSON only.` }]
           });
 
-      const resp = await fetch(url, { method: 'POST', headers, body });
-      if (useNim && !resp.ok) throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+      const resp = await (useNim ? nvidiaFetch : fetch)(url, { method: 'POST', headers, body });
+      if (useNim && !resp.ok) throw new Error(humanizeNvidiaError(resp.status, await resp.text(), selectedModel.id));
 
       const data = await resp.json();
       const content = data.choices?.[0]?.message?.content || '';

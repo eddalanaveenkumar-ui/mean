@@ -12,6 +12,7 @@ import {
   nvidiaHeaders,
   buildNvidiaPayload,
   humanizeNvidiaError,
+  nvidiaFetch,
 } from '../../utils/nvidiaNim';
 
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
@@ -268,9 +269,9 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
         }
       }
 
-      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+      const resp = await (activeEngine === 'nvidia' ? nvidiaFetch : fetch)(url, { method: 'POST', headers, body: JSON.stringify(payload) });
       if (!resp.ok) {
-        if (activeEngine === 'nvidia') throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+        if (activeEngine === 'nvidia') throw new Error(humanizeNvidiaError(resp.status, await resp.text(), nvidiaModel));
         return '';
       }
       const data = await resp.json();
@@ -1460,7 +1461,7 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
         };
       }
 
-      const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal: abortControllerRef.current.signal });
+      const resp = await (activeEngine === 'nvidia' ? nvidiaFetch : fetch)(url, { method: 'POST', headers, body: JSON.stringify(payload), signal: abortControllerRef.current.signal });
 
       if (!resp.ok) {
         const errText = await resp.text();

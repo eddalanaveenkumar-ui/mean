@@ -21,13 +21,26 @@ export const NVIDIA_KEY_PREFIX = 'nvapi-';
 /** LocalStorage key used by Teacher Classroom / Inline Classroom settings. */
 export const NVIDIA_LOCAL_KEY_STORAGE = 'meanai_nvidia_key';
 
-/** Models shown in the chat model picker (provider: 'nvidia'). */
+/**
+ * Models shown in the chat model picker (provider: 'nvidia').
+ * `nvidia/llama-3.1-nemotron-ultra-253b-v1` is the NIM reference id from
+ * docs.api.nvidia.com and is used as the safe default; everything else can be
+ * overridden from Settings → NVIDIA NIM → Model.
+ */
 export const NVIDIA_MODELS = [
   {
-    id: 'nvidia/nemotron-3-ultra-550b-a55b',
-    name: 'Nemotron 3 Ultra',
+    id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1',
+    name: 'Nemotron Ultra 253B',
     provider: 'nvidia',
     icon: '◮',
+    badge: 'NIM',
+    kind: 'text',
+  },
+  {
+    id: 'nvidia/llama-3.3-nemotron-super-49b-v1',
+    name: 'Nemotron Super 49B',
+    provider: 'nvidia',
+    icon: '◭',
     badge: 'NIM',
     kind: 'text',
   },
@@ -81,8 +94,11 @@ export const NVIDIA_MODELS = [
   },
 ];
 
+/** Model used for requests that carry an image (only omni models accept them). */
+export const NVIDIA_VISION_MODEL = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
+
 /** Default NIM model when the selected model is not a NIM one. */
-export const DEFAULT_NVIDIA_MODEL = 'meta/llama-3.3-70b-instruct';
+export const DEFAULT_NVIDIA_MODEL = 'nvidia/llama-3.1-nemotron-ultra-253b-v1';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Key helpers
@@ -126,13 +142,48 @@ export function saveNvidiaLocalKey(key) {
   } catch { /* ignore */ }
 }
 
-export function getNvidiaProxyUrl() {
-  let base = '';
+const isDevServer = (() => {
   try {
-    base = (import.meta.env.VITE_NVIDIA_PROXY_URL || '').trim();
-  } catch { /* import.meta.env always exists in Vite */ }
-  if (!base) base = '/nvidia-api';
+    return !!import.meta.env?.DEV;
+  } catch {
+    return false;
+  }
+})();
+
+/**
+ * Where NIM traffic is relayed to.
+ *
+ * `integrate.api.nvidia.com` sends no Access-Control-Allow-Origin header, so a
+ * browser `fetch()` to it always fails. Requests therefore go to a same-origin
+ * (or configured) relay:
+ *
+ *  1. `VITE_NVIDIA_PROXY_URL` — always wins. Point it at your deployed relay,
+ *     e.g. https://<app>.vercel.app/api/nvidia
+ *  2. Dev/preview server — `/nvidia-api`, proxied by vite.config.js
+ *  3. Production build with nothing configured — fall back to the bundled
+ *     Vercel edge function at `/api/nvidia` so the feature still works.
+ *
+ * If none of those exist the request 404s on the SPA fallback; `nvidiaFetch`
+ * turns that into an actionable message instead of a bogus "model not found".
+ */
+export function getNvidiaProxyUrl() {
+  let configured = '';
+  try {
+    configured = (import.meta.env?.VITE_NVIDIA_PROXY_URL || '').trim();
+  } catch { /* ignore */ }
+
+  let base = configured;
+  if (!base) base = isDevServer ? '/nvidia-api' : '/api/nvidia';
   return base.replace(/\/+$/, '');
+}
+
+/** True when a relay is explicitly configured or shipped with the build. */
+export function hasNvidiaRelay() {
+  let configured = '';
+  try {
+    configured = (import.meta.env?.VITE_NVIDIA_PROXY_URL || '').trim();
+  } catch { /* ignore */ }
+  return !!configured || isDevServer;
 }
 
 /**
@@ -149,6 +200,56 @@ export function nvidiaModelsUrl(customBase) {
   const base = (customBase || getNvidiaProxyUrl()).replace(/\/+$/, '');
   if (base.endsWith('/models')) return base;
   return `${base}/models`;
+}
+
+/** Body the SPA fallback (index.html) returns when the proxy is missing. */
+function looksLikeHtml(text) {
+  const head = (text || '').slice(0, 200).toLowerCase();
+  return head.includes('<!doctype html') || head.includes('<html');
+}
+
+function relayMissingError(url) {
+  return new Error(
+    `NVIDIA NIM relay not found at ${url || getNvidiaProxyUrl()} (got the app's 404 page). ` +
+    'The NIM proxy only exists while running `vite dev`; a deployed build needs ' +
+    'VITE_NVIDIA_PROXY_URL pointing at the api/nvidia.js relay ' +
+    '(e.g. https://<your-app>.vercel.app/api/nvidia).',
+  );
+}
+
+/**
+ * fetch() wrapper for NIM relays. Distinguishes "the relay itself is missing"
+ * (the SPA fallback answered with HTML) from a genuine upstream error such as
+ * a retired model id (JSON body, real status) so users get the right message.
+ */
+export async function nvidiaFetch(url, options = {}) {
+  let resp;
+  try {
+    resp = await fetch(url, options);
+  } catch (err) {
+    throw new Error(
+      `Could not reach the NVIDIA NIM relay (${err.message}). ` +
+      (hasNvidiaRelay()
+        ? 'Check that the relay deployment is up.'
+        : 'Set VITE_NVIDIA_PROXY_URL to your api/nvidia.js deployment.'),
+    );
+  }
+
+  const contentType = resp.headers.get('content-type') || '';
+
+  // Relay missing: SPA fallback served index.html (200 or 404) and/or a plain
+  // HTML 404 page. Genuine NIM errors always come back as JSON.
+  const maybeSpaFallback = contentType.includes('text/html') || resp.status === 404;
+  if (!maybeSpaFallback) return resp;
+
+  let body = '';
+  try { body = await resp.text(); } catch { /* ignore */ }
+
+  if (looksLikeHtml(body) || contentType.includes('text/html')) throw relayMissingError(url);
+  if (resp.status === 404 && !body) throw relayMissingError(url);
+
+  // Real JSON error from NIM (e.g. retired model) — hand it back to the caller.
+  return new Response(body, { status: resp.status, headers: resp.headers });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,8 +284,16 @@ export function buildNvidiaPayload({
     finalMessages.push({ role: m.role, content: m.content });
   });
 
+  const payload = { model, messages: finalMessages, stream };
+  if (maxTokens) payload.max_tokens = maxTokens;
+  if (typeof temperature === 'number') payload.temperature = temperature;
+  if (typeof topP === 'number') payload.top_p = topP;
+
   if (userContent !== undefined) {
     if (imageDataUrl) {
+      // Only NIM omni/vision models accept image parts — sending an image to a
+      // text-only model returns a 400 from the gateway.
+      payload.model = NVIDIA_VISION_MODEL;
       finalMessages.push({
         role: 'user',
         content: [
@@ -197,10 +306,6 @@ export function buildNvidiaPayload({
     }
   }
 
-  const payload = { model, messages: finalMessages, stream };
-  if (maxTokens) payload.max_tokens = maxTokens;
-  if (typeof temperature === 'number') payload.temperature = temperature;
-  if (typeof topP === 'number') payload.top_p = topP;
   return payload;
 }
 
@@ -214,7 +319,7 @@ export function nvidiaDelta(chunk) {
   return choice.delta?.content || '';
 }
 
-export function humanizeNvidiaError(status, bodyText) {
+export function humanizeNvidiaError(status, bodyText, model) {
   let detail = '';
   try {
     const parsed = JSON.parse(bodyText);
@@ -226,7 +331,7 @@ export function humanizeNvidiaError(status, bodyText) {
     return `NVIDIA NIM rejected the API key (${status}). Add/refresh your nvapi- key in Settings. ${detail}`.trim();
   }
   if (status === 404) {
-    return `NVIDIA NIM model not found (404). The model may have been retired — pick another NIM model. ${detail}`.trim();
+    return `NVIDIA NIM model not found (404): "${model}". Verify the exact id with Settings → NVIDIA NIM → Browse models, or pick another NIM model. ${detail}`.trim();
   }
   if (status === 429) {
     return `NVIDIA NIM rate limit hit (429). Wait a moment or use a different NIM model. ${detail}`.trim();
@@ -265,7 +370,7 @@ export async function nvidiaComplete({
   const resolvedKey = resolveExplicitKey(keyOverride, key);
   if (!resolvedKey) throw new Error('Add your NVIDIA NIM API key (nvapi-…) in Settings to use these models.');
 
-  const resp = await fetch(nvidiaChatUrl(), {
+  const resp = await nvidiaFetch(nvidiaChatUrl(), {
     method: 'POST',
     headers: nvidiaHeaders(resolvedKey),
     body: JSON.stringify(
@@ -283,7 +388,7 @@ export async function nvidiaComplete({
     ),
   });
 
-  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp)));
+  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp), model));
 
   const data = await resp.json();
   const message = data?.choices?.[0]?.message || {};
@@ -313,7 +418,7 @@ export async function nvidiaStream({
   const resolvedKey = resolveExplicitKey(keyOverride, key);
   if (!resolvedKey) throw new Error('Add your NVIDIA NIM API key (nvapi-…) in Settings to use these models.');
 
-  const resp = await fetch(nvidiaChatUrl(), {
+  const resp = await nvidiaFetch(nvidiaChatUrl(), {
     method: 'POST',
     headers: nvidiaHeaders(resolvedKey),
     body: JSON.stringify(
@@ -332,7 +437,7 @@ export async function nvidiaStream({
     signal,
   });
 
-  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp)));
+  if (!resp.ok) throw new Error(humanizeNvidiaError(resp.status, await readError(resp), model));
 
   // Some deployments ignore `stream: true` and answer with plain JSON.
   const contentType = resp.headers.get('content-type') || '';
@@ -379,7 +484,7 @@ export async function nvidiaListModels(keyOverride) {
   const resolvedKey = resolveExplicitKey(keyOverride);
   if (!resolvedKey) throw new Error('Enter an nvapi- key first.');
 
-  const resp = await fetch(nvidiaModelsUrl(), {
+  const resp = await nvidiaFetch(nvidiaModelsUrl(), {
     method: 'GET',
     headers: { Authorization: `Bearer ${resolvedKey}`, Accept: 'application/json' },
   });

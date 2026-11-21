@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   NVIDIA_KEY_PREFIX,
+  NVIDIA_MODELS,
+  DEFAULT_NVIDIA_MODEL,
   resolveNvidiaKey,
   saveNvidiaLocalKey,
   nvidiaListModels,
+  hasNvidiaRelay,
+  getNvidiaProxyUrl,
 } from '../../utils/nvidiaNim';
 import './ProfilePage.css';
 
@@ -16,6 +20,19 @@ export default function ProfilePage() {
   // NVIDIA NIM key (stored locally, never sent to the Mean backend)
   const [nvidiaKey, setNvidiaKey] = useState(() => resolveNvidiaKey(apiKey));
   const [nvidiaTest, setNvidiaTest] = useState({ status: 'idle', msg: '' });
+  const [nvidiaModelIds, setNvidiaModelIds] = useState([]);
+  const [nvidiaFilter, setNvidiaFilter] = useState('');
+  const [nvidiaChatModel, setNvidiaChatModel] = useState(
+    () => localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
+  );
+
+  const saveNvidiaChatModel = (id) => {
+    setNvidiaChatModel(id);
+    localStorage.setItem('meanai_nvidia_model', id);
+  };
+
+  const nvidiaRelayLabel = getNvidiaProxyUrl();
+  const nvidiaRelayMissing = !hasNvidiaRelay();
 
   const handleNvidiaTest = async () => {
     if (!nvidiaKey.trim()) {
@@ -26,8 +43,10 @@ export default function ProfilePage() {
     setNvidiaTest({ status: 'loading', msg: 'Contacting integrate.api.nvidia.com…' });
     try {
       const models = await nvidiaListModels(nvidiaKey);
+      setNvidiaModelIds(models);
       setNvidiaTest({ status: 'ok', msg: `Key works — ${models.length} NIM models available.` });
     } catch (e) {
+      setNvidiaModelIds([]);
       setNvidiaTest({ status: 'error', msg: e.message || 'Could not verify the key.' });
     }
   };
@@ -208,10 +227,75 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+            {/* Model picker backed by the live /v1/models list */}
+            <div className="ios-group" style={{ marginTop: '10px' }}>
+              <div className="ios-row field-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Model for the chat model picker</label>
+                {nvidiaModelIds.length > 0 ? (
+                  <>
+                    <input
+                      type="text"
+                      value={nvidiaFilter}
+                      onChange={e => setNvidiaFilter(e.target.value)}
+                      placeholder={`Filter ${nvidiaModelIds.length} models…`}
+                      className="ios-input"
+                    />
+                    <select
+                      value={nvidiaModelIds.includes(nvidiaChatModel) ? nvidiaChatModel : ''}
+                      onChange={e => e.target.value && saveNvidiaChatModel(e.target.value)}
+                      className="ios-input"
+                      style={{ maxHeight: '220px' }}
+                    >
+                      <option value="">— choose one of {nvidiaModelIds.length} —</option>
+                      {nvidiaModelIds
+                        .filter(id => id.toLowerCase().includes(nvidiaFilter.toLowerCase()))
+                        .map(id => <option key={id} value={id}>{id}</option>)}
+                    </select>
+                  </>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    Press <strong>Save &amp; Test Key</strong> to load the live NIM model list, then pick the exact id here.
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {NVIDIA_MODELS.map(m => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => saveNvidiaChatModel(m.id)}
+                      title={m.id}
+                      style={{
+                        background: nvidiaChatModel === m.id ? '#76b900' : 'var(--hover-bg)',
+                        color: nvidiaChatModel === m.id ? '#0b0f08' : 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)', borderRadius: '999px',
+                        padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  Active: <code>{nvidiaChatModel}</code>
+                </p>
+              </div>
+            </div>
+
+            {nvidiaRelayMissing && (
+              <div className="ios-group" style={{ marginTop: '10px' }}>
+                <div className="ios-row" style={{ paddingTop: 6 }}>
+                  <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: 1.45, color: '#c0392b' }}>
+                    <strong>Relay not configured.</strong> This deployed build has no NVIDIA proxy, so requests will 404.
+                    Set <code>VITE_NVIDIA_PROXY_URL</code> to your deployed relay (see <code>api/nvidia.js</code>) and redeploy.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <p className="ios-section-footer">
-              NVIDIA NIM (build.nvidia.com) models stream through an OpenAI-compatible endpoint. NIM blocks direct
-              browser calls, so requests are routed via <code>/nvidia-api</code> (dev proxy) or{' '}
-              <code>VITE_NVIDIA_PROXY_URL</code> (production). Pick a NIM model from the chat model picker to use it.
+              NVIDIA NIM (build.nvidia.com) streams through an OpenAI-compatible endpoint. NIM blocks direct browser
+              calls (no CORS headers), so traffic is relayed via <code>{nvidiaRelayLabel}</code>. Pick a NIM model from the
+              chat model picker or from the list above.
             </p>
           </div>
 
