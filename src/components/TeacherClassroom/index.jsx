@@ -3,6 +3,16 @@ import { useApp } from '../../context/AppContext';
 import './TeacherClassroom.css';
 import { extractFileContent } from '../../utils/fileExtractor';
 import { parseTOON, parsePartialTOON } from '../../utils/toonParser';
+import {
+  NVIDIA_MODELS,
+  NVIDIA_LOCAL_KEY_STORAGE,
+  DEFAULT_NVIDIA_MODEL,
+  saveNvidiaLocalKey,
+  nvidiaChatUrl,
+  nvidiaHeaders,
+  buildNvidiaPayload,
+  humanizeNvidiaError,
+} from '../../utils/nvidiaNim';
 
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results?search_query=';
 
@@ -125,6 +135,12 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
   const [activeVoiceAPI, setActiveVoiceAPI] = useState(() => localStorage.getItem('meanai_voice_api') || 'browser');
   const saveActiveVoiceAPI = (v) => { setActiveVoiceAPI(v); localStorage.setItem('meanai_voice_api', v); };
 
+  // NVIDIA NIM key (shared storage with Settings / Inline Classroom)
+  const [nvidiaKey, setNvidiaKey] = useState(() => localStorage.getItem(NVIDIA_LOCAL_KEY_STORAGE) || '');
+  const saveNvidiaKey = (k) => { setNvidiaKey(k); saveNvidiaLocalKey(k); };
+  const [nvidiaModel, setNvidiaModel] = useState(() => localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL);
+  const saveNvidiaModel = (m) => { setNvidiaModel(m); localStorage.setItem('meanai_nvidia_model', m); };
+
   // Model Selection
   const [activeEngine, setActiveEngine] = useState(() => {
     const localGemini = localStorage.getItem('meanai_gemini_key') || '';
@@ -136,6 +152,9 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
     const storedModel = localStorage.getItem('mean_selected_model');
     if (storedModel === 'gemini') {
       return 'gemini';
+    }
+    if (storedModel && NVIDIA_MODELS.some(m => m.id === storedModel)) {
+      return 'nvidia';
     }
     return 'openrouter';
   });
@@ -197,7 +216,24 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       let contents = [];
       let url, headers, payload;
 
-      if (activeEngine === 'gemini') {
+      if (activeEngine === 'nvidia') {
+        // NVIDIA NIM — OpenAI-compatible payload, proxied for CORS
+        const nvKey = (nvidiaKey && nvidiaKey.trim()) || localStorage.getItem(NVIDIA_LOCAL_KEY_STORAGE) || '';
+        if (!nvKey) return '';
+        url = nvidiaChatUrl();
+        headers = nvidiaHeaders(nvKey, { Accept: 'application/json' });
+        for (const m of messages) {
+          if (m.role === 'system') systemPrompt += m.content + "\n";
+          else contents.push(m);
+        }
+        payload = buildNvidiaPayload({
+          model: nvidiaModel || DEFAULT_NVIDIA_MODEL,
+          messages: contents,
+          systemPrompt,
+          stream: false,
+          maxTokens,
+        });
+      } else if (activeEngine === 'gemini') {
         const cleanedKey = localKey ? localKey.trim() : (apiKey && apiKey.trim().includes('AIza') ? apiKey.trim() : '');
         if (!cleanedKey) return '';
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanedKey}`;
@@ -233,6 +269,10 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       }
 
       const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
+      if (!resp.ok) {
+        if (activeEngine === 'nvidia') throw new Error(humanizeNvidiaError(resp.status, await resp.text()));
+        return '';
+      }
       const data = await resp.json();
       
       let content = '';
@@ -254,7 +294,7 @@ export default function TeacherClassroom({ isOpen, onClose, initialTopic, initia
       }
       return '';
     }
-  }, [localKey, openRouterKey, activeEngine, apiKey, selectedModel]);
+  }, [localKey, openRouterKey, activeEngine, apiKey, selectedModel, nvidiaKey, nvidiaModel]);
 
   // ===== PRE-LOAD SLIDES FROM INLINE CLASSROOM EXPAND =====
   // When opened via the Expand button in the chat canvas, skip generation
@@ -1128,6 +1168,10 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
   const startClass = async () => {
     if (!topic.trim()) return;
     const getActiveKey = () => {
+      if (activeEngine === 'nvidia') {
+        if (nvidiaKey.trim()) return nvidiaKey.trim();
+        return (localStorage.getItem(NVIDIA_LOCAL_KEY_STORAGE) || '').trim();
+      }
       if (activeEngine === 'gemini') {
         if (localKey.trim()) return localKey.trim();
         if (apiKey && apiKey.trim().includes('AIza')) return apiKey.trim();
@@ -1383,6 +1427,16 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
           systemInstruction: { parts: [{ text: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.' }] },
           contents: [{ role: 'user', parts: currentParts }]
         };
+      } else if (activeEngine === 'nvidia') {
+        url = nvidiaChatUrl();
+        headers = nvidiaHeaders(key);
+        payload = buildNvidiaPayload({
+          model: nvidiaModel || DEFAULT_NVIDIA_MODEL,
+          systemPrompt: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.',
+          userContent: outlinePrompt,
+          imageDataUrl: isBase64Image ? fileContent : null,
+          stream: true,
+        });
       } else {
         url = 'https://openrouter.ai/api/v1/chat/completions';
         headers = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
@@ -2246,6 +2300,12 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
               >
                 <i className="fas fa-network-wired" style={{ color: '#5E5CE6', marginRight: '6px' }}/> OpenRouter
               </button>
+              <button 
+                onClick={() => setActiveEngine('nvidia')}
+                style={{ background: activeEngine === 'nvidia' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'nvidia' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '6px 10px', fontSize: '12px', fontWeight: activeEngine === 'nvidia' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <i className="fas fa-microchip" style={{ color: '#76b900', marginRight: '6px' }}/> NIM
+              </button>
             </div>
             
             {/* Voice Model Selector */}
@@ -2345,6 +2405,12 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                   >
                     <i className="fas fa-network-wired" style={{ color: '#5E5CE6', marginRight: '6px' }}/> OpenRouter
                   </button>
+                  <button 
+                    onClick={() => setActiveEngine('nvidia')}
+                    style={{ flex: 1, background: activeEngine === 'nvidia' ? 'var(--hover-bg)' : 'transparent', border: 'none', color: activeEngine === 'nvidia' ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '8px 10px', fontSize: '13px', fontWeight: activeEngine === 'nvidia' ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    <i className="fas fa-microchip" style={{ color: '#76b900', marginRight: '6px' }}/> NIM
+                  </button>
                 </div>
               </div>
 
@@ -2424,6 +2490,31 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
                   onChange={e => saveOpenRouterKey(e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '15px' }}><i className="fas fa-microchip" style={{ color: '#76b900', marginRight: '8px' }}/>NVIDIA NIM API Key</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: '0 0 8px' }}>Free key from <a href="https://build.nvidia.com/models" target="_blank" rel="noreferrer" style={{ color: '#76b900' }}>build.nvidia.com</a> — routed through the NIM proxy to bypass browser CORS.</p>
+                <input
+                  type="password"
+                  placeholder="nvapi-..."
+                  value={nvidiaKey}
+                  onChange={e => saveNvidiaKey(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <input
+                  type="text"
+                  list="nvidia-model-options"
+                  placeholder={DEFAULT_NVIDIA_MODEL}
+                  value={nvidiaModel}
+                  onChange={e => saveNvidiaModel(e.target.value)}
+                  style={{ width: '100%', marginTop: '8px', padding: '10px 14px', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <datalist id="nvidia-model-options">
+                  {NVIDIA_MODELS.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </datalist>
               </div>
             </div>
 

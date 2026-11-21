@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import {
+  isNvidiaModel,
+  resolveNvidiaKey,
+  nvidiaChatUrl,
+  nvidiaHeaders,
+  buildNvidiaPayload,
+} from '../../utils/nvidiaNim';
 import './FreebuffAgent.css';
 
 export default function FreebuffAgent({ isOpen, onClose }) {
@@ -25,7 +32,8 @@ export default function FreebuffAgent({ isOpen, onClose }) {
     setIsProcessing(true);
 
     const cleanedKey = apiKey ? apiKey.trim() : '';
-    if (!cleanedKey) {
+    const nvKey = isNvidiaModel(selectedModel) ? resolveNvidiaKey(cleanedKey) : '';
+    if (!cleanedKey && !nvKey) {
       setLogs(prev => [...prev, { type: 'error', text: 'Error: API Key not found. Please set it in Settings.' }]);
       setIsProcessing(false);
       return;
@@ -51,7 +59,16 @@ Example:
       const isGeminiKey = cleanedKey.includes('AIza');
       let url, headers, body;
 
-      if (selectedModel.id === 'gemini' && isGeminiKey) {
+      if (nvKey) {
+         url = nvidiaChatUrl();
+         headers = nvidiaHeaders(nvKey);
+         body = JSON.stringify(buildNvidiaPayload({
+            model: selectedModel.id,
+            systemPrompt,
+            userContent: userText,
+            stream: true,
+         }));
+      } else if (selectedModel.id === 'gemini' && isGeminiKey) {
          url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${cleanedKey}`;
          headers = { 'Content-Type': 'application/json' };
          body = JSON.stringify({
@@ -96,7 +113,9 @@ Example:
              try {
                const parsed = JSON.parse(trimmed.slice(6));
                let delta = '';
-               if (selectedModel.id === 'gemini' && isGeminiKey) {
+               if (nvKey) {
+                  delta = parsed.choices?.[0]?.delta?.content || '';
+               } else if (selectedModel.id === 'gemini' && isGeminiKey) {
                   delta = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
                } else {
                   delta = parsed.choices?.[0]?.delta?.content || '';

@@ -3,6 +3,13 @@ import { parseTOON } from '../../utils/toonParser';
 import ToonRenderer, { CATEGORY_THEMES } from './visuals/ToonRenderer';
 import { getTopicTemplate } from './topicFallbacks';
 import { useApp } from '../../context/AppContext';
+import {
+  NVIDIA_LOCAL_KEY_STORAGE,
+  DEFAULT_NVIDIA_MODEL,
+  nvidiaChatUrl,
+  nvidiaHeaders,
+  buildNvidiaPayload,
+} from '../../utils/nvidiaNim';
 import './MeanClassroom.css';
 
 /* ── AI helpers ── */
@@ -12,10 +19,12 @@ function resolveKey(appKey) {
   if (cleaned) {
     const isGemini = cleaned.includes('AIza');
     const isOpenAi = cleaned.startsWith('sk-') && !cleaned.startsWith('sk-or-');
+    const isNvidia = cleaned.startsWith('nvapi-');
     return { 
-      or: !isGemini && !isOpenAi ? cleaned : '', 
+      or: !isGemini && !isOpenAi && !isNvidia ? cleaned : '', 
       g: isGemini ? cleaned : '',
-      oa: isOpenAi ? cleaned : ''
+      oa: isOpenAi ? cleaned : '',
+      nv: isNvidia ? cleaned : ''
     };
   }
   // Fallback to TeacherClassroom localStorage keys
@@ -23,11 +32,28 @@ function resolveKey(appKey) {
     or: (localStorage.getItem('meanai_openrouter_key') || '').trim(),
     g: (localStorage.getItem('meanai_gemini_key') || '').trim(),
     oa: (localStorage.getItem('meanai_openai_key') || '').trim(),
+    nv: (localStorage.getItem(NVIDIA_LOCAL_KEY_STORAGE) || '').trim(),
   };
 }
 
 async function fetchAI(messages, appKey, maxTokens = 3000) {
-  const { or: orKey, g: gKey, oa: oaKey } = resolveKey(appKey);
+  const { or: orKey, g: gKey, oa: oaKey, nv: nvKey } = resolveKey(appKey);
+  if (nvKey) {
+    const r = await fetch(nvidiaChatUrl(), {
+      method: 'POST',
+      headers: nvidiaHeaders(nvKey, { Accept: 'application/json' }),
+      body: JSON.stringify(buildNvidiaPayload({
+        model: localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
+        messages,
+        stream: false,
+        maxTokens,
+      })),
+    });
+    const d = await r.json();
+    const msg = d.choices?.[0]?.message || {};
+    const think = msg.reasoning_content ? `> 🧠 ${msg.reasoning_content}\n\n` : '';
+    return think + (msg.content || '');
+  }
   if (oaKey) {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST', headers: { 'Authorization': `Bearer ${oaKey}`, 'Content-Type': 'application/json' },
@@ -59,8 +85,41 @@ async function fetchAI(messages, appKey, maxTokens = 3000) {
 }
 
 async function streamAI(messages, onChunk, appKey, maxTokens = 3000) {
-  const { or: orKey, g: gKey, oa: oaKey } = resolveKey(appKey);
+  const { or: orKey, g: gKey, oa: oaKey, nv: nvKey } = resolveKey(appKey);
   let full = '';
+
+  if (nvKey) {
+    const r = await fetch(nvidiaChatUrl(), {
+      method: 'POST',
+      headers: nvidiaHeaders(nvKey),
+      body: JSON.stringify(buildNvidiaPayload({
+        model: localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
+        messages,
+        stream: true,
+        maxTokens,
+      })),
+    });
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        const trim = line.trim();
+        if (!trim || trim === 'data: [DONE]' || !trim.startsWith('data: ')) continue;
+        try {
+          const j = JSON.parse(trim.slice(6));
+          const t = j.choices?.[0]?.delta?.content || '';
+          if (t) { full += t; onChunk(full); }
+        } catch {}
+      }
+    }
+    return full;
+  }
 
   if (oaKey) {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {

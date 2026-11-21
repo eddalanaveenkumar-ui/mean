@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { parseTOON, parsePartialTOON } from '../../utils/toonParser';
+import {
+  NVIDIA_LOCAL_KEY_STORAGE,
+  DEFAULT_NVIDIA_MODEL,
+  nvidiaChatUrl,
+  nvidiaHeaders,
+  buildNvidiaPayload,
+} from '../../utils/nvidiaNim';
 import './InlineClassroom.css';
 
 export default function InlineClassroom({ topic, cachedSlides, onSaveSlides, onExpand }) {
@@ -305,10 +312,14 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
     const cleanedKey = apiKey ? apiKey.trim() : '';
     const isGeminiKey = cleanedKey.includes('AIza');
-    const activeEngine = selectedModel?.provider === 'google' && isGeminiKey ? 'gemini' : 'openrouter';
+    const activeEngine = selectedModel?.provider === 'nvidia'
+      ? 'nvidia'
+      : selectedModel?.provider === 'google' && isGeminiKey ? 'gemini' : 'openrouter';
 
     let keyToUse = cleanedKey;
-    if (activeEngine === 'gemini') {
+    if (activeEngine === 'nvidia') {
+      keyToUse = (localStorage.getItem(NVIDIA_LOCAL_KEY_STORAGE) || '').trim();
+    } else if (activeEngine === 'gemini') {
       const localGemini = localStorage.getItem('meanai_gemini_key');
       if (localGemini) keyToUse = localGemini.trim();
     } else {
@@ -324,7 +335,16 @@ Return ONLY valid TOON format. Start with --- for the first block.`;
 
     try {
       let url, headers, payload;
-      if (activeEngine === 'gemini') {
+      if (activeEngine === 'nvidia') {
+        url = nvidiaChatUrl();
+        headers = nvidiaHeaders(keyToUse);
+        payload = buildNvidiaPayload({
+          model: localStorage.getItem('meanai_nvidia_model') || DEFAULT_NVIDIA_MODEL,
+          systemPrompt: 'Output valid TOON format ONLY (Token-Oriented Object Notation). Blocks separated by ---. Use key: value pairs. No JSON. No markdown fences.',
+          userContent: outlinePrompt,
+          stream: true,
+        });
+      } else if (activeEngine === 'gemini') {
         url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${keyToUse}`;
         headers = { 'Content-Type': 'application/json' };
         payload = {
