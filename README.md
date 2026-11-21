@@ -23,7 +23,7 @@ If you are developing a production application, we recommend using TypeScript wi
 | OpenRouter | `openrouter/free` + paid models | `sk-or-v1-…` | Login / Settings |
 | Google Gemini | Gemini Flash (direct) | `AIza…` | Settings |
 | OpenAI | GPT-4o / GPT-4o mini | `sk-…` | Login / Settings |
-| **NVIDIA NIM** | Nemotron, Llama 3.3, DeepSeek R1, Qwen3, Kimi K2, Mistral Large 3, Nemotron Omni (vision) | `nvapi-…` | Settings → **NVIDIA NIM** |
+| **NVIDIA NIM** | Nemotron, Llama 3.3, DeepSeek R1, Qwen3, **Kimi K3.1 Pro** (text+image, 1M ctx), Mistral Large 3, Nemotron Omni (vision) | `nvapi-…` | Settings → **NVIDIA NIM** |
 
 ### NVIDIA NIM setup
 
@@ -55,8 +55,8 @@ travels in the `Authorization` header and is never stored server-side.
 | --- | --- |
 | `NVIDIA NIM relay not found at /nvidia-api/...` | Running a production build without a relay. Deploy `api/nvidia.js` (or set `VITE_NVIDIA_PROXY_URL`) and redeploy. |
 | `NVIDIA NIM model not found (404): "…"` | That id is retired/renamed. Settings → NVIDIA NIM → **Save & Test Key** loads the live model list; choose the id there. |
-| `NVIDIA NIM rejected the API key (401)` | Paste a fresh `nvapi-…` key from build.nvidia.com. |
-| Switched to a vision model automatically | Images are only sent to omni models; text models would reject them with a 400. |
+| `NVIDIA NIM rejected the request (401)` | Either the key is stale, or that specific model isn't enabled for your account (NIM answers `Unauthorized` for some models, e.g. Kimi K3.1 Pro on some tiers). Confirm your key works with another NIM model, else check the model page on build.nvidia.com. |
+| Switched to a vision model automatically | Multimodal models (Kimi K3.1 Pro, Nemotron Omni) receive images directly; text-only models are routed to the omni fallback, since they'd reject image parts with a 400. |
 
 Android builds are served from the app bundle, where the dev proxy does not
 exist — set `VITE_NVIDIA_PROXY_URL` before `npx cap sync android`.

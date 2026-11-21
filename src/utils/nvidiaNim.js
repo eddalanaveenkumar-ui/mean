@@ -69,12 +69,16 @@ export const NVIDIA_MODELS = [
     kind: 'text',
   },
   {
-    id: 'moonshotai/kimi-k2-instruct',
-    name: 'Kimi K2 (NIM)',
+    // Successor to Kimi K2 on NIM: 2.8T MoE (104B active), 1M-token context,
+    // text + image + video input. Vendor id: kimi-k3.1-pro.
+    id: 'moonshotai/kimi-k3.1-pro',
+    name: 'Kimi K3.1 Pro',
     provider: 'nvidia',
     icon: '☾',
     badge: 'NIM',
-    kind: 'text',
+    kind: 'multimodal',
+    capabilities: { text: true, image: true, video: true, reasoning: true, longContext: true },
+    description: 'Agentic coding, 3D modeling and finance · 1M context',
   },
   {
     id: 'mistralai/mistral-large-3-675b-instruct-2512',
@@ -94,8 +98,25 @@ export const NVIDIA_MODELS = [
   },
 ];
 
-/** Model used for requests that carry an image (only omni models accept them). */
+/** Fallback model used when an image is sent to a text-only NIM model. */
 export const NVIDIA_VISION_MODEL = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
+
+/** Look up catalog metadata for a NIM model id. */
+export function nvidiaModelInfo(modelId) {
+  return NVIDIA_MODELS.find((m) => m.id === modelId) || null;
+}
+
+/**
+ * Whether a NIM model accepts image parts. Kimi K3.1 Pro and the omni models
+ * are multimodal; everything else in the catalog is text-only and returns a
+ * 400 if sent image parts.
+ */
+export function nvidiaAcceptsImages(modelId) {
+  const info = nvidiaModelInfo(modelId);
+  if (info) return info.capabilities?.image === true || info.kind === 'vision';
+  // Unknown (custom id from Settings): Moonshot and NVIDIA omni ids accept images.
+  return /^moonshotai\//.test(modelId || '') || /omni/.test(modelId || '');
+}
 
 /** Default NIM model when the selected model is not a NIM one. */
 export const DEFAULT_NVIDIA_MODEL = 'nvidia/llama-3.1-nemotron-ultra-253b-v1';
@@ -291,9 +312,9 @@ export function buildNvidiaPayload({
 
   if (userContent !== undefined) {
     if (imageDataUrl) {
-      // Only NIM omni/vision models accept image parts — sending an image to a
-      // text-only model returns a 400 from the gateway.
-      payload.model = NVIDIA_VISION_MODEL;
+      // Multimodal models (Kimi K3.1 Pro, Nemotron Omni) take image parts as-is;
+      // text-only models would 400, so route those to the vision fallback.
+      if (!nvidiaAcceptsImages(payload.model)) payload.model = NVIDIA_VISION_MODEL;
       finalMessages.push({
         role: 'user',
         content: [
@@ -328,7 +349,12 @@ export function humanizeNvidiaError(status, bodyText, model) {
   if (!detail && bodyText) detail = bodyText.slice(0, 240);
 
   if (status === 401 || status === 403) {
-    return `NVIDIA NIM rejected the API key (${status}). Add/refresh your nvapi- key in Settings. ${detail}`.trim();
+    // NIM answers "Unauthorized" for models the key is not entitled to as well
+    // as for bad keys, so point at both causes when a model id is known.
+    const entitlement = model
+      ? ` If your key works for other models, "${model}" may not be enabled for this account — check its page on build.nvidia.com or pick another NIM model.`
+      : '';
+    return `NVIDIA NIM rejected the request (${status}). Add/refresh your nvapi- key in Settings.${entitlement} ${detail}`.trim();
   }
   if (status === 404) {
     return `NVIDIA NIM model not found (404): "${model}". Verify the exact id with Settings → NVIDIA NIM → Browse models, or pick another NIM model. ${detail}`.trim();

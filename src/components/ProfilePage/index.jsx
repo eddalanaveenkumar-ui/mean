@@ -272,6 +272,7 @@ export default function ProfilePage() {
                       }}
                     >
                       {m.name}
+                      {m.capabilities?.image ? ' · 🖼' : ''}
                     </button>
                   ))}
                 </div>
