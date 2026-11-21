@@ -33,6 +33,9 @@ If you are developing a production application, we recommend using TypeScript wi
 3. Pick any model under **NVIDIA NIM** in the chat model picker. The Teacher
    Classroom, Inline Classroom, PPT generator, Freebuff agent and title
    generator all honour the NIM engine too.
+4. If anything fails, open **Settings → NVIDIA NIM → Run diagnostics**. It
+   checks relay → key → a real completion and prints the exact endpoint in use,
+   so a broken relay never shows up as a bogus "model not found".
 
 NIM (`integrate.api.nvidia.com`) does not send CORS headers, so the browser
 cannot call it directly. Requests therefore go through a same-origin relay:
@@ -53,7 +56,9 @@ travels in the `Authorization` header and is never stored server-side.
 
 | Symptom | Cause / fix |
 | --- | --- |
-| `NVIDIA NIM relay not found at /nvidia-api/...` | Running a production build without a relay. Deploy `api/nvidia.js` (or set `VITE_NVIDIA_PROXY_URL`) and redeploy. |
+| `NVIDIA NIM relay not found at …` | The relay URL doesn't answer with JSON. On Vercel the function is a single route, so the app calls `/api/nvidia?action=chat` and `?action=models`; if you point `VITE_NVIDIA_PROXY_URL` elsewhere it must accept those (or real sub-paths such as `/chat/completions`). Use **Run diagnostics** to see which URL failed. |
+| `The NVIDIA NIM relay at … was blocked by CORS` | The relay is on another origin without `Access-Control-Allow-Origin`. Deploy this repo's `api/nvidia.js` (it sets the header) or proxy the relay through the app's own domain. |
+| `Could not list NVIDIA NIM models (404 …)` | `/models` reached something that isn't the relay — usually the app's own 404 page because the function wasn't deployed. |
 | `NVIDIA NIM model not found (404): "…"` | That id is retired/renamed. Settings → NVIDIA NIM → **Save & Test Key** loads the live model list; choose the id there. |
 | `NVIDIA NIM rejected the request (401)` | Either the key is stale, or that specific model isn't enabled for your account (NIM answers `Unauthorized` for some models, e.g. Kimi K3.1 Pro on some tiers). Confirm your key works with another NIM model, else check the model page on build.nvidia.com. |
 | Switched to a vision model automatically | Multimodal models (Kimi K3.1 Pro, Nemotron Omni) receive images directly; text-only models are routed to the omni fallback, since they'd reject image parts with a 400. |
